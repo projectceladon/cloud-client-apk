@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <solid android:color="@color/white_cc" />
+            <size android:width="200dp" android:height="200dp"/>
+        </shape>
+    </item>
+    <item android:width="120dp" android:height="60dp" android:gravity="center">
+        <bitmap android:src="@mipmap/place_hold" android:alpha="0.3" />
+    </item>
+</layer-list>

@@ -1,0 +1,480 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_sdk/public/cmdline-tools",
+  "install_mode": "copy",
+  "files": [
+    {
+      "name": "cmdline-tools/latest/NOTICE.txt",
+      "size": 85128,
+      "executable": true,
+      "hash": "-JgXRV9MXQmjb6IXIJ-EnL-Jw9b8IlwSDY7El0m98QsC"
+    },
+    {
+      "name": "cmdline-tools/latest/bin/apkanalyzer",
+      "size": 5322,
+      "executable": true,
+      "hash": "6CstR0BaQAv0crTMUugNnsTB_jTEP24BgGQ_PQPaPpMC"
+    },
+    {
+      "name": "cmdline-tools/latest/bin/avdmanager",
+      "size": 5313,
+      "executable": true,
+      "hash": "pcoqUylOoLSvPZH7WbPIt4eMHZ637PydUhyJbsv3ZT4C"
+    },
+    {
+      "name": "cmdline-tools/latest/bin/lint",
+      "size": 5281,
+      "executable": true,
+      "hash": "aj4IXDjHN3441pf_WYtHJrmsVrjARAAnSf9JF-KjWjAC"
+    },
+    {
+      "name": "cmdline-tools/latest/bin/screenshot2",
+      "size": 5310,
+      "executable": true,
+      "hash": "QKaN6CwRgPMmMfxjedp51WHP9mgxySrN1vQFeGiuZKkC"
+    },
+    {
+      "name": "cmdline-tools/latest/bin/sdkmanager",
+      "size": 5320,
+      "executable": true,
+      "hash": "QuWHzWeVkkQDlDhW-NXWIgAnLMEhronlyRaBlnRJxuAC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/README",
+      "size": 202,
+      "hash": "yVX3v2nr_DxUWDOKYEiIrYbIYCfEYiHejML6N13nB3gC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/analytics-library/protos/src/main/proto/libproto.jar",
+      "size": 3500158,
+      "executable": true,
+      "hash": "XF4kv1zSlrZYzknDGeyg568AmaxnvlEf63dZHobb2vsC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/analytics-library/shared/analytics-shared.jar",
+      "size": 91125,
+      "executable": true,
+      "hash": "Gtz9bVZS25tibpYqxmesbf3WLfYS133k9B5nrpnm1EEC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/analytics-library/tracker/analytics-tracker.jar",
+      "size": 35056,
+      "executable": true,
+      "hash": "sNEAPw2bMoKo9S2r-zu7ypcx0P5sZHGkQt1f25qFNloC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/annotations/libannotations.jar",
+      "size": 10553,
+      "executable": true,
+      "hash": "Fk691B6MkhPU7VK8LRYHbJEGt8MjkMm3X6m-RiHHEE0C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/apkanalyzer-classpath.jar",
+      "size": 4150,
+      "executable": true,
+      "hash": "BrCNqfaHmfluhd09AZbIgg31-t4jVGGQ8SGHLbxOzNQC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/apkparser/analyzer/analyzer.jar",
+      "size": 107976,
+      "executable": true,
+      "hash": "ZRZyYtOMQmcshvQM0OvRT5mOtlgdDa08zxkpwigZcpkC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/apkparser/binary-resources.jar",
+      "size": 81427,
+      "executable": true,
+      "hash": "pgbi2_r2D2oDuf25PqOcZI9m6_i_5t3H0sRWAtVaEaYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/apkparser/cli/analyzer-cli.jar",
+      "size": 59841,
+      "executable": true,
+      "hash": "4IzgHBXocK3zty3YlKq-ymF6wqzuvOPWPe1q04-jICoC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/avdmanager-classpath.jar",
+      "size": 2191,
+      "executable": true,
+      "hash": "yJGhA8uorkZyjH7GGsLzGgdm6wxGcpOcv2BpD8fywPkC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/build-system/builder-model/libbuilder-model.jar",
+      "size": 43539,
+      "executable": true,
+      "hash": "6l-BJUzDGtlwHjck2ZR4LhLLd9dKZAmBVFnS_7moCYAC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/build-system/builder-test-api/builder-test-api.jar",
+      "size": 16125,
+      "executable": true,
+      "hash": "TG78aCSE5MwfWqXn1BKaCFh06i8up6ZaFfEjL0WS0CsC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/build-system/manifest-merger.jar",
+      "size": 207088,
+      "executable": true,
+      "hash": "955_iCCyMR37dR-nRwj5Yk9Nk5z4e7DLbp_s-yirv1wC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/common/common.jar",
+      "size": 262139,
+      "executable": true,
+      "hash": "s9j5cwlk3_jwiR165jtbTHicSJb54F8gMjAAdKdxWg8C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/ddmlib/ddmlib.jar",
+      "size": 369978,
+      "executable": true,
+      "hash": "C3sumBJpHjNNBh9NuY-4ebqWKdUWsUmGMdLOpHl5pY0C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/device_validator/dvlib.jar",
+      "size": 41274,
+      "executable": true,
+      "hash": "w-6I7e6f7gs7rVi7va5Ayx2Nntpa0JJHieDUhCgqbWsC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/archive-patcher/explainer.jar",
+      "size": 12156,
+      "hash": "KXvFDU9h-LwJyqkfjuFDz98Yqj9CCNcW9aU6_Xmg-b0C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/archive-patcher/generator.jar",
+      "size": 84159,
+      "hash": "5uFIFN85C01xTbZr-E2vuqGVHWQ-CukaqMarNow5Z8UC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/archive-patcher/shared.jar",
+      "size": 28234,
+      "hash": "ORyu9prDZt3EbBx37H9B_P2ouifNsGeO0XyjSr6UlmUC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/android/tools/build/aapt2-proto/0.4.0/aapt2-proto-0.4.0.jar",
+      "size": 615321,
+      "hash": "-sBDXgiJj4nu65yiNr6nBxVf-BbBIgXO0oWtU2BBM8oC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/beust/jcommander/1.64/jcommander-1.64.jar",
+      "size": 65585,
+      "hash": "FWvnNhmcmQMh2f93CQsZlinPyYZeLWwT980pG7FkGBcC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar",
+      "size": 19936,
+      "hash": "dmrSoHg_JoeWLIrXTO7MOKKLn3Ki0IXuQ4t4E-ko0McC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/code/gson/gson/2.8.5/gson-2.8.5.jar",
+      "size": 241622,
+      "hash": "IzoBSfw2XJ9u29aDz-JmsZvcdzvpjqva9rPJJLSOfYEC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/errorprone/error_prone_annotations/2.3.1/error_prone_annotations-2.3.1.jar",
+      "size": 13162,
+      "hash": "EKWUmqD5XI3k_Uft_iBTTSrO_YwiT4r-ofYH4RKBYSAC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/guava/failureaccess/1.0.1/failureaccess-1.0.1.jar",
+      "size": 4617,
+      "hash": "oXHuTHNN0tqDfksWvp30Zhr6typBra8x64Tf2vk2yiYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/guava/guava/27.1-jre/guava-27.1-jre.jar",
+      "size": 2746671,
+      "hash": "SlqnDMlopNE35ZmtN1U-XP7tImXowZNHbXEZA2xTb-cC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar",
+      "size": 2199,
+      "hash": "s3KgN9QjCqV_vv_e8w_WEj-cDC24XQrO0AyRuXTzP5kC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/j2objc/j2objc-annotations/1.1/j2objc-annotations-1.1.jar",
+      "size": 8782,
+      "hash": "KZSn63jycQvT07-2ObLJTiGc7awNTQhNUW54wW3d7PYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/jimfs/jimfs/1.1/jimfs-1.1.jar",
+      "size": 206691,
+      "hash": "xIKOKNfAqTCvk4dRCzutp9qlwE18Jadce4sIHxwlfd0C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/google/protobuf/protobuf-java/3.4.0/protobuf-java-3.4.0.jar",
+      "size": 1383882,
+      "hash": "3OfmazJFahsRmNoMr_OorLcVSGWDkeeYx5NpJB5kkKQC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/sun/istack/istack-commons-runtime/3.0.7/istack-commons-runtime-3.0.7.jar",
+      "size": 25523,
+      "hash": "ZEPhC6LiWfuCHZtr7PENtTFihfwwxTzsnXsZo4d-f98C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/com/sun/xml/fastinfoset/FastInfoset/1.2.15/FastInfoset-1.2.15.jar",
+      "size": 311876,
+      "hash": "eFhh2xHKG9DRlWaCuXStc-sZzT4BpLP6gtYuypchCuwC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/commons-codec/commons-codec/1.10/commons-codec-1.10.jar",
+      "size": 284184,
+      "hash": "QkHfqU5xHUNfKaRgSj4t5cSqPBZeI70Ga-b8H8QwlWkC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/commons-logging/commons-logging/1.2/commons-logging-1.2.jar",
+      "size": 61829,
+      "hash": "2t3qHqC-D1aXirMAa4rJKDSv7vvZt-TmMW_KV98PpjYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/javax/activation/javax.activation-api/1.2.0/javax.activation-api-1.2.0.jar",
+      "size": 56674,
+      "hash": "Q_3vC1ts6zGwQksgi5MMdKtY-sLO63s_b9OuuLXKQ5MC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/javax/inject/javax.inject/1/javax.inject-1.jar",
+      "size": 2497,
+      "hash": "kcdwRKUMSBY2wy2Rb9ickRinIZU5BFLIEGUID5V95_8C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/javax/xml/bind/jaxb-api/2.3.1/jaxb-api-2.3.1.jar",
+      "size": 128076,
+      "hash": "iLlVoN9XiAomp0cIvDT3Tcr46_TniEOii1Dq6UVzKwYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/kotlin-plugin-ij/Kotlin/kotlinc/lib/kotlin-stdlib.jar",
+      "size": 1326263,
+      "hash": "xAZtyhBg1PNzxv79DBV-qa7Qt2Wi7JNysudZWS0hJdgC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/lint-psi/intellij-core/intellij-core-all.jar",
+      "size": 14858802,
+      "executable": true,
+      "hash": "-rBdHkk7drV5aZYLHlmivw9iTKJsFAATfRlZ8zIwepMC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/lint-psi/kotlin-compiler/kotlin-compiler-all.jar",
+      "size": 30479497,
+      "executable": true,
+      "hash": "4Jx3XLlu5_ysHAZq2avmpR-9jWYja4J57g0gupPtvgsC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/lint-psi/uast/uast-all.jar",
+      "size": 1849633,
+      "executable": true,
+      "hash": "0irR7SjDLyAmm83yZ82QfGnczjUuwplkQd69ofU-NL4C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/net/sf/jopt-simple/jopt-simple/4.9/jopt-simple-4.9.jar",
+      "size": 66469,
+      "hash": "JsWFbpVLX4ZNt28TuGkZtZxu7Pn9kwuWuqiIRia68vUC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/net/sf/kxml/kxml2/2.3.0/kxml2-2.3.0.jar",
+      "size": 43858,
+      "hash": "8mTdn3mh_eEM5ezFMiHv8kvkyTMcgwt9UvLwintjPeIC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/apache/commons/commons-compress/1.12/commons-compress-1.12.jar",
+      "size": 442553,
+      "hash": "LBVC-vNDGFt8q5w9VciuVHHW0JXTiHpK3v298phNwLYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/apache/httpcomponents/httpclient/4.5.6/httpclient-4.5.6.jar",
+      "size": 767140,
+      "hash": "wD-BMZXnqA42CNDd2NqAshaWpMkqaiKYhlvxSQcVUccC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/apache/httpcomponents/httpcore/4.4.10/httpcore-4.4.10.jar",
+      "size": 326356,
+      "hash": "eLoQllYZV9sbVSAKFZtkiHZDA0LRXUYSd-YjYNoZ9v0C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/bouncycastle/bcpkix-jdk15on/1.56/bcpkix-jdk15on-1.56.jar",
+      "size": 685403,
+      "hash": "cEPe5OnnF16T4LNvRbHsHsuJPF91VmfouRbrjdIBxsoC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/bouncycastle/bcprov-jdk15on/1.56/bcprov-jdk15on-1.56.jar",
+      "size": 3448507,
+      "hash": "lj4e4U-Aj_uZiX2EjdzbKPqR3dqGfrGNMD6Cco-Hg0kC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/checkerframework/checker-qual/2.5.5/checker-qual-2.5.5.jar",
+      "size": 192258,
+      "hash": "Fk_pcoz5WizeqT4lfQ3D1eKfKSVrPMqQCo5hm8lNWx8C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/codehaus/mojo/animal-sniffer-annotations/1.17/animal-sniffer-annotations-1.17.jar",
+      "size": 3448,
+      "hash": "kmVPST7P7FIILnY1Tw6_h2SNw9XOwuPDzblHwBZ0elMC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/glassfish/jaxb/jaxb-runtime/2.3.1/jaxb-runtime-2.3.1.jar",
+      "size": 1093432,
+      "hash": "Rf7PpcghfOHzZSq5UXl5DsjMDewDhLylHL65Sik9ny8C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/glassfish/jaxb/txw2/2.3.1/txw2-2.3.1.jar",
+      "size": 70288,
+      "hash": "NJdd3hxpIPGjl5EUIjVom8PNNX4k0F7dj_k7iFvWjWAC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/annotations/13.0/annotations-13.0.jar",
+      "size": 17536,
+      "hash": "rOKhDcji1f00kl7KwD5JiLLA-FFlDJS4zvSbob0RFHgC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/kotlin/kotlin-reflect/1.3.50/kotlin-reflect-1.3.50.jar",
+      "size": 2793146,
+      "hash": "ZFgxmepaVK79G9FZUoiSX3hCJu5WLR3SeQEcYHWz16QC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/kotlin/kotlin-stdlib-common/1.3.50/kotlin-stdlib-common-1.3.50.jar",
+      "size": 170934,
+      "hash": "jOZ46I5LoBi2bazs-VJHHk19_uFWqKgZdgpaX_KdMjwC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.3.50/kotlin-stdlib-jdk7-1.3.50.jar",
+      "size": 3129,
+      "hash": "mgJmOediEvjVe4bVWwdTlMLgCfGXkRB1HTTAXF911XsC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.3.50/kotlin-stdlib-jdk8-1.3.50.jar",
+      "size": 15476,
+      "hash": "GzUftuCcFLVVJcdMH0z0iULq5Dw0i3vHZKXm5CPU2gwC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/kotlin/kotlin-stdlib/1.3.50/kotlin-stdlib-1.3.50.jar",
+      "size": 1326269,
+      "hash": "5vBXRu4DZtC1KCWgkPrEdNz0QILJCDu7IFvRaXZIjWwC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jetbrains/trove4j/trove4j/20160824/trove4j-20160824.jar",
+      "size": 572932,
+      "hash": "c7FyRzA03v7QJ-umx99-o51WuqVEUq3nq6XF8Z1yGPkC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/jvnet/staxex/stax-ex/1.8/stax-ex-1.8.jar",
+      "size": 36073,
+      "hash": "lbBdlZCvQVTGUTucXcH7LlW1OZcroKnvKOmgwB2DrXcC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/ow2/asm/asm-analysis/7.0/asm-analysis-7.0.jar",
+      "size": 33317,
+      "hash": "6YH49lDE2QC7AzZQsY4SL6axYerdX4iXjQh1H3LuhHQC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/ow2/asm/asm-tree/7.0/asm-tree-7.0.jar",
+      "size": 50399,
+      "hash": "z9egh0-d42qZnBJ_7q37_m4E1Kce6VTXrz2FPwvkimwC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/ow2/asm/asm/7.0/asm-7.0.jar",
+      "size": 113676,
+      "hash": "uI72ZGizyXitDJf9bpCXnlYVW0rGkIm6ekTpqn_-ms8C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/smali/baksmali/2.2.4/baksmali-2.2.4.jar",
+      "size": 128039,
+      "hash": "GZCTLEyM8zSmQOUsS9BCbkq7LC_JTxgDcR6oRgwG3lAC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/smali/dexlib2/2.2.4/dexlib2-2.2.4.jar",
+      "size": 993003,
+      "hash": "yyZ3v7Zs-8lU6W6Aasa9oTBRrTd1T50bzOOFFOUOQeYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/external/org/smali/util/2.2.4/util-2.2.4.jar",
+      "size": 72328,
+      "hash": "194UbSttydC3XLbH_xfKaO8kBJ3GA4uEtfayLNAN3UYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/layoutlib-api/layoutlib-api.jar",
+      "size": 121603,
+      "executable": true,
+      "hash": "dvD4qnd_LwoKiJ5AGQ13JL0LNF8RINguahkNLTyblCEC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/lint-classpath.jar",
+      "size": 3724,
+      "executable": true,
+      "hash": "ELQYZKOW9Kjws7IXGHnwKWKPlb7rTVHUeCyWf6slg80C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/lint/cli/libcli.jar",
+      "size": 210401,
+      "executable": true,
+      "hash": "85FXAVW9oVSW-PEuGhmBIFXVDmjW0gAjmQlTsoIrVr4C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/lint/lint-api.jar",
+      "size": 670737,
+      "executable": true,
+      "hash": "AKMbq9eYfelJLT3RYPjt5HlNe176Pn6xCjDk-H7JF-sC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/lint/lint-checks.jar",
+      "size": 4090879,
+      "executable": true,
+      "hash": "yIhwR5ax03YCvrliNLn7u_BjXSFXxkqetUAGZygPxFAC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/misc/screenshot2/libscreenshot2lib.jar",
+      "size": 11154,
+      "executable": true,
+      "hash": "CgE-ubBXDnGhyDaNmyOeJ7GimpRxaKz8ioYIIcFAELYC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/repository/repository.jar",
+      "size": 232508,
+      "executable": true,
+      "hash": "hstc1FzSRLx8ET9TIjN07hjZTUu4InnKx7TtUASbmYQC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/screenshot2-classpath.jar",
+      "size": 1078,
+      "executable": true,
+      "hash": "OQnhYRETZkx2KZlrYQxhfpcTVDa6SazqkrL1PUJgPt4C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/sdk-common/sdk-common.jar",
+      "size": 1508875,
+      "executable": true,
+      "hash": "A4KDY5HG0NjR4lytgXaJccmEkLhdDNIk9OmeW1HVkq0C"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/sdklib/libavdmanager_lib.jar",
+      "size": 30475,
+      "executable": true,
+      "hash": "VcvVqqk_M5SrLx5ZXMERHEukGXu_jXZu69xKkDU-W3gC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/sdklib/libsdkmanager_lib.jar",
+      "size": 43247,
+      "executable": true,
+      "hash": "W3WcTtzRbsMubGwH8DygKeFx7RBVc7u1EMKBg_De04MC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/sdklib/sdklib.jar",
+      "size": 575181,
+      "executable": true,
+      "hash": "_ZIDG0cI3wHNZKpuamWXrTGYvBo23ho2yLo2hWShNpQC"
+    },
+    {
+      "name": "cmdline-tools/latest/lib/sdkmanager-classpath.jar",
+      "size": 2191,
+      "executable": true,
+      "hash": "Bn5jSqzjw_Y_u_wP0GNbuxqe-tl1-4-EipKsuh3PeZ8C"
+    },
+    {
+      "name": "cmdline-tools/latest/package.xml",
+      "size": 18192,
+      "hash": "FkEbLl5AdFDQo1rU85Q3qEKRfojud4xDo93j11BeL2wC"
+    },
+    {
+      "name": "cmdline-tools/latest/source.properties",
+      "size": 100,
+      "executable": true,
+      "hash": "IUue_q-ES-pS-C6RzBaFqjPPRejm9SXSRsPIFjkhpl0C"
+    }
+  ]
+}

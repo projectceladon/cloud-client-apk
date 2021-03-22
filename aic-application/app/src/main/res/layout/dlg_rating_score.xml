@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/white"
+    android:orientation="vertical"
+    android:padding="@dimen/side2x">
+
+    <TextView
+        style="@style/text_16_black"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/side2x"
+        android:gravity="center_vertical"
+        android:text="请给游戏评分"
+        android:textStyle="bold" />
+
+    <RatingBar
+        android:id="@+id/ratingScore"
+        style="@style/big_rating"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:numStars="5"
+        android:rating="2.5"
+        android:stepSize="0.5" />
+
+    <EditText
+        android:id="@+id/etFeedBack"
+        style="@style/text_14_black"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/side2x"
+        android:background="@color/white_cc"
+        android:gravity="top|left"
+        android:hint="请评价下此游戏..."
+        android:lines="5"
+        android:padding="@dimen/side1x" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/side2x"
+        android:divider="@drawable/divider_hor_1x"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnOk"
+            style="@style/button_blue_wrap"
+            android:layout_weight="1"
+            android:focusable="true"
+            android:text="确认"
+            app:backgroundTint="@color/colorPrimary"
+            app:cornerRadius="@dimen/side1x"
+            app:rippleColor="@color/black_33"
+            app:strokeColor="@color/colorPrimaryDark"
+            app:strokeWidth="1dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancel"
+            style="@style/button_white"
+            android:layout_marginEnd="@dimen/side2x"
+            android:layout_weight="1"
+            android:focusable="true"
+            android:text="取消"
+            app:backgroundTint="@color/white"
+            app:cornerRadius="@dimen/side1x"
+            app:rippleColor="@color/gray_99"
+            app:strokeColor="@color/colorPrimary"
+            app:strokeWidth="1dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

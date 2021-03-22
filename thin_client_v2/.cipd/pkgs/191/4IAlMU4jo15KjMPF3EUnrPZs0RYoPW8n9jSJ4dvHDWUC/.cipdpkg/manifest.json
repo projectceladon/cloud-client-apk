@@ -1,0 +1,16 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_system_sdk",
+  "files": [
+    {
+      "name": "android-stubs-src.jar",
+      "size": 9658314,
+      "hash": "FqDmQybyRLCKPOuRb9Zi9TQDytVbutkvS6SxF43T1swC"
+    },
+    {
+      "name": "android_system.jar",
+      "size": 49869782,
+      "hash": "IVeuCvgQrbUlK-CkN4gGO0UQlL32WZciYoshkBj7tq4C"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/com_google_android_gms_play_services_auth_api_phone",
+  "files": [
+    {
+      "name": "play-services-auth-api-phone-17.1.0.aar",
+      "size": 18064,
+      "hash": "cmBQBYUbnJ_uzPoukgpyHgIFN3L57Xmi3ODv92YK3nEC"
+    }
+  ]
+}

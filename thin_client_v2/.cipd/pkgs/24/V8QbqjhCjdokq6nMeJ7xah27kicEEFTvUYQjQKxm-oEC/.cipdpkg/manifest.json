@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_documentfile_documentfile",
+  "files": [
+    {
+      "name": "documentfile-1.0.0.aar",
+      "size": 11221,
+      "hash": "hloGHvL60WUi-EM1NrjUcgjEb_fHdFGX36HutIGGlIcC"
+    }
+  ]
+}

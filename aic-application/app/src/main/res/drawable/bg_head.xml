@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <bitmap android:src="@mipmap/hardware" android:tileMode="clamp"/>
+    </item>
+    <item>
+        <shape>
+            <gradient
+                android:endColor="#9EEF"
+                android:startColor="#FFF"
+                android:angle="45"
+                android:centerColor="#DFFF"
+                android:type="linear" />
+        </shape>
+    </item>
+</layer-list>

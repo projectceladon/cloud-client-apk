@@ -1,0 +1,53 @@
+<resources>
+    <string name="app_name">Intel Cloud Game Plat Demo</string>
+    <string name="app_name2">Intel Cloud Game</string>
+    <!-- TODO: Remove or change this placeholder text -->
+
+    <string name="title_activity_player">PlayerActivity</string>
+    <string name="exit_login">Exit Login</string>
+    <string name="setting">Setting</string>
+    <string name="test_speed_choose_region">Test Speed Choose Region</string>
+    <string name="game_rank">Game Rank</string>
+    <string name="login">Login</string>
+    <string name="register">Register</string>
+    <string name="choose_language">Choose Language</string>
+    <string name="battery_infor">Battery Information</string>
+    <string name="memory_infor">Memory Information</string>
+    <string name="tab_home">Home</string>
+    <string name="tab_game_list">Game</string>
+    <string name="tab_mine">Mine</string>
+    <string name="play_game_now">Start AIC</string>
+    <string name="multiplayer_game">Multiplayer Game</string>
+    <string name="game_intro">Game Intro</string>
+    <string name="game_image">Game Images</string>
+    <string name="run_times">Run Times：</string>
+    <string name="cumulative_duration">Cumulative \nduration：</string>
+    <string name="single_duraction">Single \nduration：</string>
+    <string name="last_time">Last Time：</string>
+    <string name="message">Message</string>
+    <string name="please_input_password">Please input password</string>
+    <string name="please_phone_number">Please input phone number</string>
+    <string name="send_identifying_code">Send identify code</string>
+    <string name="input_identifying_code">Input identify code</string>
+    <string name="sms_verification">SMS Verification</string>
+    <string name="input_password_again">Input password again</string>
+    <string name="bluetooth_infor">Bluetooth Pad Information</string>
+    <string name="search_game_name">Search Game...</string>
+    <string name="no_game">No Game</string>
+    <string name="loading">Loading...</string>
+    <string name="current_battery">Battery</string>
+    <string name="status">Status：</string>
+    <string name="voltage">Voltage：</string>
+    <string name="temperature">Temperature：</string>
+    <string name="health">Health：</string>
+    <string name="plugged">Plugged：</string>
+    <string name="technology">Technology：</string>
+    <string name="risdual_ratio">Risdual</string>
+    <string name="system_memory">System Memory：</string>
+    <string name="dv_max_memory">VM Max Memory：</string>
+    <string name="used_memory">Use Memory：</string>
+    <string name="free_memory">Free Memory：</string>
+    <string name="show_log">Show Log Window</string>
+    <string name="net_delays">Net Delays：</string>
+    <string name="current_net_speed">Net Speed：</string>
+</resources>

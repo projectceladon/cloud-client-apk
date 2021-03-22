@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:divider="@drawable/divider_hor_1x"
+    android:orientation="vertical"
+    android:padding="@dimen/side2x"
+    android:showDividers="middle">
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="35dp"
+        android:layout_gravity="center"
+        android:background="@drawable/btn_pad_rect_selector"
+        android:id="@+id/ibtnGamePad"
+        android:padding="@dimen/side1x"
+        android:src="@drawable/ic_videogame_asset_white_24dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/divider_hor_1x"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <Button
+            android:id="@+id/btnEsc"
+            style="@style/text_14_white"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minWidth="0dp"
+            android:padding="@dimen/side2x"
+            android:text="Esc" />
+
+        <LinearLayout
+            android:id="@+id/layoutRow1"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:divider="@drawable/divider_hor_1x"
+            android:orientation="horizontal"
+            android:showDividers="middle">
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="`" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="1" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="2" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="3" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="4" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="5" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="6" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="7" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="8" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="9" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="0" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="-" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="=" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnBack"
+            style="@style/text_14_white"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:elevation="@null"
+            android:padding="@dimen/side2x"
+            android:stateListAnimator="@null"
+            android:text="Back"
+            android:textAllCaps="false" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutRow2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/divider_hor_1x"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="q" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="w" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="e" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="r" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="t" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="touchy" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="u" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="i" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="o" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="p" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="[" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="]" />
+
+        <Button
+            style="@style/btn_keyboard"
+            android:text="\" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/divider_hor_1x"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <LinearLayout
+            android:id="@+id/layoutRow3"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:divider="@drawable/divider_hor_1x"
+            android:orientation="horizontal"
+            android:showDividers="middle">
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="a" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="s" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="d" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="f" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="g" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="h" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="j" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="k" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="l" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text=";" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="," />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnEnter"
+            style="@style/text_14_white"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:elevation="@null"
+            android:padding="@dimen/side2x"
+            android:stateListAnimator="@null"
+            android:text="Enter" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/divider_hor_1x"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <LinearLayout
+            android:id="@+id/layoutRow4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:divider="@drawable/divider_hor_1x"
+            android:orientation="horizontal"
+            android:showDividers="middle">
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="z" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="touchx" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="c" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="v" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="b" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="n" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="m" />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="," />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="." />
+
+            <Button
+                style="@style/btn_keyboard"
+                android:text="/" />
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/btnShift"
+            style="@style/text_14_white"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:button="@null"
+            android:gravity="center"
+            android:padding="@dimen/side2x"
+            android:text="Shift" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:divider="@drawable/divider_hor_1x"
+        android:orientation="horizontal"
+        android:showDividers="middle">
+
+        <Button
+            android:id="@+id/btnSpace"
+            style="@style/btn_keyboard"
+            android:layout_width="wrap_content"
+            android:text="Space" />
+
+        <ImageButton
+            android:id="@+id/btnLeft"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:padding="@dimen/side2x"
+            android:src="@drawable/ic_keyboard_arrow_left_white_24dp" />
+
+        <ImageButton
+            android:id="@+id/btnRight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:padding="@dimen/side2x"
+            android:src="@drawable/ic_keyboard_arrow_right_white_24dp" />
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:padding="@dimen/side2x"
+            android:src="@drawable/ic_keyboard_arrow_up_white_24dp" />
+
+        <ImageButton
+            android:id="@+id/btnDown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:padding="@dimen/side2x"
+            android:src="@drawable/ic_keyboard_arrow_down_white_24dp" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,184 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar.Bridge">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <!-- AppCompatEditText默认状态状态设置底线颜色 -->
+        <item name="colorControlNormal">@color/gray_99</item>
+        <!-- AppCompatEditText选择的底线颜色 -->
+        <item name="colorControlActivated">@color/colorAccent</item>
+    </style>
+
+    <style name="FullscreenTheme" parent="android:Theme.NoTitleBar">
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@null</item>
+        <item name="buttonBarStyle">@style/ButtonBar</item>
+        <item name="buttonBarButtonStyle">@style/ButtonBarButton</item>
+    </style>
+
+    <style name="ButtonBar">
+        <item name="android:paddingLeft">2dp</item>
+        <item name="android:paddingTop">5dp</item>
+        <item name="android:paddingRight">2dp</item>
+        <item name="android:paddingBottom">0dp</item>
+        <item name="android:background">@android:drawable/bottom_bar</item>
+    </style>
+
+    <style name="ButtonBarButton" />
+
+    <style name="btn_mini_ver">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/btn_mine</item>
+        <item name="android:drawablePadding">@dimen/side1x</item>
+        <item name="android:gravity">left|center_vertical</item>
+        <item name="android:padding">@dimen/side2x</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="title_font">
+        <item name="android:textSize">@dimen/ft20</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="text_12_white">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/ft12</item>
+    </style>
+
+    <style name="text_12_gray">
+        <item name="android:textColor">@color/gray_99</item>
+        <item name="android:textSize">@dimen/ft12</item>
+    </style>
+
+    <style name="text_12_black">
+        <item name="android:textColor">@color/black_33</item>
+        <item name="android:textSize">@dimen/ft12</item>
+    </style>
+
+    <style name="text_14_white">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/ft14</item>
+    </style>
+
+    <style name="text_14_gray">
+        <item name="android:textColor">@color/gray_99</item>
+        <item name="android:textSize">@dimen/ft14</item>
+    </style>
+
+    <style name="text_14_black">
+        <item name="android:textColor">@color/black_33</item>
+        <item name="android:textSize">@dimen/ft14</item>
+    </style>
+
+    <style name="text_14_blue">
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textSize">@dimen/ft14</item>
+    </style>
+
+    <style name="text_16_black">
+        <item name="android:textColor">@color/black_33</item>
+        <item name="android:textSize">@dimen/ft16</item>
+    </style>
+
+    <style name="text_16_white">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/ft16</item>
+    </style>
+
+    <style name="text_18_black">
+        <item name="android:textColor">@color/black_33</item>
+        <item name="android:textSize">@dimen/ft18</item>
+    </style>
+
+    <style name="text_20_blue">
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textSize">@dimen/ft20</item>
+    </style>
+
+    <style name="text_20_white">
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">@dimen/ft20</item>
+    </style>
+
+    <style name="btn_keyboard">
+        <item name="android:minHeight">0dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:elevation">@null</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:paddingTop">@dimen/side2x</item>
+        <item name="android:paddingBottom">@dimen/side2x</item>
+        <item name="android:layout_width">0dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/btn_pad_rect_selector</item>
+        <item name="android:textSize">@dimen/ft14</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:layout_height">match_parent</item>
+    </style>
+
+    <style name="btn_primary_full_width" parent="TextAppearance.AppCompat.Widget.Button">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:textSize">@dimen/ft16</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/btn_primary_selector</item>
+    </style>
+
+    <style name="RadingStyle" parent="@android:style/Widget.RatingBar">
+        <!-- 定义星星图片 -->
+        <item name="android:progressDrawable">@drawable/gold_rating_bar</item>
+        <!-- 根据自定义星星图片的大小,设置相应的值,否则可能显示不全 -->
+        <item name="android:minHeight">18dp</item>
+        <item name="android:maxHeight">18dp</item>
+    </style>
+
+    <style name="big_rating" parent="@android:style/Widget.RatingBar">
+        <!-- 定义星星图片 -->
+        <item name="android:progressDrawable">@drawable/big_gold_rating_bar</item>
+        <!-- 根据自定义星星图片的大小,设置相应的值,否则可能显示不全 -->
+        <item name="android:minHeight">24dp</item>
+        <item name="android:maxHeight">24dp</item>
+    </style>
+
+    <style name="btn_test" parent="text_12_black">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_test_btn_off</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">@dimen/side2x</item>
+        <item name="android:paddingEnd">@dimen/side2x</item>
+    </style>
+
+    <style name="btn_test_arrow">
+        <item name="android:layout_width">22dp</item>
+        <item name="android:scaleType">centerInside</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_height">22dp</item>
+        <item name="android:background">@drawable/bg_test_btn_off</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_margin">2dp</item>
+    </style>
+
+    <style name="button_blue_wrap" parent="text_16_white">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">@dimen/side2x</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <style name="button_white" parent="text_16_black">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:padding">@dimen/side2x</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+</resources>

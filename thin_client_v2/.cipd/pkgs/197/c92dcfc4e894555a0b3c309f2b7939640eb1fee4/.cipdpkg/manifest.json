@@ -1,0 +1,31 @@
+{
+  "format_version": "1",
+  "package_name": "chromium/third_party/espresso",
+  "files": [
+    {
+      "name": "lib/espresso-contrib-release-no-dep.jar",
+      "size": 34748,
+      "hash": "Q7bCuwZhDSX49HHDZm4v-E9_BfTMjepbVZSH1RZ-1JUC"
+    },
+    {
+      "name": "lib/espresso-core-release-no-dep.jar",
+      "size": 2948420,
+      "hash": "9kkBnsKro-9SE51SUXmd1x0GfgIbDMmt8k40OsbTW00C"
+    },
+    {
+      "name": "lib/espresso-idling-resource-release-no-dep.jar",
+      "size": 2281,
+      "hash": "mxAs-oDismU48FXR8e77JmvMDuDTVjrnkVlAcJ_w_5wC"
+    },
+    {
+      "name": "lib/espresso-intents-release-no-dep.jar",
+      "size": 51107,
+      "hash": "ZOveOVw4hvuKbj-5Dg7RUJyrei9CcTvcNhBDASHgQbIC"
+    },
+    {
+      "name": "lib/espresso-web-release-no-dep.jar",
+      "size": 230524,
+      "hash": "MfmZGGUZyWIVQ2WiPGGXeOaYYFLyPakpn_CvNOrcWkMC"
+    }
+  ]
+}

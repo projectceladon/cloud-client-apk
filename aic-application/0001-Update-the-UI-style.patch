@@ -1,0 +1,156 @@
+From fd2a46967eccb026017dad486c1c0ea82904a95c Mon Sep 17 00:00:00 2001
+From: yingzhex <yingzhenx.li@intel.com>
+Date: Wed, 3 Feb 2021 11:30:45 +0800
+Subject: [PATCH] Update the UI style
+
+---
+ .../gamepad/activity/GameDetailActivity.kt    | 22 +++----
+ .../main/res/layout/activity_game_detail.xml  | 57 +------------------
+ 2 files changed, 13 insertions(+), 66 deletions(-)
+
+diff --git a/esc-application/app/src/main/java/com/intel/gamepad/activity/GameDetailActivity.kt b/esc-application/app/src/main/java/com/intel/gamepad/activity/GameDetailActivity.kt
+index 5d7a8755..9870d65c 100755
+--- a/esc-application/app/src/main/java/com/intel/gamepad/activity/GameDetailActivity.kt
++++ b/esc-application/app/src/main/java/com/intel/gamepad/activity/GameDetailActivity.kt
+@@ -154,9 +154,9 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
+         bean = intent.getParcelableExtra(PARAM_BEAN)
+ 
+         bean?.let {
+-            updateHeaderDetail(it.imageUrl)
++           // updateHeaderDetail(it.imageUrl)
+             tvTitle.text = it.title
+-            tvIntro.text = it.intro
++            //tvIntro.text = it.intro
+         }
+     }
+ 
+@@ -201,7 +201,7 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
+ 
+     private fun initView() {
+         initBackButton(R.id.ibtnBack)
+-        initRvGameImage()
++        //initRvGameImage()
+         // 显示创建游戏房间对话框
+         btnJoin.setOnClickListener {
+             showGameRoom()
+@@ -212,7 +212,7 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
+         }
+         btnPlay.requestFocus()
+     }
+-
++/*
+     private fun initRvGameImage() {
+         val listGameImage = assets.list("img")?.toList()?.map { "file:///android_asset/img/$it" }
+ 
+@@ -231,19 +231,19 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
+                     }
+                 }
+             }
+-    }
++    }*/
+ 
+     private fun updateGameLog(gameId: Int) {
+-        tvLastTime.text = GameLogHelper.loadLastTime(gameId)
+-        tvRunCount.text = "${GameLogHelper.loadRunCount(gameId)} 次"
+-        tvSingleTime.text = GameLogHelper.loadSingleTime(gameId)
+-        tvTotalTime.text = GameLogHelper.getTotalTimeString(gameId)
++       // tvLastTime.text = GameLogHelper.loadLastTime(gameId)
++      //  tvRunCount.text = "${GameLogHelper.loadRunCount(gameId)} 次"
++      //  tvSingleTime.text = GameLogHelper.loadSingleTime(gameId)
++       // tvTotalTime.text = GameLogHelper.getTotalTimeString(gameId)
+     }
+ 
+     private fun updateHeaderDetail(url: String) {
+         // 作为背景模糊处理(参数25已是模糊的最大值)
+-        this.loadImageBlur(ivHeaderBg, url)
+-        this.loadImage(ivGameCover, url)
++       // this.loadImageBlur(ivHeaderBg, url)
++       // this.loadImage(ivGameCover, url)
+     }
+ 
+     /**
+diff --git a/esc-application/app/src/main/res/layout/activity_game_detail.xml b/esc-application/app/src/main/res/layout/activity_game_detail.xml
+index 6ccf853f..28bd48cb 100755
+--- a/esc-application/app/src/main/res/layout/activity_game_detail.xml
++++ b/esc-application/app/src/main/res/layout/activity_game_detail.xml
+@@ -8,6 +8,8 @@
+     android:orientation="vertical"
+     tools:context=".activity.GameDetailActivity">
+ 
++
++
+     <androidx.coordinatorlayout.widget.CoordinatorLayout
+         android:id="@+id/scrollView"
+         android:layout_width="match_parent"
+@@ -25,8 +27,6 @@
+                 app:layout_scrollFlags="scroll|exitUntilCollapsed|enterAlways|snap"
+                 app:statusBarScrim="@color/colorPrimaryDark">
+ 
+-                <include layout="@layout/include_game_cover_header" />
+-
+                 <androidx.appcompat.widget.Toolbar
+                     android:id="@+id/toolbar"
+                     android:layout_width="match_parent"
+@@ -51,59 +51,6 @@
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 android:orientation="vertical">
+-
+-                <LinearLayout
+-                    android:layout_width="match_parent"
+-                    android:layout_height="wrap_content"
+-                    android:layout_marginTop="@dimen/side1x"
+-                    android:background="@color/white"
+-                    android:orientation="vertical"
+-                    android:padding="@dimen/side2x">
+-
+-                    <TextView
+-                        style="@style/text_16_black"
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        android:layout_marginBottom="@dimen/side2x"
+-                        android:drawableLeft="@drawable/icon_label"
+-                        android:drawablePadding="@dimen/side1x"
+-                        android:text="@string/game_intro"
+-                        android:textStyle="bold" />
+-
+-                    <TextView
+-                        android:id="@+id/tvIntro"
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        tools:text="游戏介绍游戏介绍游戏介绍\n游戏介绍游戏介绍游戏介绍\n游戏介绍游戏介绍游戏介绍" />
+-                </LinearLayout>
+-
+-                <LinearLayout
+-                    android:layout_width="match_parent"
+-                    android:layout_height="wrap_content"
+-                    android:layout_marginTop="@dimen/side1x"
+-                    android:background="@color/white"
+-                    android:orientation="vertical"
+-                    android:padding="@dimen/side2x">
+-
+-                    <TextView
+-                        style="@style/text_16_black"
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        android:layout_marginBottom="@dimen/side2x"
+-                        android:drawableLeft="@drawable/icon_label"
+-                        android:drawablePadding="@dimen/side1x"
+-                        android:text="@string/game_image"
+-                        android:textStyle="bold" />
+-
+-                    <androidx.recyclerview.widget.RecyclerView
+-                        android:id="@+id/rvGameImage"
+-                        android:layout_width="match_parent"
+-                        android:layout_height="wrap_content"
+-                        tools:itemCount="5"
+-                        tools:layoutManager="LinearLayoutManager"
+-                        tools:listitem="@layout/item_game_image"
+-                        tools:orientation="horizontal" />
+-                </LinearLayout>
+                 <LinearLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+-- 
+2.25.1
+

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_gradient_primary"
+    android:orientation="vertical">
+
+    <com.mycommonlibrary.view.StatusBarHeightView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            style="@style/text_20_white"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/side2x"
+            android:shadowColor="@color/colorPrimaryDark"
+            android:shadowDx="4"
+            android:shadowDy="4"
+            android:shadowRadius="2"
+            android:text="@string/app_name2"
+            android:textStyle="bold|italic" />
+
+        <TextView
+            android:id="@+id/tvSearch"
+            style="@style/text_14_gray"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_search"
+            android:drawableStart="@drawable/ic_search_black_18dp"
+            android:drawablePadding="@dimen/side1x"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:paddingStart="@dimen/side2x"
+            android:singleLine="true"
+            android:text="@string/search_game_name" />
+
+        <ImageButton
+            android:id="@+id/ibtnMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:padding="@dimen/side2x"
+            android:src="@drawable/ic_mail_outline_white_24dp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/white" />
+</LinearLayout>

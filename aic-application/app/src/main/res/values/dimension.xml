@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="ft12">12sp</dimen>
+    <dimen name="ft14">14sp</dimen>
+    <dimen name="ft16">16sp</dimen>
+    <dimen name="ft18">18sp</dimen>
+    <dimen name="ft20">20sp</dimen>
+    <dimen name="ft22">22sp</dimen>
+    <dimen name="ft24">24sp</dimen>
+    <dimen name="ft28">28sp</dimen>
+    <dimen name="side1x">6dp</dimen>
+    <dimen name="side0_5x">3dp</dimen>
+    <dimen name="side2x">12dp</dimen>
+    <dimen name="side3x">18dp</dimen>
+    <dimen name="side4x">24dp</dimen>
+    <dimen name="side5x">30dp</dimen>
+
+</resources>

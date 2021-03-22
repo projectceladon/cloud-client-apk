@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_lifecycle_lifecycle_common",
+  "files": [
+    {
+      "name": "lifecycle-common-2.0.0.jar",
+      "size": 20306,
+      "hash": "e616GIgErepvofNdXvmbcF8gvZPsrd5IR2D_hrU1_vwC"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_multidex_multidex",
+  "files": [
+    {
+      "name": "multidex-2.0.0.aar",
+      "size": 26501,
+      "hash": "wBcACRBy4P9djsLQDqxrj5bqGGRggEJenOPGp7X2bjMC"
+    }
+  ]
+}

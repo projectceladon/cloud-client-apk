@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_legacy_legacy_preference_v14",
+  "files": [
+    {
+      "name": "legacy-preference-v14-1.0.0.aar",
+      "size": 18390,
+      "hash": "1tEZE-Vrjy0U_VYL0a1tf9ViShXdTsBzstkYggX4YoAC"
+    }
+  ]
+}

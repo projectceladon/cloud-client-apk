@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="@dimen/side1x"
+    app:cardElevation="@dimen/side1x"
+    app:cardPreventCornerOverlap="true"
+    app:cardUseCompatPadding="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="true"
+        android:background="@drawable/btn_mine"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/ivCover"
+            android:layout_width="150dp"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/icon_place_hold" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/side2x"
+            android:layout_marginEnd="@dimen/side2x"
+            android:layout_marginTop="@dimen/side2x"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvTitle"
+                style="@style/text_16_black"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="游戏标题" />
+
+            <RatingBar
+                style="@style/RadingStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:isIndicator="true"
+                android:numStars="5"
+                android:rating="2.5"
+                android:stepSize="0.5" />
+
+            <TextView
+                android:id="@+id/tvDesc"
+                style="@style/text_12_gray"
+                android:layout_width="match_parent"
+                android:lines="3"
+                android:ellipsize="end"
+                android:layout_height="wrap_content"
+                tools:text="游戏介绍游戏介绍游戏介绍游戏介绍游戏介绍" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_coordinatorlayout_coordinatorlayout",
+  "files": [
+    {
+      "name": "coordinatorlayout-1.0.0.aar",
+      "size": 44222,
+      "hash": "5QjGlUiUkzdNlCv3tO4Cq_dXHSWqxMYi5X1s1c0p63MC"
+    }
+  ]
+}

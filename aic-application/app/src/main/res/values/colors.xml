@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#0071C6</color>
+    <color name="colorPrimaryDark">#0051A4</color>
+    <color name="colorAccent">#1B60D8</color>
+    <color name="black_33">#333</color>
+    <color name="white">#fff</color>
+    <color name="white_cc">#CCC</color>
+    <color name="white_e8">#EEEEE8</color>
+    <color name="white_f5">#F5F5F5</color>
+    <color name="white_alpha">#3FFF</color>
+    <color name="gray_99">#999</color>
+    <color name="gray67">#676767</color>
+    <color name="black_alpha">#3000</color>
+    <color name="black_alpha333">#3333</color>
+    <color name="gold">#FFD700</color>
+    <color name="slive">#E6E8FA</color>
+    <color name="copper">#FF9912</color>
+
+    <color name="green">#00FF00</color>
+    <color name="green2">#3F0</color>
+    <color name="green3">#6F0</color>
+    <color name="green4">#aF0</color>
+    <color name="orange">#EE9A00</color>
+    <color name="yellow">#FFFF00</color>
+    <color name="red">#EE0000</color>
+
+    <integer-array name="gradient_arc_color">
+        <item>@color/red</item>
+        <item>@color/orange</item>
+        <item>@color/yellow</item>
+        <item>@color/green4</item>
+        <item>@color/green3</item>
+        <item>@color/green2</item>
+        <item>@color/green</item>
+    </integer-array>
+
+</resources>

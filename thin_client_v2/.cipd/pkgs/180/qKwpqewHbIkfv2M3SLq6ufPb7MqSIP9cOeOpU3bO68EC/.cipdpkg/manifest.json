@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/org_plumelib_require_javadoc",
+  "files": [
+    {
+      "name": "require-javadoc-0.1.0.jar",
+      "size": 7964,
+      "hash": "Qeu2bLCxhFDpV59B7HBmZpmNg8_tDE42IQH3Gr2DA9wC"
+    }
+  ]
+}

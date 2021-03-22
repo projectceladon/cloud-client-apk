@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/layoutRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
+        android:id="@+id/viewMouse"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:focusedByDefault="true" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="60dp"
+            android:layout_height="35dp"
+            android:layout_margin="@dimen/side2x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:text="Back"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft12" />
+
+        <ImageButton
+            android:id="@+id/ibtnShowKeyBoard"
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:layout_marginTop="@dimen/side2x"
+            android:layout_marginEnd="@dimen/side2x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:padding="@dimen/side1x"
+            android:src="@drawable/ic_keyboard_white_24dp" />
+
+        <ImageButton
+            android:id="@+id/ibtnShowDPad"
+            android:layout_width="wrap_content"
+            android:layout_height="35dp"
+            android:layout_marginTop="@dimen/side2x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:padding="@dimen/side1x"
+            android:src="@drawable/ic_videogame_asset_white_24dp" />
+
+        <Button
+            android:id="@+id/btnEsc"
+            android:layout_width="60dp"
+            android:layout_height="35dp"
+            android:layout_alignParentRight="true"
+            android:layout_margin="@dimen/side2x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:text="ESC"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft12" />
+
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/layoutArrow"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="@dimen/side2x">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@mipmap/keyboard_select_key_asdw_bk"
+            android:visibility="visible" />
+
+        <com.intel.gamepad.controller.view.Pad
+            android:id="@+id/padLeft"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:alpha="0.3" />
+    </FrameLayout>
+
+    <ImageView
+        android:id="@+id/btnShootLeft"
+        android:layout_width="90dp"
+        android:layout_height="90dp"
+        android:layout_above="@id/layoutArrow"
+        android:layout_margin="@dimen/side2x"
+        android:background="@drawable/btn_pad_oval_selector"
+        android:gravity="center"
+        android:scaleType="center"
+        android:src="@drawable/bmp_mouse_left"
+        android:textColor="@color/white"
+        android:textSize="@dimen/ft24" />
+
+    <RelativeLayout
+        android:layout_width="140dp"
+        android:layout_height="190dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="@dimen/side2x"
+        android:clickable="false">
+
+        <ImageView
+            android:id="@+id/btnFight"
+            style="@style/text_20_white"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:scaleType="centerInside"
+            android:src="@drawable/bmp_fight" />
+
+        <ImageView
+            android:id="@+id/btnShootRight"
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_below="@id/btnFight"
+            android:background="@drawable/btn_pad_oval_selector"
+            android:clickable="true"
+            android:gravity="center"
+            android:scaleType="center"
+            android:src="@drawable/bmp_mouse_left"
+            android:text="射击"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft24" />
+
+        <CheckBox
+            android:id="@+id/btnLock"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/btn_pad_oval_selector"
+            android:button="@null"
+            android:drawableTop="@drawable/bmp_aim"
+            android:gravity="center"
+            android:paddingTop="@dimen/side1x"
+            android:scaleType="center"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft20" />
+
+        <Button
+            android:id="@+id/btnKeyR"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_below="@id/btnLock"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/btn_pad_oval_selector"
+            android:text="R"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft20" />
+
+        <Button
+            android:id="@+id/btnStand"
+            style="@style/text_20_white"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minWidth="0dp"
+            android:paddingStart="@dimen/side2x"
+            android:paddingEnd="@dimen/side2x"
+            android:scaleType="center"
+            android:text="Ctrl"
+            android:textAllCaps="false" />
+
+        <ImageButton
+            android:id="@+id/btnChangeGun"
+            style="@style/text_16_white"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_alignParentBottom="true"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:scaleType="centerInside"
+            android:src="@drawable/bmp_change_gun"
+            android:text="换枪" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:orientation="horizontal"
+        android:padding="@dimen/side3x"
+        android:visibility="visible">
+
+        <Button
+            android:id="@+id/btnStart"
+            android:layout_width="70dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:elevation="@null"
+            android:minHeight="0dp"
+            android:stateListAnimator="@null"
+            android:text="Enter"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft12" />
+
+        <Button
+            android:id="@+id/btn1"
+            style="@style/text_12_white"
+            android:layout_width="@dimen/side5x"
+            android:layout_height="@dimen/side5x"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minHeight="0dp"
+            android:text="1" />
+
+        <Button
+            android:id="@+id/btn2"
+            style="@style/text_14_white"
+            android:layout_width="@dimen/side5x"
+            android:layout_height="@dimen/side5x"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minHeight="0dp"
+            android:text="2" />
+
+        <Button
+            android:id="@+id/btn3"
+            style="@style/text_14_white"
+            android:layout_width="@dimen/side5x"
+            android:layout_height="@dimen/side5x"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minHeight="0dp"
+            android:text="3" />
+
+        <Button
+            android:id="@+id/btn4"
+            style="@style/text_14_white"
+            android:layout_width="@dimen/side5x"
+            android:layout_height="@dimen/side5x"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minHeight="0dp"
+            android:text="4" />
+
+        <Button
+            android:id="@+id/btn5"
+            style="@style/text_14_white"
+            android:layout_width="@dimen/side5x"
+            android:layout_height="@dimen/side5x"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minHeight="0dp"
+            android:text="5" />
+
+        <Button
+            android:id="@+id/btn6"
+            style="@style/text_14_white"
+            android:layout_width="@dimen/side5x"
+            android:layout_height="@dimen/side5x"
+            android:layout_marginEnd="@dimen/side1x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:minHeight="0dp"
+            android:text="6"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/btnSelect"
+            android:layout_width="70dp"
+            android:layout_height="30dp"
+            android:layout_marginEnd="@dimen/side2x"
+            android:background="@drawable/btn_pad_rect_selector"
+            android:elevation="@null"
+            android:minHeight="0dp"
+            android:stateListAnimator="@null"
+            android:text="Space"
+            android:textColor="@color/white"
+            android:textSize="@dimen/ft12" />
+    </LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_localbroadcastmanager_localbroadcastmanager",
+  "files": [
+    {
+      "name": "localbroadcastmanager-1.0.0.aar",
+      "size": 6808,
+      "hash": "5xwyjO71xKfXby2G3xtl1l_irPhosaTv2Eo_NDNhhtgC"
+    }
+  ]
+}

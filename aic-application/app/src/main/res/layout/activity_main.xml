@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white_e8"
+    android:orientation="vertical"
+    tools:context=".activity.MainActivity">
+
+    <FrameLayout
+        android:id="@+id/flContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <RadioGroup
+        android:id="@+id/navBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/windowBackground"
+        android:orientation="horizontal"
+        app:itemTextColor="@color/rbtn_blue_gray_selector">
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:button="@null"
+            android:id="@+id/tab_home"
+            android:drawableTop="@drawable/bottom_icon_home_selector"
+            android:gravity="center"
+            android:padding="@dimen/side1x"
+            android:text="@string/tab_home"
+            android:textColor="@color/rbtn_blue_gray_selector" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:button="@null"
+            android:id="@+id/tab_game"
+            android:drawableTop="@drawable/bottom_icon_list_selector"
+            android:gravity="center"
+            android:padding="@dimen/side1x"
+            android:text="@string/tab_game_list"
+            android:textColor="@color/rbtn_blue_gray_selector" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:button="@null"
+            android:id="@+id/tab_mine"
+            android:drawableTop="@drawable/bottom_icon_mine_selector"
+            android:gravity="center"
+            android:padding="@dimen/side1x"
+            android:text="@string/tab_mine"
+            android:textColor="@color/rbtn_blue_gray_selector" />
+    </RadioGroup>
+</LinearLayout>

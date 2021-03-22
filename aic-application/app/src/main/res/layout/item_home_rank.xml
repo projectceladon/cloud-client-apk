@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:focusable="true">
+
+    <ImageView
+        android:id="@+id/ivGame"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:scaleType="centerCrop"
+        android:src="@mipmap/ic_launcher" />
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:src="@drawable/mask_gradient_black" />
+
+    <TextView
+        android:id="@+id/tvTitle"
+        style="@style/text_18_black"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/ivGame"
+        android:layout_marginBottom="@dimen/side3x"
+        android:background="@drawable/bg_line_white_title"
+        android:ellipsize="end"
+        android:gravity="start"
+        android:maxLines="1"
+        android:paddingStart="80dp"
+        android:paddingTop="@dimen/side0_5x"
+        android:paddingEnd="@dimen/side2x"
+        android:paddingBottom="@dimen/side0_5x"
+        android:shadowColor="@color/gray_99"
+        android:shadowDx="3"
+        android:shadowDy="3"
+        android:shadowRadius="3"
+        android:text="游戏名称"
+        android:textStyle="bold|italic" />
+
+    <TextView
+        android:id="@+id/tvRank"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_alignBottom="@id/ivGame"
+        android:layout_marginStart="@dimen/side3x"
+        android:layout_marginBottom="@dimen/side2x"
+        android:background="@drawable/bg_icon_rank"
+        android:elevation="@dimen/side1x"
+        android:gravity="center"
+        android:shadowColor="@color/colorPrimaryDark"
+        android:shadowDx="2"
+        android:shadowDy="2"
+        android:shadowRadius="2"
+        android:text="1"
+        android:textColor="@color/black_33"
+        android:textSize="@dimen/ft28"
+        android:textStyle="bold|italic" />
+
+</RelativeLayout>

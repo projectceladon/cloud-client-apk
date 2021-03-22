@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="210dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="@dimen/side1x"
+    app:cardElevation="@dimen/side2x"
+    app:cardPreventCornerOverlap="true"
+    app:cardUseCompatPadding="true"
+    app:strokeColor="@color/white_cc"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/chkShowHideMemory"
+            style="@style/text_16_white"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_color_primary"
+            android:button="@null"
+            android:drawableStart="@drawable/ic_memory_white_18dp"
+            android:drawablePadding="@dimen/side1x"
+            android:padding="@dimen/side1x"
+            android:text="@string/memory_infor"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/layoutMemory"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_head"
+            android:orientation="horizontal"
+            android:padding="@dimen/side2x">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="1dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <!--带刻度的圆环-->
+                <com.mycommonlibrary.view.DialProgress
+                    android:id="@+id/dialProcMemory"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_margin="@dimen/side1x"
+                    android:background="@drawable/bg_dial"
+                    android:padding="@dimen/side1x"
+                    app:animTime="1000"
+                    app:arcColors="@array/gradient_arc_color"
+                    app:arcWidth="@dimen/side2x"
+                    app:dialColor="@color/white"
+                    app:dialWidth="2dp"
+                    app:hint="@string/risdual_ratio"
+                    app:hintColor="@color/gray67"
+                    app:hintSize="12sp"
+                    app:maxValue="100"
+                    app:startAngle="135"
+                    app:sweepAngle="270"
+                    app:unit="%"
+                    app:unitColor="@color/gray67"
+                    app:unitSize="12sp"
+                    app:value="75"
+                    app:valueColor="@color/gray67"
+                    app:valueSize="16sp" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/side1x"
+                    android:layout_marginEnd="@dimen/side1x"
+                    android:stretchColumns="1">
+
+                    <TableRow>
+
+                        <TextView
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="end"
+                            android:text="@string/system_memory" />
+
+                        <TextView
+                            android:id="@+id/tvSysMem"
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            tools:text="0" />
+                    </TableRow>
+
+                    <TableRow>
+
+                        <TextView
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="end"
+                            android:text="@string/dv_max_memory" />
+
+                        <TextView
+                            android:id="@+id/tvAppMaxMem"
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            tools:text="0" />
+                    </TableRow>
+
+                    <TableRow>
+
+                        <TextView
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="end"
+                            android:text="@string/used_memory" />
+
+                        <TextView
+                            android:id="@+id/tvAppTotal"
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            tools:text="0" />
+                    </TableRow>
+
+                    <TableRow>
+
+                        <TextView
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="end"
+                            android:text="@string/free_memory" />
+
+                        <TextView
+                            android:id="@+id/tvAppFreeMem"
+                            style="@style/text_14_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            tools:text="0" />
+                    </TableRow>
+                </TableLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

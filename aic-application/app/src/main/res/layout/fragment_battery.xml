@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="210dp"
+    android:orientation="horizontal"
+    app:cardElevation="@dimen/side2x"
+    app:cardPreventCornerOverlap="true"
+    app:cardBackgroundColor="@color/white"
+    app:cardUseCompatPadding="true"
+    app:cardCornerRadius="@dimen/side1x"
+    app:strokeColor="@color/white_cc"
+    app:strokeWidth="1dp"
+    tools:context=".fragment.BatteryFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/text_16_white"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_color_primary"
+            android:button="@null"
+            android:padding="@dimen/side1x"
+            android:drawableStart="@drawable/ic_battery_charging_full_white_18dp"
+            android:drawablePadding="@dimen/side1x"
+            android:textStyle="bold"
+            android:text="@string/battery_infor" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_head"
+            android:padding="@dimen/side2x">
+
+            <!--带刻度的圆环-->
+            <com.mycommonlibrary.view.DialProgress
+                android:id="@+id/dialProgressBar"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/bg_dial"
+                android:padding="@dimen/side1x"
+                app:animTime="1000"
+                app:arcColors="@array/gradient_arc_color"
+                app:arcWidth="@dimen/side2x"
+                app:dialColor="@color/white_cc"
+                app:dialWidth="1dp"
+                app:hint="@string/current_battery"
+                app:hintColor="@color/gray67"
+                app:hintSize="12sp"
+                app:maxValue="100"
+                app:startAngle="135"
+                app:sweepAngle="270"
+                app:unit="%"
+                app:unitColor="@color/gray67"
+                app:unitSize="12sp"
+                app:value="50"
+                app:valueColor="@color/gray67"
+                app:valueSize="20sp" />
+
+            <TableLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/side2x"
+                android:layout_weight="1"
+                android:stretchColumns="1">
+
+                <TableRow>
+
+                    <TextView
+                        style="@style/text_14_black"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_height="wrap_content"
+                        android:text="@string/status" />
+
+                    <TextView
+                        android:id="@+id/tvBatteryStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </TableRow>
+
+                <TableRow>
+
+                    <TextView
+                        style="@style/text_14_black"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_height="wrap_content"
+                        android:text="@string/voltage" />
+
+                    <TextView
+                        android:id="@+id/tvVolt"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </TableRow>
+
+                <TableRow>
+
+                    <TextView
+                        style="@style/text_14_black"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_height="wrap_content"
+                        android:text="@string/temperature" />
+
+                    <TextView
+                        android:id="@+id/tvBatteryTemp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </TableRow>
+
+                <TableRow>
+
+                    <TextView
+                        style="@style/text_14_black"
+                        android:layout_width="wrap_content"
+                        android:layout_gravity="end"
+                        android:layout_height="wrap_content"
+                        android:text="@string/health" />
+
+                    <TextView
+                        android:id="@+id/tvHealth"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </TableRow>
+
+                <TableRow>
+
+                    <TextView
+                        style="@style/text_14_black"
+                        android:gravity="end"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/plugged" />
+
+                    <TextView
+                        android:id="@+id/tvPluggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </TableRow>
+
+                <TableRow>
+
+                    <TextView
+                        style="@style/text_14_black"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:text="@string/technology" />
+
+                    <TextView
+                        android:id="@+id/tvTech"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </TableRow>
+            </TableLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_test_rules",
+  "files": [
+    {
+      "name": "rules-1.2.0.aar",
+      "size": 46803,
+      "hash": "JL1xEeDbkbSl9tXD4-iWmFgNyQ0pJz0Ep3W7f-fCp2EC"
+    }
+  ]
+}

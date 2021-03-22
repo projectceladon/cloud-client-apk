@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@mipmap/ic_mouse_right"
+    android:tint="#aaffffff"
+    android:tintMode="src_in">
+
+</bitmap>

@@ -1,0 +1,19 @@
+step1: modify bellow value in /tmp/codechal_dump/buffer_config.txt
+FrameCount: your value
+FrameWidth: your value
+FrameHeigth: your value
+Codec:AVC
+
+step2: use local mda tool to run your avc clip to dump the buffer for avc
+./bin/mv_decoder_adv -i output.264 --avc --limit 100000 --long
+
+step3: run local avc_streamout_demo  to dump the mv info for each mb
+./avc_streamout_demo --dump
+
+step4: streamout buffer for each frame in /tmp/codechal_dump/dump_streamout_buffer_surface_1.txt ...
+
+step5: parse the streamout buffer by refering streamout_layout_struct.h
+    read_in_bin_file(/tmp/codechal_dump/dump_streamout_buffer_surface_1.txt, *streamout);
+    for_each(streamout; mb_index < mb_num_in_frame; mb_index++, streamout++)
+
+

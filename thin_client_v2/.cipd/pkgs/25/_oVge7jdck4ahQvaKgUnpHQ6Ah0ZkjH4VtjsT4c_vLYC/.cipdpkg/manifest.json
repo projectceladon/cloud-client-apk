@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_drawerlayout_drawerlayout",
+  "files": [
+    {
+      "name": "drawerlayout-1.0.0.aar",
+      "size": 32470,
+      "hash": "lAJELNxaQ89i-xT4z5jGM0LU2dm4BcgDPGz36AJ0msEC"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<MediaCodecs>
+<Encoders>
+	<MediaCodec name="OMX.qcom.video.encoder.avc" type="video/avc"/>
+</Encoders>
+
+<Decoders>
+	<MediaCodec name="OMX.qcom.video.decoder.avc" type="video/avc"/>
+</Decoders>
+</MediaCodecs>

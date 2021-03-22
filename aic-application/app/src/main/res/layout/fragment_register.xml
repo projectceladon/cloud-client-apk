@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".fragment.RegisterFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/side5x"
+        android:paddingTop="@dimen/side2x"
+        android:paddingRight="@dimen/side5x">
+
+        <!--手机短信验证布局-->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:id="@+id/layoutGetCode"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etPhone"
+                    style="@style/text_16_black"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:drawableStart="@drawable/ic_person_outline_black_18dp"
+                    android:drawablePadding="@dimen/side1x"
+                    android:hint="@string/please_phone_number"
+                    android:inputType="phone"
+                    android:maxEms="11" />
+
+                <TextView
+                    android:id="@+id/tvGetCode"
+                    style="@style/text_14_blue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="right"
+                    android:gravity="center"
+                    android:padding="@dimen/side1x"
+                    android:text="@string/send_identifying_code" />
+            </FrameLayout>
+
+            <EditText
+                android:id="@+id/etCode"
+                style="@style/text_16_black"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/side1x"
+                android:drawableStart="@drawable/ic_verified_user_black_18dp"
+                android:drawablePadding="@dimen/side1x"
+                android:hint="@string/input_identifying_code"
+                android:inputType="phone" />
+
+            <Button
+                android:id="@+id/btnCheckCode"
+                style="@style/btn_primary_full_width"
+                android:layout_marginTop="@dimen/side3x"
+                android:enabled="false"
+                android:text="@string/sms_verification" />
+        </LinearLayout>
+
+        <!--用户注册布局-->
+        <LinearLayout
+            android:id="@+id/layoutReg"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:orientation="vertical"
+            android:layout_weight="1"
+            android:visibility="visible">
+
+            <EditText
+                android:id="@+id/etPhone2"
+                style="@style/text_16_black"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:drawableStart="@drawable/ic_person_outline_black_18dp"
+                android:drawablePadding="@dimen/side1x"
+                android:hint="@string/please_phone_number"
+                android:inputType="phone" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                style="@style/text_16_black"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/side1x"
+                android:drawableStart="@drawable/ic_lock_outline_black_18dp"
+                android:drawablePadding="@dimen/side1x"
+                android:hint="@string/please_input_password"
+                android:inputType="textPassword" />
+
+            <EditText
+                android:id="@+id/etPassword2"
+                style="@style/text_16_black"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/side1x"
+                android:drawableStart="@drawable/ic_lock_outline_black_18dp"
+                android:drawablePadding="@dimen/side1x"
+                android:hint="@string/input_password_again"
+                android:inputType="textPassword" />
+
+            <Button
+                android:id="@+id/btnRegister"
+                style="@style/btn_primary_full_width"
+                android:layout_marginTop="@dimen/side3x"
+                android:text="@string/register" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
+
+

@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_appcompat_appcompat",
+  "files": [
+    {
+      "name": "appcompat-1.0.0.aar",
+      "size": 1077073,
+      "hash": "mUJU4SA2y9MyaygZpNi8O-8Tn0UCLPsLEIbcWNNtVs4C"
+    }
+  ]
+}

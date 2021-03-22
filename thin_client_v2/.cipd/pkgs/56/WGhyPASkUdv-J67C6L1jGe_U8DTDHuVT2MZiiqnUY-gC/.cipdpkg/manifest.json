@@ -1,0 +1,11 @@
+{
+  "format_version": "1.1",
+  "package_name": "chromium/third_party/android_deps/libs/androidx_test_ext_junit",
+  "files": [
+    {
+      "name": "junit-1.1.1.aar",
+      "size": 5056,
+      "hash": "RJ30GNKRag-G_n2vse2wlID6-26ZXVx1HH0NGXDUrnIC"
+    }
+  ]
+}
