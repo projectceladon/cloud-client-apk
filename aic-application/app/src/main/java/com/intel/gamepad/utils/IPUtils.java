@@ -5,7 +5,7 @@ import com.mycommonlibrary.utils.LogEx;
 
 public class IPUtils {
     public static final String DEFAULT_IP = "http://153.35.78.77:8095/";
-    public static final String DEFAULT_PEERID ="ga0";
+    public static final String DEFAULT_PEERID ="server0";
     public static final String DEFAULT_TOKENID="client0";
  //   public static final String DEFAULT_IP = "http://192.168.1.2:80/";
 //    public static final String DEFAULT_IP = "http://www.intelcloudplay.com/";
