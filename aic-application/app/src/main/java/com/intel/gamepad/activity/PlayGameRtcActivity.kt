@@ -212,7 +212,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         })
 
         initFullRender()
-        initTCPListener()
+       // initTCPListener()
     }
 
     private fun initTCPListener() {
