@@ -27,5 +27,6 @@ Compile:
 2. $ ./scripts/build_android.py
 
 Upload patches:
-1. Don't upload patch to owt-client-native/src.
-2. Put your patches to aic_application/owt-client-native/patches
+1. cd owt-client-native/src && git reset --hard 56f83d98fc861c564fca0f81ae09bc6e1fa139bd
+2. Don't upload patch to owt-client-native/src.
+3. Put your patches to aic_application/owt-client-native/patches
