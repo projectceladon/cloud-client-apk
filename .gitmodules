@@ -1,3 +1,6 @@
 [submodule "owt-client-native/src"]
 	path = owt-client-native/src
 	url = git@github.com:open-webrtc-toolkit/owt-client-native.git
+[submodule "owt-client-android/src"]
+	path = owt-client-android/src
+	url = git@github.com:open-webrtc-toolkit/owt-client-android.git
