@@ -1,4 +1,0 @@
-FrameCount:300
-FrameWidth:960
-FrameHeigth:540
-Codec:AVC
