@@ -15,11 +15,12 @@ Preconditions:
 
 Download owt-client-native source code:
 1. $ cd owt-client-native/src
-2. Checkout v5.0-rc.3:
-    $ git checkout -b v5.0-rc.3-local v5.0-rc.3
+2. Checkout v5.0:
+    $ git checkout -b v5.0-local v5.0
 3. Fetch dependency projects: $ gclient sync
 4. Apply patch one by one:
-    $ git am -3 git am -3 ../patches/0001-Add-talk-owt-patches-0015-Adopt-SingletonSurfaceView.patch
+    $ git am -3 ../patches/0001-Add-talk-owt-patches-0015-Adopt-SingletonSurfaceView.patch
+    $ git am -3 ../patches/0002-Add-talk-owt-patches-0016-Use-AToU-to-print-trace.pa.patch
 5. Patch the third_party project: $ gclient sync
 
 Compile:

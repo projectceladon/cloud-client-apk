@@ -1,0 +1,940 @@
+From c324658b0e01f94a9ca6463985539d685abe08b5 Mon Sep 17 00:00:00 2001
+From: yingzhex <yingzhenx.li@intel.com>
+Date: Thu, 25 Mar 2021 14:53:15 +0800
+Subject: [PATCH] Add talk/owt/patches/0016-Use-AToU-to-print-trace.patch
+
+Signed-off-by: yingzhex <yingzhenx.li@intel.com>
+---
+ scripts/prepare_dev.py                        |   3 +-
+ .../0016-Use-AToU-to-print-trace.patch        | 905 ++++++++++++++++++
+ 2 files changed, 907 insertions(+), 1 deletion(-)
+ create mode 100644 talk/owt/patches/0016-Use-AToU-to-print-trace.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index 762cbc6..e51061d 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -43,7 +43,8 @@ patchList = [
+     ('0011-libjpeg_turbo-fix-for-CVE-2018-20330-and-19664.patch', LIBJPEG_TURBO_PATH),
+     ('0013-Remove-unused-gni-for-av1-build.patch', THIRD_PARTY_PATH),
+     ('0014-Fix-missing-ffmpeg-configure-item-for-msvc-build.patch', FFMPEG_PATH),
+-    ('0015-Adopt-SingletonSurfaceView.patch', WEBRTC_PATH)
++    ('0015-Adopt-SingletonSurfaceView.patch', WEBRTC_PATH),
++    ('0016-Use-AToU-to-print-trace.patch', WEBRTC_PATH)
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0016-Use-AToU-to-print-trace.patch b/talk/owt/patches/0016-Use-AToU-to-print-trace.patch
+new file mode 100644
+index 0000000..01f8175
+--- /dev/null
++++ b/talk/owt/patches/0016-Use-AToU-to-print-trace.patch
+@@ -0,0 +1,905 @@
++From 95fd763d1497dbaac9042dd1386aa2bda8fb24f2 Mon Sep 17 00:00:00 2001
++From: yingzhex <yingzhenx.li@intel.com>
++Date: Thu, 25 Mar 2021 14:35:59 +0800
++Subject: [PATCH] Use AToU to print trace
++
++Signed-off-by: yingzhex <yingzhenx.li@intel.com>
++---
++ modules/video_coding/AToU.cpp           | 146 ++++++++++
++ modules/video_coding/AToU.h             | 294 +++++++++++++++++++
++ modules/video_coding/BUILD.gn           |   2 +
++ modules/video_coding/generic_decoder.cc |  14 +
++ modules/video_coding/stdatomic.h        | 370 ++++++++++++++++++++++++
++ 5 files changed, 826 insertions(+)
++ create mode 100644 modules/video_coding/AToU.cpp
++ create mode 100644 modules/video_coding/AToU.h
++ create mode 100644 modules/video_coding/stdatomic.h
++
++diff --git a/modules/video_coding/AToU.cpp b/modules/video_coding/AToU.cpp
++new file mode 100644
++index 0000000000..8e973ffe17
++--- /dev/null
+++++ b/modules/video_coding/AToU.cpp
++@@ -0,0 +1,146 @@
+++/*
+++ * Copyright (C) 2012 The Android Open Source Project
+++ *
+++ * Licensed under the Apache License, Version 2.0 (the "License");
+++ * you may not use this file except in compliance with the License.
+++ * You may obtain a copy of the License at
+++ *
+++ *      http://www.apache.org/licenses/LICENSE-2.0
+++ *
+++ * Unless required by applicable law or agreed to in writing, software
+++ * distributed under the License is distributed on an "AS IS" BASIS,
+++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+++ * See the License for the specific language governing permissions and
+++ * limitations under the License.
+++ */
+++
+++#include "AToU.h"
+++
+++#include <errno.h>
+++#include <fcntl.h>
+++#include <limits.h>
+++#include <pthread.h>
+++#include <stdlib.h>
+++#include <string.h>
+++#include <android/log.h>
+++
+++ /**
+++  * Maximum size of a message that can be logged to the trace buffer.
+++  * Note this message includes a tag, the pid, and the string given as the name.
+++  * Names should be kept short to get the most use of the trace buffer.
+++  */
+++#define ATRACE_MESSAGE_LENGTH 1024
+++
+++atomic_bool             atrace_is_ready      = ATOMIC_VAR_INIT(false);
+++int                     atrace_marker_fd     = -1;
+++uint64_t                atrace_enabled_tags  = ATRACE_TAG_NOT_READY;
+++static bool             atrace_is_debuggable = false;
+++static atomic_bool      atrace_is_enabled    = ATOMIC_VAR_INIT(true);
+++static pthread_mutex_t  atrace_tags_mutex    = PTHREAD_MUTEX_INITIALIZER;
+++
+++// Set whether this process is debuggable, which determines whether
+++// application-level tracing is allowed when the ro.debuggable system property
+++// is not set to '1'.
+++void atrace_set_debuggable(bool debuggable)
+++{
+++    atrace_is_debuggable = debuggable;
+++    atrace_update_tags();
+++}
+++
+++// Update tags if tracing is ready. Useful as a sysprop change callback.
+++void atrace_update_tags()
+++{
+++    uint64_t tags;
+++    if (CC_UNLIKELY(atomic_load_explicit(&atrace_is_ready, memory_order_acquire))) {
+++        if (atomic_load_explicit(&atrace_is_enabled, memory_order_acquire)) {
+++            tags = ATRACE_TAG_APP;
+++            pthread_mutex_lock(&atrace_tags_mutex);
+++            atrace_enabled_tags = tags;
+++            pthread_mutex_unlock(&atrace_tags_mutex);
+++        }
+++        else {
+++            // Tracing is disabled for this process, so we simply don't
+++            // initialize the tags.
+++            pthread_mutex_lock(&atrace_tags_mutex);
+++            atrace_enabled_tags = ATRACE_TAG_NOT_READY;
+++            pthread_mutex_unlock(&atrace_tags_mutex);
+++        }
+++    }
+++}
+++
+++#define WRITE_MSG(format_begin, format_end, name, value) { \
+++    char buf[ATRACE_MESSAGE_LENGTH]; \
+++    int pid = getpid(); \
+++    int len = snprintf(buf, sizeof(buf), format_begin "%s" format_end, pid, \
+++        name, value); \
+++    if (len >= (int) sizeof(buf)) { \
+++        /* Given the sizeof(buf), and all of the current format buffers, \
+++         * it is impossible for name_len to be < 0 if len >= sizeof(buf). */ \
+++        int name_len = strlen(name) - (len - sizeof(buf)) - 1; \
+++        /* Truncate the name to make the message fit. */ \
+++        printf("Truncated name in %s: %s\n", __FUNCTION__, name); \
+++        len = snprintf(buf, sizeof(buf), format_begin "%.*s" format_end, pid, \
+++            name_len, name, value); \
+++    } \
+++    write(atrace_marker_fd, buf, len); \
+++}
+++
+++static pthread_once_t atrace_once_control = PTHREAD_ONCE_INIT;
+++
+++// Set whether tracing is enabled in this process.  This is used to prevent
+++// the Zygote process from tracing.
+++void atrace_set_tracing_enabled(bool enabled)
+++{
+++    atomic_store_explicit(&atrace_is_enabled, enabled, memory_order_release);
+++    atrace_update_tags();
+++}
+++
+++static void atrace_init_once()
+++{
+++    atrace_marker_fd = open("/sys/kernel/debug/tracing/trace_marker", O_WRONLY | O_CLOEXEC);
+++    if (atrace_marker_fd == -1) {
+++        printf("Error opening trace file: %s (%d)", strerror(errno), errno);
+++        atrace_enabled_tags = 0;
+++        goto done;
+++    }
+++
+++    atrace_enabled_tags = ATRACE_TAG_VALID_MASK;
+++
+++    done:
+++    atomic_store_explicit(&atrace_is_ready, true, memory_order_release);
+++}
+++
+++void atrace_setup()
+++{
+++    pthread_once(&atrace_once_control, atrace_init_once);
+++}
+++
+++void atrace_begin_body(const char* name)
+++{
+++    WRITE_MSG("B|%d|", "%s", name, "");
+++}
+++
+++void atrace_end_body()
+++{
+++    WRITE_MSG("E|%d", "%s", "", "");
+++}
+++
+++void atrace_async_begin_body(const char* name, int32_t cookie)
+++{
+++    WRITE_MSG("S|%d|", "|%" PRId32, name, cookie);
+++}
+++
+++void atrace_async_end_body(const char* name, int32_t cookie)
+++{
+++    WRITE_MSG("F|%d|", "|%" PRId32, name, cookie);
+++}
+++
+++void atrace_int_body(const char* name, int32_t value)
+++{
+++    WRITE_MSG("C|%d|", "|%" PRId32, name, value);
+++}
+++
+++void atrace_int64_body(const char* name, int64_t value)
+++{
+++    WRITE_MSG("C|%d|", "|%" PRId64, name, value);
+++}
++diff --git a/modules/video_coding/AToU.h b/modules/video_coding/AToU.h
++new file mode 100644
++index 0000000000..f20729eea1
++--- /dev/null
+++++ b/modules/video_coding/AToU.h
++@@ -0,0 +1,294 @@
+++/*
+++ * Copyright (C) 2012 The Android Open Source Project
+++ *
+++ * Licensed under the Apache License, Version 2.0 (the "License");
+++ * you may not use this file except in compliance with the License.
+++ * You may obtain a copy of the License at
+++ *
+++ *      http://www.apache.org/licenses/LICENSE-2.0
+++ *
+++ * Unless required by applicable law or agreed to in writing, software
+++ * distributed under the License is distributed on an "AS IS" BASIS,
+++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+++ * See the License for the specific language governing permissions and
+++ * limitations under the License.
+++ */
+++
+++#ifndef _LIBS_TRACE_ANRROID_H
+++#define _LIBS_TRACE_ANRROID_H
+++
+++#define USE_CLANG 1
+++
+++#include <inttypes.h>
+++#if USE_CLANG
+++#include <stdatomic.h>
+++#else
+++#include "stdatomic.h"
+++#endif
+++#include <stdbool.h>
+++#include <stdint.h>
+++#include <stdio.h>
+++#include <sys/cdefs.h>
+++#include <sys/types.h>
+++#include <unistd.h>
+++
+++#ifdef __cplusplus
+++#   define CC_LIKELY( exp )    (__builtin_expect( !!(exp), true ))
+++#   define CC_UNLIKELY( exp )  (__builtin_expect( !!(exp), false ))
+++#else
+++#   define CC_LIKELY( exp )    (__builtin_expect( !!(exp), 1 ))
+++#   define CC_UNLIKELY( exp )  (__builtin_expect( !!(exp), 0 ))
+++#endif
+++
+++__BEGIN_DECLS
+++
+++/**
+++ * The ATRACE_TAG macro can be defined before including this header to trace
+++ * using one of the tags defined below.  It must be defined to one of the
+++ * following ATRACE_TAG_* macros.  The trace tag is used to filter tracing in
+++ * userland to avoid some of the runtime cost of tracing when it is not desired.
+++ *
+++ * Defining ATRACE_TAG to be ATRACE_TAG_ALWAYS will result in the tracing always
+++ * being enabled - this should ONLY be done for debug code, as userland tracing
+++ * has a performance cost even when the trace is not being recorded.  Defining
+++ * ATRACE_TAG to be ATRACE_TAG_NEVER or leaving ATRACE_TAG undefined will result
+++ * in the tracing always being disabled.
+++ *
+++ * ATRACE_TAG_HAL should be bitwise ORed with the relevant tags for tracing
+++ * within a hardware module.  For example a camera hardware module would set:
+++ * #define ATRACE_TAG  (ATRACE_TAG_CAMERA | ATRACE_TAG_HAL)
+++ *
+++ * Keep these in sync with frameworks/base/core/java/android/os/Trace.java.
+++ */
+++    #define ATRACE_TAG_NEVER            0       // This tag is never enabled.
+++    #define ATRACE_TAG_ALWAYS           (1<<0)  // This tag is always enabled.
+++    #define ATRACE_TAG_GRAPHICS         (1<<1)
+++    #define ATRACE_TAG_INPUT            (1<<2)
+++    #define ATRACE_TAG_VIEW             (1<<3)
+++    #define ATRACE_TAG_WEBVIEW          (1<<4)
+++    #define ATRACE_TAG_WINDOW_MANAGER   (1<<5)
+++    #define ATRACE_TAG_ACTIVITY_MANAGER (1<<6)
+++    #define ATRACE_TAG_SYNC_MANAGER     (1<<7)
+++    #define ATRACE_TAG_AUDIO            (1<<8)
+++    #define ATRACE_TAG_VIDEO            (1<<9)
+++    #define ATRACE_TAG_CAMERA           (1<<10)
+++    #define ATRACE_TAG_HAL              (1<<11)
+++    #define ATRACE_TAG_APP              (1<<12)
+++    #define ATRACE_TAG_RESOURCES        (1<<13)
+++    #define ATRACE_TAG_DALVIK           (1<<14)
+++    #define ATRACE_TAG_RS               (1<<15)
+++    #define ATRACE_TAG_BIONIC           (1<<16)
+++    #define ATRACE_TAG_POWER            (1<<17)
+++    #define ATRACE_TAG_PACKAGE_MANAGER  (1<<18)
+++    #define ATRACE_TAG_SYSTEM_SERVER    (1<<19)
+++    #define ATRACE_TAG_DATABASE         (1<<20)
+++    #define ATRACE_TAG_NETWORK          (1<<21)
+++    #define ATRACE_TAG_ADB              (1<<22)
+++    #define ATRACE_TAG_VIBRATOR         (1<<23)
+++    #define ATRACE_TAG_AIDL             (1<<24)
+++    #define ATRACE_TAG_LAST             ATRACE_TAG_AIDL
+++
+++ // Reserved for initialization.
+++    #define ATRACE_TAG_NOT_READY        (1ULL<<63)
+++
+++    #define ATRACE_TAG_VALID_MASK ((ATRACE_TAG_LAST - 1) | ATRACE_TAG_LAST)
+++
+++    #ifndef ATRACE_TAG
+++    #define ATRACE_TAG ATRACE_TAG_NEVER
+++    #elif ATRACE_TAG > ATRACE_TAG_VALID_MASK
+++    #error ATRACE_TAG must be defined to be one of the tags defined in trace.h
+++    #endif
+++
+++    /**
+++     * Opens the trace file for writing and reads the property for initial tags.
+++     * The atrace.tags.enableflags property sets the tags to trace.
+++     * This function should not be explicitly called, the first call to any normal
+++     * trace function will cause it to be run safely.
+++     */
+++    void atrace_setup();
+++
+++/**
+++ * If tracing is ready, set atrace_enabled_tags to the system property
+++ * debug.atrace.tags.enableflags. Can be used as a sysprop change callback.
+++ */
+++void atrace_update_tags();
+++
+++/**
+++ * Set whether the process is debuggable.  By default the process is not
+++ * considered debuggable.  If the process is not debuggable then application-
+++ * level tracing is not allowed unless the ro.debuggable system property is
+++ * set to '1'.
+++ */
+++void atrace_set_debuggable(bool debuggable);
+++
+++/**
+++ * Set whether tracing is enabled for the current process.  This is used to
+++ * prevent tracing within the Zygote process.
+++ */
+++void atrace_set_tracing_enabled(bool enabled);
+++
+++/**
+++ * Flag indicating whether setup has been completed, initialized to 0.
+++ * Nonzero indicates setup has completed.
+++ * Note: This does NOT indicate whether or not setup was successful.
+++ */
+++extern atomic_bool atrace_is_ready;
+++
+++/**
+++ * Set of ATRACE_TAG flags to trace for, initialized to ATRACE_TAG_NOT_READY.
+++ * A value of zero indicates setup has failed.
+++ * Any other nonzero value indicates setup has succeeded, and tracing is on.
+++ */
+++extern uint64_t atrace_enabled_tags;
+++
+++/**
+++ * Handle to the kernel's trace buffer, initialized to -1.
+++ * Any other value indicates setup has succeeded, and is a valid fd for tracing.
+++ */
+++extern int atrace_marker_fd;
+++
+++/**
+++ * atrace_init readies the process for tracing by opening the trace_marker file.
+++ * Calling any trace function causes this to be run, so calling it is optional.
+++ * This can be explicitly run to avoid setup delay on first trace function.
+++ */
+++#define ATRACE_INIT() atrace_init()
+++static inline void atrace_init()
+++{
+++    if (CC_UNLIKELY(!atomic_load_explicit(&atrace_is_ready, memory_order_acquire))) {
+++        atrace_setup();
+++    }
+++}
+++
+++/**
+++ * Get the mask of all tags currently enabled.
+++ * It can be used as a guard condition around more expensive trace calculations.
+++ * Every trace function calls this, which ensures atrace_init is run.
+++ */
+++#define ATRACE_GET_ENABLED_TAGS() atrace_get_enabled_tags()
+++static inline uint64_t atrace_get_enabled_tags()
+++{
+++    atrace_init();
+++    return atrace_enabled_tags;
+++}
+++
+++/**
+++ * Test if a given tag is currently enabled.
+++ * Returns nonzero if the tag is enabled, otherwise zero.
+++ * It can be used as a guard condition around more expensive trace calculations.
+++ */
+++#define ATRACE_ENABLED() atrace_is_tag_enabled(ATRACE_TAG)
+++static inline uint64_t atrace_is_tag_enabled(uint64_t tag)
+++{
+++    return atrace_get_enabled_tags() & tag;
+++}
+++
+++void atrace_begin_body(const char*);
+++void atrace_end_body();
+++void atrace_async_begin_body(const char*, int32_t);
+++void atrace_async_end_body(const char*, int32_t);
+++void atrace_int_body(const char*, int32_t);
+++
+++/**
+++ * Trace the beginning of a context.  name is used to identify the context.
+++ * This is often used to time function execution.
+++ */
+++#define ATRACE_BEGIN(name) atrace_begin(ATRACE_TAG, name)
+++static inline void atrace_begin(uint64_t tag, const char* name)
+++{
+++    if (CC_UNLIKELY(atrace_is_tag_enabled(tag))) {
+++        atrace_begin_body(name);
+++    }
+++}
+++
+++/**
+++ * Trace the end of a context.
+++ * This should match up (and occur after) a corresponding ATRACE_BEGIN.
+++ */
+++#define ATRACE_END() atrace_end(ATRACE_TAG)
+++static inline void atrace_end(uint64_t tag)
+++{
+++    if (CC_UNLIKELY(atrace_is_tag_enabled(tag))) {
+++        atrace_end_body();
+++    }
+++}
+++
+++/**
+++ * Trace the beginning of an asynchronous event. Unlike ATRACE_BEGIN/ATRACE_END
+++ * contexts, asynchronous events do not need to be nested. The name describes
+++ * the event, and the cookie provides a unique identifier for distinguishing
+++ * simultaneous events. The name and cookie used to begin an event must be
+++ * used to end it.
+++ */
+++#define ATRACE_ASYNC_BEGIN(name, cookie) \
+++    atrace_async_begin(ATRACE_TAG, name, cookie)
+++static inline void atrace_async_begin(uint64_t tag, const char* name,
+++    int32_t cookie)
+++{
+++    if (CC_UNLIKELY(atrace_is_tag_enabled(tag))) {
+++        atrace_async_begin_body(name, cookie);
+++    }
+++}
+++
+++/**
+++ * Trace the end of an asynchronous event.
+++ * This should have a corresponding ATRACE_ASYNC_BEGIN.
+++ */
+++#define ATRACE_ASYNC_END(name, cookie) atrace_async_end(ATRACE_TAG, name, cookie)
+++static inline void atrace_async_end(uint64_t tag, const char* name, int32_t cookie)
+++{
+++    if (CC_UNLIKELY(atrace_is_tag_enabled(tag))) {
+++        atrace_async_end_body(name, cookie);
+++    }
+++}
+++
+++/**
+++ * Traces an integer counter value.  name is used to identify the counter.
+++ * This can be used to track how a value changes over time.
+++ */
+++#define ATRACE_INT(name, value) atrace_int(ATRACE_TAG, name, value)
+++static inline void atrace_int(uint64_t tag, const char* name, int32_t value)
+++{
+++    if (CC_UNLIKELY(atrace_is_tag_enabled(tag))) {
+++        atrace_int_body(name, value);
+++    }
+++}
+++
+++/**
+++ * Traces a 64-bit integer counter value.  name is used to identify the
+++ * counter. This can be used to track how a value changes over time.
+++ */
+++#define ATRACE_INT64(name, value) atrace_int64(ATRACE_TAG, name, value)
+++static inline void atrace_int64(uint64_t tag, const char* name, int64_t value)
+++{
+++    if (CC_UNLIKELY(atrace_is_tag_enabled(tag))) {
+++        void atrace_int64_body(const char*, int64_t);
+++        atrace_int64_body(name, value);
+++    }
+++}
+++
+++__END_DECLS
+++
+++class ScopedTrace {
+++public:
+++    inline ScopedTrace(uint64_t tag, const char* name) : mTag(tag) {
+++        atrace_begin(mTag, name);
+++    }
+++
+++    inline ~ScopedTrace() {
+++        atrace_end(mTag);
+++    }
+++
+++private:
+++    uint64_t mTag;
+++};
+++
+++// ATRACE_NAME traces from its location until the end of its enclosing scope.
+++#define _PASTE(x, y) x ## y
+++#define PASTE(x, y) _PASTE(x,y)
+++#define ATRACE_NAME(name) ScopedTrace PASTE(___tracer, __LINE__) (ATRACE_TAG, name)
+++
+++// ATRACE_CALL is an ATRACE_NAME that uses the current function name.
+++#define ATRACE_CALL() ATRACE_NAME(__FUNCTION__)
+++
+++#endif // _LIBS_TRACE_ANRROID_H
++diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
++index 2f9d257e4a..334a536eb3 100644
++--- a/modules/video_coding/BUILD.gn
+++++ b/modules/video_coding/BUILD.gn
++@@ -105,6 +105,8 @@ rtc_library("video_coding") {
++     "frame_buffer2.h",
++     "frame_object.cc",
++     "frame_object.h",
+++    "AToU.cpp",
+++    "AToU.h",
++     "generic_decoder.cc",
++     "generic_decoder.h",
++     "h264_sprop_parameter_sets.cc",
++diff --git a/modules/video_coding/generic_decoder.cc b/modules/video_coding/generic_decoder.cc
++index 100686d336..13a67c56db 100644
++--- a/modules/video_coding/generic_decoder.cc
+++++ b/modules/video_coding/generic_decoder.cc
++@@ -8,11 +8,14 @@
++  *  be found in the AUTHORS file in the root of the source tree.
++  */
++ 
+++#define ATRACE_TAG ATRACE_TAG_INPUT
+++
++ #include "modules/video_coding/generic_decoder.h"
++ 
++ #include <stddef.h>
++ 
++ #include <algorithm>
+++#include <sstream>
++ 
++ #include "api/video/video_timing.h"
++ #include "modules/video_coding/include/video_error_codes.h"
++@@ -23,6 +26,8 @@
++ #include "rtc_base/trace_event.h"
++ #include "system_wrappers/include/clock.h"
++ #include "system_wrappers/include/field_trial.h"
+++#include <android/log.h>
+++#include "AToU.h"
++ 
++ namespace webrtc {
++ 
++@@ -215,6 +220,15 @@ int32_t VCMGenericDecoder::InitDecode(const VideoCodec* settings,
++ int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
++   TRACE_EVENT1("webrtc", "VCMGenericDecoder::Decode", "timestamp",
++                frame.Timestamp());
+++
+++  if (ATRACE_ENABLED()) {
+++    static int nCount = 0;
+++    nCount++;
+++    std::string str = "atou C4 ID: " + std::to_string(nCount) + " size: " + std::to_string(frame.size());
+++    ATRACE_BEGIN(str.c_str());
+++    ATRACE_END();
+++  }
+++
++   _frameInfos[_nextFrameInfoIdx].decodeStart = now;
++   _frameInfos[_nextFrameInfoIdx].renderTimeMs = frame.RenderTimeMs();
++   _frameInfos[_nextFrameInfoIdx].rotation = frame.rotation();
++diff --git a/modules/video_coding/stdatomic.h b/modules/video_coding/stdatomic.h
++new file mode 100644
++index 0000000000..d8276f2954
++--- /dev/null
+++++ b/modules/video_coding/stdatomic.h
++@@ -0,0 +1,370 @@
+++/*
+++ * An implementation of C11 stdatomic.h directly borrowed from FreeBSD
+++ * (original copyright follows), with minor modifications for
+++ * portability to other systems. Works for recent Clang (that
+++ * implement the feature c_atomic) and GCC 4.7+; includes
+++ * compatibility for GCC below 4.7 but I wouldn't recommend it.
+++ *
+++ * Caveats and limitations:
+++ * - Only the ``_Atomic parentheses'' notation is implemented, while
+++ *   the ``_Atomic space'' one is not.
+++ * - _Atomic types must be typedef'ed, or programs using them will
+++ *   not type check correctly (incompatible anonymous structure
+++ *   types).
+++ * - Non-scalar _Atomic types would require runtime support for
+++ *   runtime locking, which, as far as I know, is not currently
+++ *   available on any system.
+++ */
+++
+++/*-
+++ * Copyright (c) 2011 Ed Schouten <ed@FreeBSD.org>
+++ *                    David Chisnall <theraven@FreeBSD.org>
+++ * All rights reserved.
+++ *
+++ * Redistribution and use in source and binary forms, with or without
+++ * modification, are permitted provided that the following conditions
+++ * are met:
+++ * 1. Redistributions of source code must retain the above copyright
+++ *    notice, this list of conditions and the following disclaimer.
+++ * 2. Redistributions in binary form must reproduce the above copyright
+++ *    notice, this list of conditions and the following disclaimer in the
+++ *    documentation and/or other materials provided with the distribution.
+++ *
+++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+++ * SUCH DAMAGE.
+++ *
+++ * $FreeBSD: src/include/stdatomic.h,v 1.10.2.2 2012/05/30 19:21:54 theraven Exp $
+++ */
+++
+++#ifndef _STDATOMIC_H_
+++#define	_STDATOMIC_H_
+++
+++#include <stdbool.h>
+++#include <stddef.h>
+++#include <stdint.h>
+++
+++#if !defined(__has_feature)
+++#define __has_feature(x) 0
+++#endif
+++#if !defined(__has_builtin)
+++#define __has_builtin(x) 0
+++#endif
+++#if !defined(__GNUC_PREREQ__)
+++#if defined(__GNUC__) && defined(__GNUC_MINOR__)
+++#define __GNUC_PREREQ__(maj, min)					\
+++	((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+++#else
+++#define __GNUC_PREREQ__(maj, min) 0
+++#endif
+++#endif
+++
+++#if !defined(__CLANG_ATOMICS) && !defined(__GNUC_ATOMICS)
+++#if __has_feature(c_atomic)
+++#define	__CLANG_ATOMICS
+++#elif __GNUC_PREREQ__(4, 7)
+++#define	__GNUC_ATOMICS
+++#elif !defined(__GNUC__)
+++#error "stdatomic.h does not support your compiler"
+++#endif
+++#endif
+++
+++#if !defined(__CLANG_ATOMICS)
+++#define	_Atomic(T)			struct { volatile __typeof__(T) __val; }
+++#endif
+++
+++/*
+++ * 7.17.2 Initialization.
+++ */
+++
+++#if defined(__CLANG_ATOMICS)
+++#define	ATOMIC_VAR_INIT(value)		(value)
+++#define	atomic_init(obj, value)		__c11_atomic_init(obj, value)
+++#else
+++#define	ATOMIC_VAR_INIT(value)		{ .__val = (value) }
+++#define	atomic_init(obj, value) do {					\
+++	(obj)->__val = (value);						\
+++} while (0)
+++#endif
+++
+++/*
+++ * Clang and recent GCC both provide predefined macros for the memory
+++ * orderings.  If we are using a compiler that doesn't define them, use the
+++ * clang values - these will be ignored in the fallback path.
+++ */
+++
+++#ifndef __ATOMIC_RELAXED
+++#define __ATOMIC_RELAXED		0
+++#endif
+++#ifndef __ATOMIC_CONSUME
+++#define __ATOMIC_CONSUME		1
+++#endif
+++#ifndef __ATOMIC_ACQUIRE
+++#define __ATOMIC_ACQUIRE		2
+++#endif
+++#ifndef __ATOMIC_RELEASE
+++#define __ATOMIC_RELEASE		3
+++#endif
+++#ifndef __ATOMIC_ACQ_REL
+++#define __ATOMIC_ACQ_REL		4
+++#endif
+++#ifndef __ATOMIC_SEQ_CST
+++#define __ATOMIC_SEQ_CST		5
+++#endif
+++
+++/*
+++ * 7.17.3 Order and consistency.
+++ *
+++ * The memory_order_* constants that denote the barrier behaviour of the
+++ * atomic operations.
+++ */
+++
+++enum memory_order {
+++	memory_order_relaxed = __ATOMIC_RELAXED,
+++	memory_order_consume = __ATOMIC_CONSUME,
+++	memory_order_acquire = __ATOMIC_ACQUIRE,
+++	memory_order_release = __ATOMIC_RELEASE,
+++	memory_order_acq_rel = __ATOMIC_ACQ_REL,
+++	memory_order_seq_cst = __ATOMIC_SEQ_CST
+++};
+++
+++typedef enum memory_order memory_order;
+++
+++/*
+++ * 7.17.4 Fences.
+++ */
+++
+++#ifdef __CLANG_ATOMICS
+++#define	atomic_thread_fence(order)	__c11_atomic_thread_fence(order)
+++#define	atomic_signal_fence(order)	__c11_atomic_signal_fence(order)
+++#elif defined(__GNUC_ATOMICS)
+++#define	atomic_thread_fence(order)	__atomic_thread_fence(order)
+++#define	atomic_signal_fence(order)	__atomic_signal_fence(order)
+++#else
+++#define	atomic_thread_fence(order)	__sync_synchronize()
+++#define	atomic_signal_fence(order)	__asm volatile ("" : : : "memory")
+++#endif
+++
+++/*
+++ * 7.17.5 Lock-free property.
+++ */
+++
+++#if defined(__CLANG_ATOMICS)
+++#define	atomic_is_lock_free(obj) \
+++	__c11_atomic_is_lock_free(sizeof(obj))
+++#elif defined(__GNUC_ATOMICS)
+++#define	atomic_is_lock_free(obj) \
+++	__atomic_is_lock_free(sizeof((obj)->__val))
+++#else
+++#define	atomic_is_lock_free(obj) \
+++	(sizeof((obj)->__val) <= sizeof(void *))
+++#endif
+++
+++/*
+++ * 7.17.6 Atomic integer types.
+++ */
+++
+++typedef _Atomic(_Bool)			atomic_bool;
+++typedef _Atomic(char)			atomic_char;
+++typedef _Atomic(signed char)		atomic_schar;
+++typedef _Atomic(unsigned char)		atomic_uchar;
+++typedef _Atomic(short)			atomic_short;
+++typedef _Atomic(unsigned short)		atomic_ushort;
+++typedef _Atomic(int)			atomic_int;
+++typedef _Atomic(unsigned int)		atomic_uint;
+++typedef _Atomic(long)			atomic_long;
+++typedef _Atomic(unsigned long)		atomic_ulong;
+++typedef _Atomic(long long)		atomic_llong;
+++typedef _Atomic(unsigned long long)	atomic_ullong;
+++#if 0
+++typedef _Atomic(char16_t)		atomic_char16_t;
+++typedef _Atomic(char32_t)		atomic_char32_t;
+++#endif
+++typedef _Atomic(wchar_t)		atomic_wchar_t;
+++typedef _Atomic(int_least8_t)		atomic_int_least8_t;
+++typedef _Atomic(uint_least8_t)		atomic_uint_least8_t;
+++typedef _Atomic(int_least16_t)		atomic_int_least16_t;
+++typedef _Atomic(uint_least16_t)		atomic_uint_least16_t;
+++typedef _Atomic(int_least32_t)		atomic_int_least32_t;
+++typedef _Atomic(uint_least32_t)		atomic_uint_least32_t;
+++typedef _Atomic(int_least64_t)		atomic_int_least64_t;
+++typedef _Atomic(uint_least64_t)		atomic_uint_least64_t;
+++typedef _Atomic(int_fast8_t)		atomic_int_fast8_t;
+++typedef _Atomic(uint_fast8_t)		atomic_uint_fast8_t;
+++typedef _Atomic(int_fast16_t)		atomic_int_fast16_t;
+++typedef _Atomic(uint_fast16_t)		atomic_uint_fast16_t;
+++typedef _Atomic(int_fast32_t)		atomic_int_fast32_t;
+++typedef _Atomic(uint_fast32_t)		atomic_uint_fast32_t;
+++typedef _Atomic(int_fast64_t)		atomic_int_fast64_t;
+++typedef _Atomic(uint_fast64_t)		atomic_uint_fast64_t;
+++typedef _Atomic(intptr_t)		atomic_intptr_t;
+++typedef _Atomic(uintptr_t)		atomic_uintptr_t;
+++typedef _Atomic(size_t)			atomic_size_t;
+++typedef _Atomic(ptrdiff_t)		atomic_ptrdiff_t;
+++typedef _Atomic(intmax_t)		atomic_intmax_t;
+++typedef _Atomic(uintmax_t)		atomic_uintmax_t;
+++
+++/*
+++ * 7.17.7 Operations on atomic types.
+++ */
+++
+++/*
+++ * Compiler-specific operations.
+++ */
+++
+++#if defined(__CLANG_ATOMICS)
+++#define	atomic_compare_exchange_strong_explicit(object, expected,	\
+++    desired, success, failure)						\
+++	__c11_atomic_compare_exchange_strong(object, expected, desired,	\
+++	    success, failure)
+++#define	atomic_compare_exchange_weak_explicit(object, expected,		\
+++    desired, success, failure)						\
+++	__c11_atomic_compare_exchange_weak(object, expected, desired,	\
+++	    success, failure)
+++#define	atomic_exchange_explicit(object, desired, order)		\
+++	__c11_atomic_exchange(object, desired, order)
+++#define	atomic_fetch_add_explicit(object, operand, order)		\
+++	__c11_atomic_fetch_add(object, operand, order)
+++#define	atomic_fetch_and_explicit(object, operand, order)		\
+++	__c11_atomic_fetch_and(object, operand, order)
+++#define	atomic_fetch_or_explicit(object, operand, order)		\
+++	__c11_atomic_fetch_or(object, operand, order)
+++#define	atomic_fetch_sub_explicit(object, operand, order)		\
+++	__c11_atomic_fetch_sub(object, operand, order)
+++#define	atomic_fetch_xor_explicit(object, operand, order)		\
+++	__c11_atomic_fetch_xor(object, operand, order)
+++#define	atomic_load_explicit(object, order)				\
+++	__c11_atomic_load(object, order)
+++#define	atomic_store_explicit(object, desired, order)			\
+++	__c11_atomic_store(object, desired, order)
+++#elif defined(__GNUC_ATOMICS)
+++#define	atomic_compare_exchange_strong_explicit(object, expected,	\
+++    desired, success, failure)						\
+++	__atomic_compare_exchange_n(&(object)->__val, expected,		\
+++	    desired, 0, success, failure)
+++#define	atomic_compare_exchange_weak_explicit(object, expected,		\
+++    desired, success, failure)						\
+++	__atomic_compare_exchange_n(&(object)->__val, expected,		\
+++	    desired, 1, success, failure)
+++#define	atomic_exchange_explicit(object, desired, order)		\
+++	__atomic_exchange_n(&(object)->__val, desired, order)
+++#define	atomic_fetch_add_explicit(object, operand, order)		\
+++	__atomic_fetch_add(&(object)->__val, operand, order)
+++#define	atomic_fetch_and_explicit(object, operand, order)		\
+++	__atomic_fetch_and(&(object)->__val, operand, order)
+++#define	atomic_fetch_or_explicit(object, operand, order)		\
+++	__atomic_fetch_or(&(object)->__val, operand, order)
+++#define	atomic_fetch_sub_explicit(object, operand, order)		\
+++	__atomic_fetch_sub(&(object)->__val, operand, order)
+++#define	atomic_fetch_xor_explicit(object, operand, order)		\
+++	__atomic_fetch_xor(&(object)->__val, operand, order)
+++#define	atomic_load_explicit(object, order)				\
+++	__atomic_load_n(&(object)->__val, order)
+++#define	atomic_store_explicit(object, desired, order)			\
+++	__atomic_store_n(&(object)->__val, desired, order)
+++#else
+++#define	atomic_compare_exchange_strong_explicit(object, expected,	\
+++    desired, success, failure) ({					\
+++	__typeof__((object)->__val) __v;				\
+++	_Bool __r;							\
+++	__v = __sync_val_compare_and_swap(&(object)->__val,		\
+++	    *(expected), desired);					\
+++	__r = *(expected) == __v;					\
+++	*(expected) = __v;						\
+++	__r;								\
+++})
+++
+++#define	atomic_compare_exchange_weak_explicit(object, expected,		\
+++    desired, success, failure)						\
+++	atomic_compare_exchange_strong_explicit(object, expected,	\
+++		desired, success, failure)
+++#if __has_builtin(__sync_swap)
+++/* Clang provides a full-barrier atomic exchange - use it if available. */
+++#define atomic_exchange_explicit(object, desired, order)		\
+++	__sync_swap(&(object)->__val, desired)
+++#else
+++/*
+++ * __sync_lock_test_and_set() is only an acquire barrier in theory (although in
+++ * practice it is usually a full barrier) so we need an explicit barrier after
+++ * it.
+++ */
+++#define	atomic_exchange_explicit(object, desired, order) ({		\
+++	__typeof__((object)->__val) __v;				\
+++	__v = __sync_lock_test_and_set(&(object)->__val, desired);	\
+++	__sync_synchronize();						\
+++	__v;								\
+++})
+++#endif
+++#define	atomic_fetch_add_explicit(object, operand, order)		\
+++	__sync_fetch_and_add(&(object)->__val, operand)
+++#define	atomic_fetch_and_explicit(object, operand, order)		\
+++	__sync_fetch_and_and(&(object)->__val, operand)
+++#define	atomic_fetch_or_explicit(object, operand, order)		\
+++	__sync_fetch_and_or(&(object)->__val, operand)
+++#define	atomic_fetch_sub_explicit(object, operand, order)		\
+++	__sync_fetch_and_sub(&(object)->__val, operand)
+++#define	atomic_fetch_xor_explicit(object, operand, order)		\
+++	__sync_fetch_and_xor(&(object)->__val, operand)
+++#define	atomic_load_explicit(object, order)				\
+++	__sync_fetch_and_add(&(object)->__val, 0)
+++#define	atomic_store_explicit(object, desired, order) do {		\
+++	__sync_synchronize();						\
+++	(object)->__val = (desired);					\
+++	__sync_synchronize();						\
+++} while (0)
+++#endif
+++
+++/*
+++ * Convenience functions.
+++ */
+++
+++#define	atomic_compare_exchange_strong(object, expected, desired)	\
+++	atomic_compare_exchange_strong_explicit(object, expected,	\
+++	    desired, memory_order_seq_cst, memory_order_seq_cst)
+++#define	atomic_compare_exchange_weak(object, expected, desired)		\
+++	atomic_compare_exchange_weak_explicit(object, expected,		\
+++	    desired, memory_order_seq_cst, memory_order_seq_cst)
+++#define	atomic_exchange(object, desired)				\
+++	atomic_exchange_explicit(object, desired, memory_order_seq_cst)
+++#define	atomic_fetch_add(object, operand)				\
+++	atomic_fetch_add_explicit(object, operand, memory_order_seq_cst)
+++#define	atomic_fetch_and(object, operand)				\
+++	atomic_fetch_and_explicit(object, operand, memory_order_seq_cst)
+++#define	atomic_fetch_or(object, operand)				\
+++	atomic_fetch_or_explicit(object, operand, memory_order_seq_cst)
+++#define	atomic_fetch_sub(object, operand)				\
+++	atomic_fetch_sub_explicit(object, operand, memory_order_seq_cst)
+++#define	atomic_fetch_xor(object, operand)				\
+++	atomic_fetch_xor_explicit(object, operand, memory_order_seq_cst)
+++#define	atomic_load(object)						\
+++	atomic_load_explicit(object, memory_order_seq_cst)
+++#define	atomic_store(object, desired)					\
+++	atomic_store_explicit(object, desired, memory_order_seq_cst)
+++
+++/*
+++ * 7.17.8 Atomic flag type and operations.
+++ */
+++
+++typedef atomic_bool			atomic_flag;
+++
+++#define	ATOMIC_FLAG_INIT		ATOMIC_VAR_INIT(0)
+++
+++#define	atomic_flag_clear_explicit(object, order)			\
+++	atomic_store_explicit(object, 0, order)
+++#define	atomic_flag_test_and_set_explicit(object, order)		\
+++	atomic_compare_exchange_strong_explicit(object, 0, 1, order, order)
+++
+++#define	atomic_flag_clear(object)					\
+++	atomic_flag_clear_explicit(object, memory_order_seq_cst)
+++#define	atomic_flag_test_and_set(object)				\
+++	atomic_flag_test_and_set_explicit(object, memory_order_seq_cst)
+++
+++#endif /* !_STDATOMIC_H_ */
++-- 
++2.17.1
++
+-- 
+2.17.1
+
