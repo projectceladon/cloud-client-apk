@@ -372,7 +372,8 @@ public class IOUtils {
             e.printStackTrace();
             return 0;
         }
-        if (Build.VERSION.SDK_INT >= 18) return getStatFsSize(stat, "getBlockSizeLong", "getAvailableBlocksLong");
+        if (Build.VERSION.SDK_INT >= 18)
+            return getStatFsSize(stat, "getBlockSizeLong", "getAvailableBlocksLong");
         else return getStatFsSize(stat, "getBlockSize", "getAvailableBlocks");
     }
 

@@ -56,8 +56,8 @@ class BatteryFragment : Fragment() {
 
     inner class BatteryReceiver : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val current = intent.extras?.getInt("level")?:0// 获得当前电量
-            val total = intent.extras?.getInt("scale")?:0// 获得总电量
+            val current = intent.extras?.getInt("level") ?: 0// 获得当前电量
+            val total = intent.extras?.getInt("scale") ?: 0// 获得总电量
             val percent = current * 100 / total
             dialProgressBar.setValue(percent.toFloat())
             ///获取电池技术支持

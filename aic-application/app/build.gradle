@@ -9,7 +9,7 @@ apply plugin: 'kotlin-kapt'
 android {
     signingConfigs {
         debug {
-            storeFile file('/home/li/project/elastic_streamer_container/esc-application/key.jks')
+            storeFile file('/job/aic_application/aic-application/key.jks')
             storePassword '111111'
             keyPassword '111111'
             keyAlias = 'key0'

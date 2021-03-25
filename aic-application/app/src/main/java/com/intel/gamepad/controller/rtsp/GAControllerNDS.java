@@ -30,212 +30,202 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 
 public class GAControllerNDS extends GAController implements
-	OnClickListener, PartitionEventListener
-{
-	public static final String NAME="NDS";
-	private Button buttonL = null;
-	private Button buttonR = null;
-	private Button buttonToggleLPad = null;
-	private Button buttonToggleRPad = null;
-	private Button buttonToggleLRBtn = null;
-	private Button buttonEsc = null;
-	private Button buttonBack = null;
-	private Button buttonSelect = null;
-	private Button buttonStart = null;
-	private Pad padLeft = null;
-//	private Pad padRight = null;
-	private Button buttonA = null;
-	private Button buttonB = null;
-	private Button buttonX = null;
-	private Button buttonY = null;
+        OnClickListener, PartitionEventListener {
+    public static final String NAME = "NDS";
+    private Button buttonL = null;
+    private Button buttonR = null;
+    private Button buttonToggleLPad = null;
+    private Button buttonToggleRPad = null;
+    private Button buttonToggleLRBtn = null;
+    private Button buttonEsc = null;
+    private Button buttonBack = null;
+    private Button buttonSelect = null;
+    private Button buttonStart = null;
+    private Pad padLeft = null;
+    //	private Pad padRight = null;
+    private Button buttonA = null;
+    private Button buttonB = null;
+    private Button buttonX = null;
+    private Button buttonY = null;
 
-	public GAControllerNDS(Context context) {
-		super(context);
-	}
+    public GAControllerNDS(Context context) {
+        super(context);
+    }
 
-	public String getName() {
-		return NAME;
-	}
-	
-	public String getDescription() {
-		return "Emulated NDS controller";
-	}
+    public String getName() {
+        return NAME;
+    }
 
-	int currWidth = -1;
-	int currHeight = -1;
-	boolean showLPad = true;
-	boolean showRPad = true;
-	boolean showLRBtn = true;
-	@Override
-	public void onDimensionChange(int width, int height) {
-		// assume Portrait layout
-		int keyBtnWidth = width/6;	// top has 5 keys, leave one for spacing
-		int keyBtnHeight = height/16;
-		int padSize = height/4;
-		int margin = keyBtnWidth/6;
-		// check width/height
-		if(width < 0 || height < 0)
-			return;
-		// must be called first
-		super.setMouseVisibility(false);
-		super.onDimensionChange(width, height);
-		currWidth = width;
-		currHeight = height;
-		//
-		buttonToggleLPad = newButton("LPad", margin, margin, keyBtnWidth, keyBtnHeight);
-		buttonToggleLPad.setOnClickListener(this);
-		//
-		buttonToggleLRBtn = newButton("L/R Button", margin+(margin+keyBtnWidth)*1, margin, keyBtnWidth, keyBtnHeight);
-		buttonToggleLRBtn.setOnClickListener(this);
-		//
-		buttonBack = newButton("<<", margin+(margin+keyBtnWidth)*2, margin, keyBtnWidth, keyBtnHeight);
-		buttonBack.setOnClickListener(this);
-		//
-		buttonEsc = newButton("ESC", margin+(margin+keyBtnWidth)*3, margin, keyBtnWidth, keyBtnHeight);
-		buttonEsc.setOnTouchListener(this);
-		//
-		buttonToggleRPad = newButton("RPad", margin+(margin+keyBtnWidth)*4, margin, keyBtnWidth, keyBtnHeight);
-		buttonToggleRPad.setOnClickListener(this);
-		//
-		buttonSelect = newButton("Select",
-				width-margin-keyBtnWidth, height-margin-keyBtnHeight,
-				keyBtnWidth, keyBtnHeight);
-		buttonSelect.setOnTouchListener(this);
-		//
-		buttonStart = newButton("Start",
-				width-margin-keyBtnWidth, height-margin*2-keyBtnHeight*2,
-				keyBtnWidth, keyBtnHeight);
-		buttonStart.setOnTouchListener(this);
-		//
-		if(showLRBtn) {
-			buttonL = newButton("L", margin, height-margin*2-padSize-keyBtnHeight, padSize, keyBtnHeight);
-			buttonL.setOnTouchListener(this);
-			//
-			buttonR = newButton("R", width-margin-padSize, height-margin-padSize, padSize, keyBtnHeight);
-			buttonR.setOnTouchListener(this);
-		} else {
-			buttonL = null;
-			buttonR = null;
-		}
-		//
-		if(showLPad) {
-			padLeft = new Pad(getContext());
-			padLeft.setAlpha((float) 0.5);
-			padLeft.setOnTouchListener(this);
-			padLeft.setPartition(12);
-			padLeft.setPartitionEventListener(this);
-			padLeft.setDrawPartitionAll(false);
-			placeView(padLeft, margin, height-margin-padSize, padSize, padSize);
-		} else {
-			padLeft = null;
-		}
-		//
-		if(showRPad) {
-			// Pad-based ABXY
+    public String getDescription() {
+        return "Emulated NDS controller";
+    }
+
+    int currWidth = -1;
+    int currHeight = -1;
+    boolean showLPad = true;
+    boolean showRPad = true;
+    boolean showLRBtn = true;
+
+    @Override
+    public void onDimensionChange(int width, int height) {
+        // assume Portrait layout
+        int keyBtnWidth = width / 6;    // top has 5 keys, leave one for spacing
+        int keyBtnHeight = height / 16;
+        int padSize = height / 4;
+        int margin = keyBtnWidth / 6;
+        // check width/height
+        if (width < 0 || height < 0)
+            return;
+        // must be called first
+        super.setMouseVisibility(false);
+        super.onDimensionChange(width, height);
+        currWidth = width;
+        currHeight = height;
+        //
+        buttonToggleLPad = newButton("LPad", margin, margin, keyBtnWidth, keyBtnHeight);
+        buttonToggleLPad.setOnClickListener(this);
+        //
+        buttonToggleLRBtn = newButton("L/R Button", margin + (margin + keyBtnWidth) * 1, margin, keyBtnWidth, keyBtnHeight);
+        buttonToggleLRBtn.setOnClickListener(this);
+        //
+        buttonBack = newButton("<<", margin + (margin + keyBtnWidth) * 2, margin, keyBtnWidth, keyBtnHeight);
+        buttonBack.setOnClickListener(this);
+        //
+        buttonEsc = newButton("ESC", margin + (margin + keyBtnWidth) * 3, margin, keyBtnWidth, keyBtnHeight);
+        buttonEsc.setOnTouchListener(this);
+        //
+        buttonToggleRPad = newButton("RPad", margin + (margin + keyBtnWidth) * 4, margin, keyBtnWidth, keyBtnHeight);
+        buttonToggleRPad.setOnClickListener(this);
+        //
+        buttonSelect = newButton("Select",
+                width - margin - keyBtnWidth, height - margin - keyBtnHeight,
+                keyBtnWidth, keyBtnHeight);
+        buttonSelect.setOnTouchListener(this);
+        //
+        buttonStart = newButton("Start",
+                width - margin - keyBtnWidth, height - margin * 2 - keyBtnHeight * 2,
+                keyBtnWidth, keyBtnHeight);
+        buttonStart.setOnTouchListener(this);
+        //
+        if (showLRBtn) {
+            buttonL = newButton("L", margin, height - margin * 2 - padSize - keyBtnHeight, padSize, keyBtnHeight);
+            buttonL.setOnTouchListener(this);
+            //
+            buttonR = newButton("R", width - margin - padSize, height - margin - padSize, padSize, keyBtnHeight);
+            buttonR.setOnTouchListener(this);
+        } else {
+            buttonL = null;
+            buttonR = null;
+        }
+        //
+        if (showLPad) {
+            padLeft = new Pad(getContext());
+            padLeft.setAlpha((float) 0.5);
+            padLeft.setOnTouchListener(this);
+            padLeft.setPartition(12);
+            padLeft.setPartitionEventListener(this);
+            padLeft.setDrawPartitionAll(false);
+            placeView(padLeft, margin, height - margin - padSize, padSize, padSize);
+        } else {
+            padLeft = null;
+        }
+        //
+        if (showRPad) {
+            // Pad-based ABXY
+            int cx, cy, gap, bsize;
+            cx = width - margin - padSize / 2;
+            cy = height - margin * 2 - padSize - padSize / 2;
+            gap = (int) (padSize * 0.3 / 2);
+            bsize = (int) (padSize * 0.7 / 2);
+            buttonA = newButton("A", cx + gap, cy - bsize / 2, bsize, bsize);
+            buttonA.setOnTouchListener(this);
+            //
+            buttonB = newButton("B", cx - bsize / 2, cy + gap, bsize, bsize);
+            buttonB.setOnTouchListener(this);
+            //
+            buttonX = newButton("X", cx - bsize / 2, cy - gap - bsize, bsize, bsize);
+            buttonX.setOnTouchListener(this);
+            //
+            buttonY = newButton("Y", cx - gap - bsize, cy - bsize / 2, bsize, bsize);
+            buttonY.setOnTouchListener(this);
+        } else {
 //			padRight = null;
-//			padRight = new Pad(getContext());
-//			padRight.setAlpha((float) 0.5);
-//			padRight.setOnTouchListener(this);
-//			padRight.setPartition(8);
-//			padRight.setPartitionEventListener(this);
-//			padRight.setDrawPartitionAll(false);
-//			padRight.setDrawPartitionLine(new int[] {1, 3, 5, 7});
-//			padRight.setDrawLabel(new int[] {3, 5, 1, 3, 5, 7, 7, 1}, new String[] {"B", "A", "Y", "X"});
-//			placeView(padRight,
-//					width-margin-padSize, height-margin*2-padSize*2, padSize, padSize);
-			int cx, cy, gap, bsize;
-			cx = width-margin-padSize/2;
-			cy = height-margin*2-padSize-padSize/2;
-			gap = (int) (padSize*0.3/2);
-			bsize = (int) (padSize*0.7/2);
-			buttonA = newButton("A", cx+gap, cy-bsize/2, bsize, bsize);
-			buttonA.setOnTouchListener(this);
-			//
-			buttonB = newButton("B", cx-bsize/2, cy+gap, bsize, bsize);
-			buttonB.setOnTouchListener(this);
-			//
-			buttonX = newButton("X", cx-bsize/2, cy-gap-bsize, bsize, bsize);
-			buttonX.setOnTouchListener(this);
-			//
-			buttonY = newButton("Y", cx-gap-bsize, cy-bsize/2, bsize, bsize);
-			buttonY.setOnTouchListener(this);
-		} else {
-//			padRight = null;
-		}
-	}
-	
-	private float lastX = -1;
-	private float lastY = -1;
-	private int lastButton = -1;
-	@Override
-	public boolean onTouch(View v, MotionEvent evt) {
-		int count = evt.getPointerCount();
-		int action = evt.getActionMasked();
-		float x = evt.getX();
-		float y = evt.getY();
-		//
-		if(count==1 && (v == padLeft/* || v == padRight*/)) {
-			if(((Pad) v).onTouch(evt));
-				return true;
-		}
-		if(v == buttonA)
-			return handleButtonTouch(action, SDL2.Scancode.X, SDL2.Keycode.x, 0, 0);
-		if(v == buttonB)
-			return handleButtonTouch(action, SDL2.Scancode.Z, SDL2.Keycode.z, 0, 0);
-		if(v == buttonX)
-			return handleButtonTouch(action, SDL2.Scancode.S, SDL2.Keycode.s, 0, 0);
-		if(v == buttonY)
-			return handleButtonTouch(action, SDL2.Scancode.A, SDL2.Keycode.a, 0, 0);
-		if(v == buttonL)
-			return handleButtonTouch(action, SDL2.Scancode.Q, SDL2.Keycode.q, 0, 0);
-		if(v == buttonR)
-			return handleButtonTouch(action, SDL2.Scancode.W, SDL2.Keycode.w, 0, 0);
-		if(v == buttonEsc)
-			return handleButtonTouch(action, SDL2.Scancode.ESCAPE, SDL2.Keycode.ESCAPE, 0, 0);
-		if(v == buttonSelect)
-			return handleButtonTouch(action, SDL2.Scancode.RSHIFT, SDL2.Keycode.RSHIFT, 0/*SDL2.Keymod.RSHIFT*/, 0);
-		if(v == buttonStart)
-			return handleButtonTouch(action, SDL2.Scancode.RETURN, SDL2.Keycode.RETURN, 0, 0);
-		// must be called last
-		// XXX: not calling super.onTouch() because we have our own handler
-		//return super.onTouch(v, evt);
-		if(v == this.getPanel()) {
-			switch(action) {
-			case MotionEvent.ACTION_DOWN:
-			//case MotionEvent.ACTION_POINTER_DOWN:
-				if(count==1) {
-					lastX = x;
-					lastY = y;
-					lastButton = SDL2.Button.LEFT;
-					sendMouseKey(true, SDL2.Button.LEFT, x, y);
-				}
-				break;
-			case MotionEvent.ACTION_UP:
-			//case MotionEvent.ACTION_POINTER_UP:
-				if(count == 1 && lastButton != -1) {
-					sendMouseKey(false, SDL2.Button.LEFT, x, y);
-					lastButton = -1;
-				}
-				break;
-			case MotionEvent.ACTION_MOVE:
-				if(count == 1) {
-					float dx = x-lastX;
-					float dy = y-lastY;
-					sendMouseMotion(x, y, dx, dy, 0, /*relative=*/false);
-					lastX = x;
-					lastY = y;
-				}
-				break;
-			}
-			return true;
-		}
-		return false;
-	}
+        }
+    }
 
-	private boolean keyLeft = false;
-	private boolean keyRight = false;
-	private boolean keyUp = false;
-	private boolean keyDown = false;
+    private float lastX = -1;
+    private float lastY = -1;
+    private int lastButton = -1;
+
+    @Override
+    public boolean onTouch(View v, MotionEvent evt) {
+        int count = evt.getPointerCount();
+        int action = evt.getActionMasked();
+        float x = evt.getX();
+        float y = evt.getY();
+        //
+        if (count == 1 && (v == padLeft/* || v == padRight*/)) {
+            if (((Pad) v).onTouch(evt)) ;
+            return true;
+        }
+        if (v == buttonA)
+            return handleButtonTouch(action, SDL2.Scancode.X, SDL2.Keycode.x, 0, 0);
+        if (v == buttonB)
+            return handleButtonTouch(action, SDL2.Scancode.Z, SDL2.Keycode.z, 0, 0);
+        if (v == buttonX)
+            return handleButtonTouch(action, SDL2.Scancode.S, SDL2.Keycode.s, 0, 0);
+        if (v == buttonY)
+            return handleButtonTouch(action, SDL2.Scancode.A, SDL2.Keycode.a, 0, 0);
+        if (v == buttonL)
+            return handleButtonTouch(action, SDL2.Scancode.Q, SDL2.Keycode.q, 0, 0);
+        if (v == buttonR)
+            return handleButtonTouch(action, SDL2.Scancode.W, SDL2.Keycode.w, 0, 0);
+        if (v == buttonEsc)
+            return handleButtonTouch(action, SDL2.Scancode.ESCAPE, SDL2.Keycode.ESCAPE, 0, 0);
+        if (v == buttonSelect)
+            return handleButtonTouch(action, SDL2.Scancode.RSHIFT, SDL2.Keycode.RSHIFT, 0/*SDL2.Keymod.RSHIFT*/, 0);
+        if (v == buttonStart)
+            return handleButtonTouch(action, SDL2.Scancode.RETURN, SDL2.Keycode.RETURN, 0, 0);
+        // must be called last
+        // XXX: not calling super.onTouch() because we have our own handler
+        //return super.onTouch(v, evt);
+        if (v == this.getPanel()) {
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    //case MotionEvent.ACTION_POINTER_DOWN:
+                    if (count == 1) {
+                        lastX = x;
+                        lastY = y;
+                        lastButton = SDL2.Button.LEFT;
+                        sendMouseKey(true, SDL2.Button.LEFT, x, y);
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                    //case MotionEvent.ACTION_POINTER_UP:
+                    if (count == 1 && lastButton != -1) {
+                        sendMouseKey(false, SDL2.Button.LEFT, x, y);
+                        lastButton = -1;
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (count == 1) {
+                        float dx = x - lastX;
+                        float dy = y - lastY;
+                        sendMouseMotion(x, y, dx, dy, 0, /*relative=*/false);
+                        lastX = x;
+                        lastY = y;
+                    }
+                    break;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean keyLeft = false;
+    private boolean keyRight = false;
+    private boolean keyUp = false;
+    private boolean keyDown = false;
 //	private void emulateArrowKeys(int action, int part) {
 //		boolean myKeyLeft, myKeyRight, myKeyUp, myKeyDown;
 //		myKeyLeft = keyLeft;
@@ -325,7 +315,7 @@ public class GAControllerNDS extends GAController implements
 //		keyLeft = myKeyLeft;
 //		keyRight = myKeyRight;
 //	}
-	
+
 //	private int lastScan = -1;
 //	private int lastKey = -1;
 //	private void emulateABXZ(int action, int part) {
@@ -364,39 +354,39 @@ public class GAControllerNDS extends GAController implements
 //			break;
 //		}
 //	}
-	
-	@Override
-	public void onPartitionEvent(View v, int action, int part) {
+
+    @Override
+    public void onPartitionEvent(View v, int action, int part) {
 //		String obj = "null";
 //		if(v == padLeft)	obj = "padLeft";
 //		if(v == padRight)	obj = "padRight";
 //		Log.d("ga_log", String.format("[%s] partition event: action=%d, part=%d", obj, action, part));
-		// Left: emulated arrow keys
-		if(v == padLeft) {
-			emulateArrowKeys(action, part);
-			return;
-		}
-		// Right: emulated ABXZ + mouse click
+        // Left: emulated arrow keys
+        if (v == padLeft) {
+            emulateArrowKeys(action, part);
+            return;
+        }
+        // Right: emulated ABXZ + mouse click
 //		if(v == padRight) {
 //			emulateABXZ(action, part);
 //			return;
 //		}
-	}
-	
-	@Override
-	public void onClick(View v) {
-		if(v == buttonBack) {
-			onBackPress();
-		} else if(v == buttonToggleLPad) {
-			showLPad = !showLPad;
-			this.onDimensionChange(currWidth, currHeight);
-		} else if(v == buttonToggleRPad) {
-			showRPad = !showRPad;
-			this.onDimensionChange(currWidth, currHeight);
-		} else if(v == buttonToggleLRBtn) {
-			showLRBtn = !showLRBtn;
-			this.onDimensionChange(currWidth, currHeight);
-		}
-	}
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v == buttonBack) {
+            onBackPress();
+        } else if (v == buttonToggleLPad) {
+            showLPad = !showLPad;
+            this.onDimensionChange(currWidth, currHeight);
+        } else if (v == buttonToggleRPad) {
+            showRPad = !showRPad;
+            this.onDimensionChange(currWidth, currHeight);
+        } else if (v == buttonToggleLRBtn) {
+            showLRBtn = !showLRBtn;
+            this.onDimensionChange(currWidth, currHeight);
+        }
+    }
 
 }

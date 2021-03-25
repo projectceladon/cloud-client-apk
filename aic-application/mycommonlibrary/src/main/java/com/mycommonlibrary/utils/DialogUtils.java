@@ -101,7 +101,8 @@ public class DialogUtils {
     public static ProgressDialog showProgressDialog(Context context) {
         return showProgressDialog(context, null, false, null, false);
     }
-    public static ProgressDialog showProgressDialog(Context context,boolean isNoActivity){
+
+    public static ProgressDialog showProgressDialog(Context context, boolean isNoActivity) {
         return showProgressDialog(context, null, false, null, isNoActivity);
     }
 

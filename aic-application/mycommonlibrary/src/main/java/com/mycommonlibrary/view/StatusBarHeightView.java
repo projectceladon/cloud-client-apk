@@ -32,18 +32,16 @@ public class StatusBarHeightView extends LinearLayout {
     public StatusBarHeightView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr);
         init(attrs);
-
-
     }
 
     private void init(@Nullable AttributeSet attrs) {
 
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            if(resourceId>0) {
+            if (resourceId > 0) {
                 statusBarHeight = getResources().getDimensionPixelSize(resourceId);
             }
-        }else{
+        } else {
             //低版本 直接设置0
             statusBarHeight = 0;
         }
@@ -66,5 +64,5 @@ public class StatusBarHeightView extends LinearLayout {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }
     }
- 
+
 }

@@ -29,8 +29,8 @@ public class BaseActvitiy extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         ActivityManager.add(this);
-        StatusBarUtil.setRootViewFitsSystemWindows(this,true);
-        StatusBarUtil.setStatusBarColor(this, ContextCompat.getColor(this,R.color.colorPrimaryDark));
+        StatusBarUtil.setRootViewFitsSystemWindows(this, true);
+        StatusBarUtil.setStatusBarColor(this, ContextCompat.getColor(this, R.color.colorPrimaryDark));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class BaseActvitiy extends AppCompatActivity {
     private Context updateResources(Context context) {
         Resources resources = context.getResources();
         Locale locale = LanguageUtils.getLocale();
-        if (locale==null) {
+        if (locale == null) {
             return context;
         }
         Configuration configuration = resources.getConfiguration();

@@ -92,7 +92,6 @@ class HomeFragment : Fragment() {
                 return when (position) {
                     0 -> MemoryFragment()
                     1 -> BatteryFragment()
-//                    2 -> BluetoothFragment()
                     else -> Fragment()
                 }
             }

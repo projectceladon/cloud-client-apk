@@ -23,7 +23,7 @@ public class RTCControllerKeyBoard extends BaseController implements OnClickList
     private CheckBox chkShift;
 
     public RTCControllerKeyBoard(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
-        super(act,handler, devSwitch);
+        super(act, handler, devSwitch);
     }
 
     public String getName() {

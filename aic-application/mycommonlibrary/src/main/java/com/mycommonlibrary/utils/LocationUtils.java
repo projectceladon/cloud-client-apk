@@ -27,19 +27,20 @@ import java.util.Locale;
 public class LocationUtils {
     private LocationManager locationManager;
     static LocationUtils locationUtils;
-    public static LocationUtils getInstance(){
-        if (locationUtils == null){
+
+    public static LocationUtils getInstance() {
+        if (locationUtils == null) {
             locationUtils = new LocationUtils();
         }
         return locationUtils;
     }
 
 
-    public String getLocations(Context context){
+    public String getLocations(Context context) {
         String strLocation = "0,0";
         DecimalFormat df = new DecimalFormat("#####0.0000");
-        if (!checkPermission(context,permission.ACCESS_COARSE_LOCATION)){
-            Toast.makeText(context,"定位权限关闭，无法获取地理位置",Toast.LENGTH_SHORT).show();
+        if (!checkPermission(context, permission.ACCESS_COARSE_LOCATION)) {
+            Toast.makeText(context, "定位权限关闭，无法获取地理位置", Toast.LENGTH_SHORT).show();
         }
         try {
             //获取系统的服务，
@@ -55,7 +56,7 @@ public class LocationUtils {
             //要求低耗电
             criteria.setPowerRequirement(Criteria.POWER_LOW);
             String provider = locationManager.getBestProvider(criteria, true);
-            Log.i("Tobin", "Location Provider is "+ provider);
+            Log.i("Tobin", "Location Provider is " + provider);
             Location location = locationManager.getLastKnownLocation(provider);
 
             /**
@@ -71,7 +72,7 @@ public class LocationUtils {
 //            },2000);
 
             //第一次获得设备的位置
-            if (location != null){
+            if (location != null) {
                 strLocation = df.format(location.getLongitude()) + "," + df.format(location.getLatitude());
                 // 耗时操作
 //                strLocation += " " + convertAddress(context, location.getLatitude(),location.getLongitude());
@@ -79,9 +80,9 @@ public class LocationUtils {
             }
 
 
-        }catch (SecurityException e){
+        } catch (SecurityException e) {
             e.printStackTrace();
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -97,18 +98,22 @@ public class LocationUtils {
         public void onLocationChanged(Location location) {
 
         }
-        public void onProviderDisabled(String provider){
+
+        public void onProviderDisabled(String provider) {
             Log.i("Tobin", "Provider now is disabled..");
         }
-        public void onProviderEnabled(String provider){
+
+        public void onProviderEnabled(String provider) {
             Log.i("Tobin", "Provider now is enabled..");
         }
-        public void onStatusChanged(String provider, int status,Bundle extras){ }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
     };
 
 
     /**
-     * @param latitude 经度
+     * @param latitude  经度
      * @param longitude 纬度
      * @return 详细位置信息 GeoCoder是基于后台backend的服务，因此这个方法不是对每台设备都适用。
      */
@@ -129,12 +134,12 @@ public class LocationUtils {
         return mStringBuilder.toString();
     }
 
-	private boolean checkPermission(Context context, permission permName) {
-        int perm = context.checkCallingOrSelfPermission("android.permission."+permName.toString());
+    private boolean checkPermission(Context context, permission permName) {
+        int perm = context.checkCallingOrSelfPermission("android.permission." + permName.toString());
         return perm == PackageManager.PERMISSION_GRANTED;
     }
 
-    private enum permission{
+    private enum permission {
         ACCESS_COARSE_LOCATION,
         ACCESS_FINE_LOCATION
     }

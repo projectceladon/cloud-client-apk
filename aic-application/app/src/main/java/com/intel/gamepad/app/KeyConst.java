@@ -806,6 +806,4 @@ public class KeyConst {
      * @since 1.4
      */
     public static final int KEY_LOCATION_NUMPAD = 4;
-
-
 }

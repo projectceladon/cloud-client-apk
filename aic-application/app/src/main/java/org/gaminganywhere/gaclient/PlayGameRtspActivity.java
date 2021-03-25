@@ -235,7 +235,7 @@ public class PlayGameRtspActivity extends Activity implements SurfaceHolder.Call
      */
     private void windowFullScreen() {
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                                  WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         this.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
             View v = this.getWindow().getDecorView();

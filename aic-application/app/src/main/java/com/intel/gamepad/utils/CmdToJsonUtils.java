@@ -14,8 +14,8 @@ public class CmdToJsonUtils {
 
     public static String toJson(String cmd, int reqId) {
         HashMap<String, Object> map = new HashMap<>();
-        map.put("magic", 0x55AA55AA+"");
-        map.put("msgHdr", reqId+"");
+        map.put("magic", 0x55AA55AA + "");
+        map.put("msgHdr", reqId + "");
         map.put("payloadLen", cmd.length() + "");
         map.put("payload", cmd);
 

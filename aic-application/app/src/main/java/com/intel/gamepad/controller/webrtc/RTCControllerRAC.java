@@ -80,19 +80,8 @@ public class RTCControllerRAC extends BaseController implements MouseMotionEvent
         btnBrake.setOnTouchListener(this);
     }
 
-//    @Override
-//    public void onDimensionChange(int width, int height) {
-//        if (width < 0 || height < 0)
-//            return;
-//        // must be called first
-//        super.setMouseVisibility(false);
-//        super.onDimensionChange(width, height);
-//    }
-
     @Override
     public boolean onTouch(View v, MotionEvent evt) {
-//        BaseController.lastTouchMillis = System.currentTimeMillis();
-//        super.onTouch(v, evt);
         updateLastTouchEvent();
         int count = evt.getPointerCount(); // 屏幕的触点数
         int action = evt.getActionMasked();

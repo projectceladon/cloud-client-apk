@@ -95,7 +95,6 @@ class SettingActivity : BaseActvitiy(), CompoundButton.OnCheckedChangeListener {
             "中文" -> LanguageUtils.updateLocale(this, Locale.CHINESE)
             "English" -> LanguageUtils.updateLocale(this, Locale.ENGLISH)
         }
-//        ActivityManager.finishAll()
         PackageUtils.resetApp(this)
     }
 }

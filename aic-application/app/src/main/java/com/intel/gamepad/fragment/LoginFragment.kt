@@ -61,41 +61,6 @@ class LoginFragment : Fragment() {
 
     private fun requestLogin() {
         val dlg = LoadingDialog(this.context)
-
-       /* OkGo.get<String>(IPUtils.load() + "/user/login")
-            .params("username", etPhone.text.toString())
-            .params("password", etPassword.text.toString())
-            .execute(object : StringCallback() {
-                override fun onSuccess(response: Response<String>) {
-                    LogEx.i(response.body())
-                    //dlg.dismiss()
-                    try {
-                        val result = LoginBean.objectFromData(response.body())
-                        UserHelper.saveId(result.id)
-                        UserHelper.saveName(result.username)
-                        UserHelper.save(etPhone.text.toString(), etPassword.text.toString())
-                        activity?.let {
-                            MainActivity.actionStart(it)
-                            it.finish()
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        toast("登录时出错")
-                    }
-                }
-
-                override fun onError(response: Response<String>?) {
-                    super.onError(response)
-                    dlg.dismiss()
-                    response?.exception?.printStackTrace()
-                    toast(response?.exception?.message ?: "connect server error")
-                }
-
-                override fun onFinish() {
-                    super.onFinish()
-                    dlg.dismiss()
-                }
-            })*/
         activity?.let {
             MainActivity.actionStart(it)
             it.finish()

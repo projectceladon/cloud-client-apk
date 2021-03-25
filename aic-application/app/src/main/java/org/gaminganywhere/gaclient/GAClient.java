@@ -86,14 +86,6 @@ public class GAClient {
     }
 
     public boolean profileLoad(String key) {
-//		if(context == null) {
-//			Log.e("androidclient", "No context provded");
-//			return false;
-//		}
-//		if((gaconfig = GAConfigHelper.profileLoad(context, key)) == null) {
-//			return false;
-//		}
-        //
         resetConfig();
         setProtocol(gaconfig.get("protocol"));
         setHost(gaconfig.get("host"));
@@ -106,11 +98,8 @@ public class GAClient {
         setAudioCodec(
                 Integer.parseInt(gaconfig.get("audio_samplerate")),
                 Integer.parseInt(gaconfig.get("audio_channels")));
-        //
         audioSamplerate = Integer.parseInt(gaconfig.get("audio_samplerate"));
         audioChannels = Integer.parseInt(gaconfig.get("audio_channels"));
-        //
-        //
         return true;
     }
 
@@ -308,7 +297,6 @@ public class GAClient {
             }
         }
         // flush decoder
-        //vdecoder.queueInputBuffer(0, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
         outbufIdx = vdecoder.dequeueOutputBuffer(bufinfo, 10000);
         if (outbufIdx >= 0) {
             vdecoder.releaseOutputBuffer(outbufIdx, true);
@@ -658,11 +646,6 @@ public class GAClient {
                         inputVBuffers[currVInbufIdx].put(data, 0, size);
                         queued = true;
                     }
-//					Log.d("ga_log", "decodeVideo: submit,"
-//							+ " pts=" + Long.toString(currVPts)
-//							+ " position="+inputVBuffers[currVInbufIdx].position()
-//							+ " capacity="+inputVBuffers[currVInbufIdx].capacity()
-//							);
                     vdecoder.queueInputBuffer(currVInbufIdx, 0, inputVBuffers[currVInbufIdx].position(), currVPts, currVFlag);
                     //
                     inbufIdx = vdecoder.dequeueInputBuffer(1000000/*1s*/);
@@ -712,7 +695,6 @@ public class GAClient {
     /* JNI stuff */
     static {
         // full
-        //System.loadLibrary("gnustl_shared");
         System.loadLibrary("mp3lame");
         System.loadLibrary("opus");
         System.loadLibrary("ogg");

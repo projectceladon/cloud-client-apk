@@ -69,15 +69,6 @@ public class RTCControllerACT extends BaseController implements PartitionEventLi
         return layoutGamePad;
     }
 
-//    @Override
-//    public void onDimensionChange(int width, int height) {
-//        if (width < 0 || height < 0)
-//            return;
-//        // must be called first
-//        super.setMouseVisibility(false);
-//        super.onDimensionChange(width, height);
-//    }
-
     private void initView() {
         layoutGamePad = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.game_pad_xbox, null, false);
         addControllerView(layoutGamePad);

@@ -23,12 +23,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+
 import com.intel.gamepad.controller.impl.PartitionEventListener;
 import com.intel.gamepad.controller.view.Pad;
 
 public class GAControllerBasic extends GAController implements
         OnClickListener, PartitionEventListener {
-    public static final String NAME="Basic";
+    public static final String NAME = "Basic";
     private Button buttonEsc = null;
     private Pad padLeft = null;
 

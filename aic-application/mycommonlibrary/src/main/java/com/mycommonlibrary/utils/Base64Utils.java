@@ -2,7 +2,9 @@ package com.mycommonlibrary.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
 import androidx.annotation.NonNull;
+
 import android.util.Base64;
 
 import java.io.ByteArrayOutputStream;

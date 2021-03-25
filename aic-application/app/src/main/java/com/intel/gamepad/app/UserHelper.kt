@@ -15,7 +15,6 @@ object UserHelper {
             }
     }
 
-
     fun getUserName() = FastSharedPreferences.get(FILE).getString("username", "")
     fun getPassword() = FastSharedPreferences.get(FILE).getString("password", "")
     fun clear() = FastSharedPreferences.get(FILE).edit().clear().commit()

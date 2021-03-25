@@ -1,6 +1,7 @@
 package com.mycommonlibrary.application;
 
 import android.app.Application;
+
 import com.mycommonlibrary.utils.DensityUtils;
 import com.mycommonlibrary.utils.MemoryUtils;
 import com.mycommonlibrary.utils.NetDeviceUtils;

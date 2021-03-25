@@ -33,7 +33,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     public static final String NAME = "ANDROID";
     public static final String DESC = "Android Touch Screen ";
     private ViewGroup vgRoot;
-    private View viewTouch    = null;
+    private View viewTouch = null;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -141,19 +141,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         axisHatY = BaseController.filterMinValue(axisHatY);
 
         LogEx.i(String.format("%.1f %.1f | %.1f %.1f %.1f %.1f", axisHatX, axisHatY, leftAxisX, leftAsixY, rightAxisX, rightAxisY));
-        // 响应摇杆
-//        if ((leftAxisX + leftAxisX + rightAxisX + rightAxisY) != 0) {
-//            if (showMouse) {
-//                float offx = (leftAxisX + rightAxisX) * 10;
-//                float offy = (leftAsixY + rightAxisY) * 10;
-//                sendMouseMotionF(mouseX + marginWidth + offx, mouseY + offy, 0, 0);
-//            } else {
-//                sendMouseRelative(true);
-//                sendMouseMotionF(0, 0, leftAxisX * 3, leftAsixY * 3);
-//                sendMouseMotionF(0, 0, rightAxisX * 3, rightAxisY * 3);
-//                sendMouseRelative(false);
-//            }
-//        }
 
         return false;
     }
@@ -167,43 +154,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         LogEx.i(keyCode + " " + event + " " + event.getDevice().getId());
         if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
             onBackPress();
-
-//        if (leftAxisX != 0f || leftAsixY != 0f || rightAxisX != 0f || rightAxisY != 0f) {
-//            switch (event.getAction()) {
-//                case MotionEvent.ACTION_DOWN:
-//                    speed += 3;
-//                    float offx = (leftAxisX + rightAxisX) * (10 + speed);
-//                    float offy = (leftAsixY + rightAxisY) * (10 + speed);
-//                    sendMouseMotionF(mouseX + marginWidth + offx, mouseY + offy, 0, 0);
-//                    return true;
-//                case MotionEvent.ACTION_UP:
-//                    speed = 0;
-//                    break;
-//            }
-//        }
-//        switch (keyCode) {
-//            case KeyEvent.KEYCODE_BUTTON_A:
-//                sendMouseKey(true, MouseConst.LEFT, mouseX, mouseY);
-//                sendMouseKey(false, MouseConst.LEFT, mouseX, mouseY);
-//                break;
-//            case KeyEvent.KEYCODE_BUTTON_B:
-//                sendMouseKey(true, MouseConst.RIGHT, mouseX, mouseY);
-//                sendMouseKey(false, MouseConst.RIGHT, mouseX, mouseY);
-//                break;
-//            case KeyEvent.KEYCODE_BUTTON_SELECT:
-//                handleButtonTouch(event.getAction(), KeyConst.VK_SPACE, null);
-//                break;
-//            case KeyEvent.KEYCODE_BUTTON_START:
-//                handleButtonTouch(event.getAction(), KeyConst.VK_ENTER, null);
-//                if (keyCount == 5) {
-//                    devSwitch.switchGamePad();
-//                    keyCount = 0;
-//                    ToastUtils.show("Game Pad Mode");
-//                } else {
-//                    keyCount++;
-//                }
-//                break;
-//        }
         return true;
     }
 }

@@ -94,7 +94,6 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
             }
         })
 
-
         etPeerID.setText(IPUtils.loadPeerID())
         P2PHelper.peerId = IPUtils.loadPeerID()
         etPeerID.addTextChangedListener(object : TextWatcher {
@@ -113,7 +112,7 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
         })
 
         etClientID.setText(IPUtils.loadTokenID())
-        P2PHelper.clientId= IPUtils.loadTokenID()
+        P2PHelper.clientId = IPUtils.loadTokenID()
         etClientID.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) {
             }
@@ -156,9 +155,7 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
         bean = intent.getParcelableExtra(PARAM_BEAN)
 
         bean?.let {
-           // updateHeaderDetail(it.imageUrl)
             tvTitle.text = it.title
-            //tvIntro.text = it.intro
         }
     }
 
@@ -178,7 +175,6 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
                     LogEx.i("normal exit")
                     // 正常退出时关闭游戏，并显示打分界面
                     requestCloseGame()
-                    //showRatingScoreDialog()
                 }
                 AppConst.EXIT_TIMEOUT -> {
                     LogEx.e("time out")
@@ -203,49 +199,17 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
 
     private fun initView() {
         initBackButton(R.id.ibtnBack)
-        //initRvGameImage()
-        // 显示创建游戏房间对话框
-        /* btnJoin.setOnClickListener {
-            showGameRoom()
-        } */
         // 跳游戏播放界面
         btnPlay.setOnClickListener {
             requestStartGame()
         }
         btnPlay.requestFocus()
     }
-/*
-    private fun initRvGameImage() {
-        val listGameImage = assets.list("img")?.toList()?.map { "file:///android_asset/img/$it" }
-
-        rvGameImage.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        rvGameImage.horItemDecoration(Color.TRANSPARENT, 6f)
-        rvGameImage.adapter =
-            object : CommonAdapter<String>(
-                context,
-                listGameImage,
-                R.layout.item_game_image
-            ) {
-                override fun convert(vh: ViewHolder, imgUrl: String) {
-                    loadImage(vh.itemView.ivGame, imgUrl, R.drawable.icon_place_hold2)
-                    vh.setOnClickListener(R.id.ivGame) {
-                        ImageViewActivity.actionStart(this@GameDetailActivity, imgUrl)
-                    }
-                }
-            }
-    }*/
 
     private fun updateGameLog(gameId: Int) {
-       // tvLastTime.text = GameLogHelper.loadLastTime(gameId)
-      //  tvRunCount.text = "${GameLogHelper.loadRunCount(gameId)} 次"
-      //  tvSingleTime.text = GameLogHelper.loadSingleTime(gameId)
-       // tvTotalTime.text = GameLogHelper.getTotalTimeString(gameId)
     }
 
     private fun updateHeaderDetail(url: String) {
-        // 作为背景模糊处理(参数25已是模糊的最大值)
-       // this.loadImageBlur(ivHeaderBg, url)
-       // this.loadImage(ivGameCover, url)
     }
 
     /**
@@ -268,20 +232,7 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
                     else -> RTCControllerXBox.NAME
                 }
                 // TODO:以后要改信令服的地址
-                //P2PHelper.serverIP = "http://192.168.1.244:8095"
-                /*when (roomCount) {
-                    0 -> {
-                        P2PHelper.peerId = "ga2";P2PHelper.clientId = "client2"
-                    }
-                    in 1..3 -> {
-                        P2PHelper.peerId = "ga${roomCount}"
-                        P2PHelper.clientId = "client${roomCount}"
-                    }
-                }
-                */
                 LogEx.i("ga = ${P2PHelper.peerId} client = ${P2PHelper.clientId}")
-
-
                 PlayGameRtcActivity.actionStart(this, ctrlName, it.iid, it.conf)
             } else {
                 PlayGameRtspActivity.actionStart(this, it.iid, it.ip, it.port)
@@ -301,21 +252,7 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
      * 通知服务器关游戏
      */
     private fun requestCloseGame() {
-
         P2PHelper.closeP2PClient();
-       // longToast("turn off the game")
-        /*if (nodeIP.isEmpty()) return
-        OkGo.get<String>(IPUtils.loadIP() + AppConst.CLOSE_GAME)
-            .params("iid", bean?.iid.toString())
-            .params("gamedir", MyApp.pId)
-            .params("nodeIP", nodeIP)
-            .execute(object : StringCallback() {
-                override fun onSuccess(response: Response<String>) {
-                    LogEx.i(response.body())
-                    nodeIP = ""
-                }
-            })
-        */
     }
 
     /**
@@ -396,47 +333,9 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
      */
     fun requestStartGame(isCreateRoom: Boolean = false) {
         val dlg = LoadingDialog.show(this)
-        if(isCreateRoom){
+        if (isCreateRoom) {
             longToast("room is not supported");
-        }
-        else {
-            /* OkGo.get<String>(IPUtils.load() + AppConst.START_GAME)
-            .params("iid", bean?.iid ?: 0)
-            .params("gamedir", MyApp.pId) // 唯一码
-            .params("width", DensityUtils.getmScreenHeight())
-            .params("height", DensityUtils.getmScreenWidth())
-            .params("fps", 60)
-            .params("client", 1)
-            .execute(object : StringCallback() {
-                override fun onSuccess(response: Response<String>) {
-                    LogEx.i(response.body())
-                    //val result = GameStatusBean.objectFromData(response.body())
-                    //if (result.isSuccess) {
-                       // nodeIP = result.ip
-                        P2PHelper.serverIP = "http://10.188.197.40:8095/"
-                        LogEx.i(">>>> ${P2PHelper.serverIP}")
-                        gotoGamePlay()
-
-                       // if (isCreateRoom) requestCreateRoom()
-
-                    //} else {
-                        //longToast("" + result.message)
-                    //}
-                }
-
-                override fun onError(response: Response<String>?) {
-                    super.onError(response)
-                    dlg.dismiss()
-                    response?.exception?.printStackTrace()
-                    LogEx.e("Error: " + response?.exception?.message)
-                    toast(response?.exception?.message.toString())
-                }
-
-                override fun onFinish() {
-                    super.onFinish()
-                    dlg.dismiss()
-                }
-            })*/
+        } else {
             gotoGamePlay()
             dlg.dismiss()
         }

@@ -36,7 +36,7 @@ import com.mycommonlibrary.utils.LogEx;
 
 public class GAControllerACT extends GAController implements PartitionEventListener, MouseMotionEventListener {
     public static final String NAME = "ACT";
-    public static final String DESC="动作类游戏控制器";
+    public static final String DESC = "动作类游戏控制器";
     private Button btnEsc = null;
     private Button btnSelect = null;
     private Button btnStart = null;
@@ -130,23 +130,23 @@ public class GAControllerACT extends GAController implements PartitionEventListe
         int y = (int) evt.getY();
         //
         if (v == btnL)
-            return handleButtonTouch(action,  SDL2.Scancode.L,  SDL2.Keycode.l, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.L, SDL2.Keycode.l, 0, 0);
         if (v == btnR)
-            return handleButtonTouch(action,  SDL2.Scancode.R,  SDL2.Keycode.r, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.R, SDL2.Keycode.r, 0, 0);
         if (v == btnX)
-            return handleButtonTouch(action,  SDL2.Scancode.X,  SDL2.Keycode.x, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.X, SDL2.Keycode.x, 0, 0);
         if (v == btnY)
-            return handleButtonTouch(action,  SDL2.Scancode.Y,  SDL2.Keycode.y, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.Y, SDL2.Keycode.y, 0, 0);
         if (v == btnA)
-            return handleButtonTouch(action,  SDL2.Scancode.A,  SDL2.Keycode.a, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.A, SDL2.Keycode.a, 0, 0);
         if (v == btnB)
-            return handleButtonTouch(action,  SDL2.Scancode.B,  SDL2.Keycode.b, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.B, SDL2.Keycode.b, 0, 0);
         if (v == btnSelect)
-            return handleButtonTouch(action,  SDL2.Scancode.SPACE,  SDL2.Keycode.SPACE, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.SPACE, SDL2.Keycode.SPACE, 0, 0);
         if (v == btnStart)
-            return handleButtonTouch(action,  SDL2.Scancode.RETURN,  SDL2.Keycode.RETURN, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.RETURN, SDL2.Keycode.RETURN, 0, 0);
         if (v == btnEsc)
-            return handleButtonTouch(action,  SDL2.Scancode.ESCAPE,  SDL2.Keycode.ESCAPE, 0, 0);
+            return handleButtonTouch(action, SDL2.Scancode.ESCAPE, SDL2.Keycode.ESCAPE, 0, 0);
         if (v == padLeft) {
             if (((Pad) v).onTouch(evt)) ;
             return true;
@@ -246,16 +246,16 @@ public class GAControllerACT extends GAController implements PartitionEventListe
                 break;
         }
         if (myKeyUp) {
-            this.sendKeyEvent(isPress,  SDL2.Scancode.UP,  SDL2.Keycode.UP, 0, 0);
+            this.sendKeyEvent(isPress, SDL2.Scancode.UP, SDL2.Keycode.UP, 0, 0);
         }
         if (myKeyDown) {
-            this.sendKeyEvent(isPress,  SDL2.Scancode.DOWN,  SDL2.Keycode.DOWN, 0, 0);
+            this.sendKeyEvent(isPress, SDL2.Scancode.DOWN, SDL2.Keycode.DOWN, 0, 0);
         }
         if (myKeyLeft) {
-            this.sendKeyEvent(isPress,  SDL2.Scancode.LEFT,  SDL2.Keycode.LEFT, 0, 0);
+            this.sendKeyEvent(isPress, SDL2.Scancode.LEFT, SDL2.Keycode.LEFT, 0, 0);
         }
         if (myKeyRight) {
-            this.sendKeyEvent(isPress,  SDL2.Scancode.RIGHT,  SDL2.Keycode.RIGHT, 0, 0);
+            this.sendKeyEvent(isPress, SDL2.Scancode.RIGHT, SDL2.Keycode.RIGHT, 0, 0);
         }
         LogEx.i(">>>>>" + myKeyUp + " " + myKeyDown + " " + myKeyLeft + " " + myKeyRight);
     }

@@ -28,15 +28,7 @@ class SplashActivity : BaseActvitiy() {
 
     override fun onStart() {
         super.onStart()
-       GameDetailActivity.actionStart(this)
-       /* if (UserHelper.getUserName().isNullOrEmpty()) {
-            LoginActivity.actionStart(this)
-            finish()
-        } else {
-            val userName = UserHelper.getUserName() ?: ""
-            val password = UserHelper.getPassword() ?: ""
-            requestLogin(userName, password)
-        }*/
+        GameDetailActivity.actionStart(this)
     }
 
     private fun windowFullScreen() {
@@ -66,28 +58,5 @@ class SplashActivity : BaseActvitiy() {
         val dlg = LoadingDialog(this)
         GameDetailActivity.actionStart(this@SplashActivity)
         finish()
-        /*
-        OkGo.get<String>(IPUtils.load() + AppConst.LOGIN)
-            .params("username", userName)
-            .params("password", password)
-            .execute(object : StringCallback() {
-                override fun onSuccess(response: Response<String>) {
-                    LogEx.i(response.body())
-                    dlg.dismiss()
-
-                    MainActivity.actionStart(this@SplashActivity)
-                    finish()
-                }
-
-                override fun onError(response: Response<String>?) {
-                    super.onError(response)
-                    dlg.dismiss()
-                    Handler().postDelayed({
-                        MainActivity.actionStart(this@SplashActivity)
-                        finish()
-                    }, 1000)
-                }
-
-            })*/
     }
 }

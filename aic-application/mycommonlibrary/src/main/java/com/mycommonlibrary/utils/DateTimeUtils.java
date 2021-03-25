@@ -23,6 +23,7 @@ public class DateTimeUtils {
         /* cannot be instantiated */
         throw new UnsupportedOperationException("cannot be instantiated");
     }
+
     public static int getMonthDays(int year, int month) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.YEAR, year);
@@ -54,6 +55,7 @@ public class DateTimeUtils {
         calendar.set(Calendar.YEAR, year);
         return calendar.get(Calendar.DAY_OF_WEEK);
     }
+
     /**
      * @param year
      * @param month
@@ -82,6 +84,7 @@ public class DateTimeUtils {
         }
         return "";
     }
+
     /**
      * 格式化日期，月日用两位数保存，不足的前面加0
      */
@@ -501,20 +504,20 @@ public class DateTimeUtils {
         Long milliSecond = ms - day * dd - hour * hh - minute * mi - second * ss;
 
         StringBuffer sb = new StringBuffer();
-        if(day > 0) {
-            sb.append(day+"天");
+        if (day > 0) {
+            sb.append(day + "天");
         }
-        if(hour > 0) {
-            sb.append(hour+"小时");
+        if (hour > 0) {
+            sb.append(hour + "小时");
         }
-        if(minute > 0) {
-            sb.append(minute+"分");
+        if (minute > 0) {
+            sb.append(minute + "分");
         }
-        if(second > 0) {
-            sb.append(second+"秒");
+        if (second > 0) {
+            sb.append(second + "秒");
         }
-        if(milliSecond > 0 && isShowMillis) {
-            sb.append(milliSecond+"毫秒");
+        if (milliSecond > 0 && isShowMillis) {
+            sb.append(milliSecond + "毫秒");
         }
         return sb.toString();
     }

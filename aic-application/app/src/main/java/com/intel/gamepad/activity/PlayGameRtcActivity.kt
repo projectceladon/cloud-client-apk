@@ -49,13 +49,12 @@ import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-private const val SERVER_SCREEN_WIDTH  = 1920
+private const val SERVER_SCREEN_WIDTH = 1920
 private const val SERVER_SCREEN_HEIGHT = 1080
-private const val DELAY_GET_STATUS     = 3000L
+private const val DELAY_GET_STATUS = 3000L
 
 class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     CoroutineScope by MainScope() {
-   // private var fullRenderer:SurfaceViewRenderer? = null;
     companion object {
         const val RESULT_MSG = "resultMsg"
         fun actionStart(act: Activity, controller: String, gameId: Int, gameName: String) {
@@ -73,7 +72,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var remoteStream: RemoteStream? = null
     private var remoteStreamEnded = false
     private var controller: BaseController? = null
-    private var viewWidth  = DensityUtils.getmScreenWidth()
+    private var viewWidth = DensityUtils.getmScreenWidth()
     private var viewHeight = DensityUtils.getmScreenHeight()
     private var screenWidth = viewWidth;
     private var screenHeight = viewHeight;
@@ -91,7 +90,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         initP2PClient()
         var outMetrics = DisplayMetrics();
         getWindowManager().getDefaultDisplay().getRealMetrics(outMetrics);
-        screenWidth  = outMetrics.widthPixels;
+        screenWidth = outMetrics.widthPixels;
         screenHeight = outMetrics.heightPixels;
 
         controller = selectGamePad()
@@ -105,7 +104,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         super.onResume()
         hideStatusBar()
         LogEx.e("RTC Activity onResume called");
-//        layoutController.doOnPreDraw { fitScreenSize() }
     }
 
     override fun onDestroy() {
@@ -166,28 +164,12 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
             override fun onDataReceived(peerId: String, message: String) {
                 if (!JSONObject(message).isNull("type")) {
                     val type = JSONObject(message).getString("type")
-                    /*if (type == "cursor") {
-                        LogEx.i(message)
-                        parseMouseCursor(message)
-                    }*/
                 }
             }
 
             override fun onStreamAdded(remoteStream: RemoteStream) {
                 LogEx.e("onStreamAdded called");
                 runOnUiThread { if (!isFirst) fitScreenSize() }
-//                P2PHelper.getClient().getStats(P2PHelper.serverIP, object :
-//                    ActionCallback<RTCStatsReport> {
-//                    override fun onSuccess(p0: RTCStatsReport) {
-//                        p0.statsMap.values.forEach {
-//                          LogEx.i(it.toString())
-//                        }
-//                    }
-//
-//                    override fun onFailure(p0: OwtError?) {
-//                    }
-//
-//                })
                 this@PlayGameRtcActivity.remoteStream = remoteStream
                 remoteStream.addObserver(object : owt.base.RemoteStream.StreamObserver {
                     override fun onUpdated() {
@@ -198,9 +180,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                         remoteStreamEnded = true
                     }
                 })
-                //if (fullRenderer != null && remoteStream.hasVideo()) {
-               //     remoteStream.attach(fullRenderer)
-             //   }
             }
 
             override fun onServerDisconnected() {
@@ -212,7 +191,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         })
 
         initFullRender()
-       // initTCPListener()
     }
 
     private fun initTCPListener() {
@@ -230,14 +208,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                 }
                 val s = Socket(P2PHelper.strIP, nTCPPort)
                 s.setTcpNoDelay(true)
-                //val out: OutputStream = s.getOutputStream()
-                // val output = PrintWriter(out)
-                //output.println("msg")
-                // output.flush()
                 val mInputStream = DataInputStream(s.getInputStream())
-                /*
-                val input =
-                    BufferedReader(InputStreamReader(s.getInputStream()))*/
                 var nCountInput = 0
                 while (true) {
                     var i = 0
@@ -251,43 +222,29 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                         length += res shl i * 8
                         i++
                     }
-                   // val res = mInputStream.read()
-                    if(length <= 0 || length > 512) {
+                    if (length <= 0 || length > 512) {
                         Log.d("test", "initTCPListener: read length is not right")
                         break
                     } else {
                         val buf = ByteArray(length)
                         val ret = mInputStream.read(buf, 0, length)
                         val strRev = String(buf)
-                         if(ret < 0) {
-                             Log.d("test", "initTCPListener------read failed")
-                          } else {
-                             //Log.d("test", "From Server :        " + strRev)
-                             nCountInput++
-                             val strSplit: Array<String> =
-                                 strRev.split("size ".toRegex()).toTypedArray()
-                             if(strSplit.size > 1) {
-                                 Trace.beginSection("atou C3 ID: " + nCountInput + " size: " + strSplit[1].toInt())
-                                 Trace.endSection()
-                             }
-                          }
+                        if (ret < 0) {
+                            Log.d("test", "initTCPListener------read failed")
+                        } else {
+                            //Log.d("test", "From Server :        " + strRev)
+                            nCountInput++
+                            val strSplit: Array<String> =
+                                strRev.split("size ".toRegex()).toTypedArray()
+                            if (strSplit.size > 1) {
+                                Trace.beginSection("atou C3 ID: " + nCountInput + " size: " + strSplit[1].toInt())
+                                Trace.endSection()
+                            }
+                        }
                     }
-
-                    //Log.d("test", "initTCPListener------3")
-
-                   // Log.d("test", "initTCPListener------4")
-                   /* val st: String = input.readLine()
-                    Log.d("test", "From Server :        " + st) */
-                    //
-                    //
-                    //Log.d("test", "initTCPListener------5")
-
                 }
-                //output.close()
-                //out.close()
                 s.close()
             } catch (e: IOException) {
-                Log.d("test", "initTCPListener------failed")
                 e.printStackTrace()
             }
         })
@@ -355,20 +312,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
      * 初始化全屏渲染
      */
     private fun initFullRender() {
-
-        /*fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT)
-        fullRenderer.setEnableHardwareScaler(true)
-        fullRenderer.init(P2PHelper.getInst().rootEglBase.eglBaseContext, null)
-        this.lifecycle.addObserver(object : LifecycleObserver {
-            @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-          fun onDestory() {
-               fullRenderer.release()
-           }
-        })
-        */
-
-
-
         SingletonSurfaceView.getInstance().setSurfaceView(fullRenderer)
     }
 
@@ -390,8 +333,8 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                 override fun onSuccess(result: String) {
                     LogEx.e("$result ${Thread.currentThread().name}")
                     runOnUiThread {
-                        onCallRequest(P2PHelper.peerId); }
-
+                        onCallRequest(P2PHelper.peerId);
+                    }
                 }
 
                 override fun onFailure(error: OwtError) {
@@ -415,14 +358,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         // 添加服务端ID
         P2PHelper.getClient()?.addAllowedRemotePeer(peerId)
         P2PHelper.getClient()?.stop(peerId);
-        //P2PHelper.getClient()?.stop(peerId);
-        //P2PHelper.getClient()?.stop(peerId);
-//        远程数据流附加到屏幕渲染器
-//        remoteStream?.let {
-//            if (!remoteStreamEnded) it.attach(fullRenderer)
-//        }
-        // 向服务端发送启动命令
-        //P2PHelper.getClient()?.send(peerId, "start",null);
         P2PHelper.getClient()?.send(peerId, "start", object : ActionCallback<Void> {
             override fun onSuccess(result: Void?) {
                 LogEx.e("start message send success ${Thread.currentThread().name}")
@@ -430,14 +365,12 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
 
                 runOnUiThread {
                     // 实例一个消息机制用于定时刷新信令服状态
-                   // val handler = StatusHandler()
-                   // handler.obtainMessage(AppConst.MSG_UPDATE_STATUS).sendToTarget()
 
                     lifecycle.addObserver(object : LifecycleObserver {
                         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
                         fun onDestroy() {
                             LogEx.e(" webrtc onDestroy called");
-                           // handler.removeCallbacksAndMessages(null)
+                            // handler.removeCallbacksAndMessages(null)
                         }
                     })
                 }
@@ -523,30 +456,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private inner class StatusHandler : Handler() {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
-           //getStatus(P2PHelper.peerId)
-            //val show = FastSharedPreferences.get("show_status").getBoolean("show", true)
-           // if (show) {
-           //     getStatus(P2PHelper.peerId)
-           // }
-            // 发送心跳包
-           // val gameId = intent.getIntExtra("gameId", 0)
-           // val gameName = intent.getStringExtra("gameName") ?: ""
-          //  requestOnline(gameId, gameName)
-
-//            // 网络延时
-//            launch(Dispatchers.IO) {
-//                val ip = P2PHelper.serverIP
-//                    .substringAfter("http://")
-//                    .substringBefore(":8095")
-//                val ping = PingUtils.getPing(ip)
-//                withContext(Dispatchers.Main) {
-//                    tvNetDelay.text = "${PingUtils.parseAvgDelay(ping)}ms"
-//                }
-//            }
-            // 网速
-           // tvNetSpeed.text = NetSpeedUtils.showNetSpeed()
-
-           // sendEmptyMessageDelayed(AppConst.MSG_UPDATE_STATUS, DELAY_GET_STATUS)
         }
     }
 
@@ -555,7 +464,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
      */
     private fun fitScreenSize() {
         // 获取渲染器的宽和高，并根据服务器屏幕宽和高的比例计算出手机端屏幕的内边距
-        viewWidth  = fullRenderer.width
+        viewWidth = fullRenderer.width
         viewHeight = fullRenderer.height
         val paddingWidth =
             if (viewWidth > SERVER_SCREEN_WIDTH)
@@ -567,9 +476,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                 viewHeight - SERVER_SCREEN_HEIGHT
             else 0
         LogEx.i(" $paddingWidth $viewWidth $viewHeight ${(SERVER_SCREEN_WIDTH * viewHeight / SERVER_SCREEN_HEIGHT)}")
-        // 调整布局的边距，使渲染器居中
-        //layoutRenderBox.setPadding(paddingWidth / 2, 0, paddingWidth / 2, paddingHeight)
-        //viewWidth -= paddingWidth
         // 发送调整后的渲染器尺寸
         sendSizeChange()
         controller?.setViewDimenson(
@@ -586,7 +492,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
      */
     private fun sendSizeChange() {
         val mapScreenSize = mapOf(
-            "width"  to screenWidth,
+            "width" to screenWidth,
             "height" to screenHeight
         )
         val mapRenderSize = mapOf(
@@ -609,7 +515,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         )
         val jsonString = JSONObject(mapKey).toString()
         LogEx.e(jsonString)
-      //  longToast("Ben start to play a game server:"+ viewWidth + " client:"+ viewHeight);
+        //  longToast("Ben start to play a game server:"+ viewWidth + " client:"+ viewHeight);
         P2PHelper.getClient()
             ?.send(P2PHelper.peerId, jsonString, object : P2PHelper.FailureCallBack<Void>() {
                 override fun onFailure(err: OwtError?) {
@@ -686,12 +592,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     }
 
     override fun switchMapperPad() {
-       /* controller?.let { layoutController.removeView(it.view) }
-        controller = selectGamePad()*/
-        //P2PHelper.getClient()?.stop("ga")
         onCallRequest("ga");
-       // P2PHelper.getClient()?.stop("ga2")
-//        LogEx.e("trying to disconnect to webrtc server");
     }
 
     override fun switchGamePad() {
@@ -758,16 +659,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
      * 在线心跳包
      */
     private fun requestOnline(gameId: Int, gameName: String) {
-       /* OkGo.get<String>(IPUtils.load() + AppConst.ONLINE)
-            .params("iid", gameId)
-            .params("gameName", gameName)
-            .params("gamedir", MyApp.pId)
-            .params("gameIp", P2PHelper.serverIP.substringAfter("http://").substringBefore(":8095"))
-            .execute(object : StringCallback() {
-                override fun onSuccess(response: Response<String>) {
-                }
-            })*/
     }
-
 }
 

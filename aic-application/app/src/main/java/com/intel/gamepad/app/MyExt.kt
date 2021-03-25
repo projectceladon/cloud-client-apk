@@ -28,7 +28,7 @@ inline fun Context.loadImage(iv: ImageView, url: String, resHolder: Int = -1) {
 
 inline fun Fragment.loadImage(iv: ImageView, url: String, resHolder: Int = -1) {
     val urlImage =
-        if (url.contains("static/")) url.replace("static/",  IPUtils.loadIP())
+        if (url.contains("static/")) url.replace("static/", IPUtils.loadIP())
         else url
     GlideApp.with(this)
         .load(urlImage)
@@ -38,7 +38,7 @@ inline fun Fragment.loadImage(iv: ImageView, url: String, resHolder: Int = -1) {
 
 inline fun Activity.loadImage(iv: ImageView, url: String, resHolder: Int = -1) {
     val urlImage =
-        if (url.contains("static/")) url.replace("static/",  IPUtils.loadIP())
+        if (url.contains("static/")) url.replace("static/", IPUtils.loadIP())
         else url
     GlideApp.with(this)
         .load(urlImage)
@@ -48,7 +48,7 @@ inline fun Activity.loadImage(iv: ImageView, url: String, resHolder: Int = -1) {
 
 inline fun Context.loadImageBlur(iv: ImageView, url: String, resHolder: Int = -1) {
     val urlImage =
-        if (url.contains("static/")) url.replace("static/",  IPUtils.loadIP())
+        if (url.contains("static/")) url.replace("static/", IPUtils.loadIP())
         else url
     GlideApp.with(this)
         .load(urlImage)

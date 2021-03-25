@@ -173,6 +173,4 @@ class BluetoothFragment : Fragment() {
         }
 
     }
-
-
 }

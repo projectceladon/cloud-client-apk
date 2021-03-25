@@ -106,12 +106,6 @@ class MainActivity : BaseActvitiy() {
     }
 
     private fun requestShowNodeInfo() {
-      /*  OkGo.get<String>(IPUtils.load() + "user/shownodeinfor")
-            .execute(object : StringCallback() {
-                override fun onSuccess(response: Response<String>) {
-                    LogEx.i(response.body())
-                }
-            })*/
-    }
 
+    }
 }

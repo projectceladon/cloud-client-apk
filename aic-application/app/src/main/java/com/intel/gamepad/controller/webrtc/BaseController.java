@@ -705,8 +705,7 @@ public abstract class BaseController implements OnTouchListener {
 
         String jsonString = new Gson().toJson(meb, MotionEventBean.class);
         //LogEx.d(jsonString);
-        if(action == MotionEvent.ACTION_UP)
-        {
+        if (action == MotionEvent.ACTION_UP) {
             nCountInput++;
             Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
             Trace.endSection();

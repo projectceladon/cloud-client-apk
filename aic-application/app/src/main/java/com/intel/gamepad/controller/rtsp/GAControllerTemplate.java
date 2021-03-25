@@ -21,25 +21,26 @@ package com.intel.gamepad.controller.rtsp;
 import android.content.Context;
 import android.view.MotionEvent;
 import android.view.View;
+
 import com.intel.gamepad.controller.rtsp.GAController;
 
 public class GAControllerTemplate extends GAController {
-	
-	GAControllerTemplate(Context context) {
-		super(context);
-	}
 
-	@Override
-	public void onDimensionChange(int width, int height) {
-		// must be called first
-		super.onDimensionChange(width,  height);
-		// TODO: initialized and add your controls here
-	}
-	
-	@Override
-	public boolean onTouch(View v, MotionEvent evt) {
-		// TODO: add your handler to touch event here
-		// must be called last
-		return super.onTouch(v, evt);
-	}
+    GAControllerTemplate(Context context) {
+        super(context);
+    }
+
+    @Override
+    public void onDimensionChange(int width, int height) {
+        // must be called first
+        super.onDimensionChange(width, height);
+        // TODO: initialized and add your controls here
+    }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent evt) {
+        // TODO: add your handler to touch event here
+        // must be called last
+        return super.onTouch(v, evt);
+    }
 }

@@ -23,9 +23,9 @@ public class PictureUtil {
 
         String fileName = null;
         //系统相册目录
-        String galleryPath= Environment.getExternalStorageDirectory()
+        String galleryPath = Environment.getExternalStorageDirectory()
                 + File.separator + Environment.DIRECTORY_DCIM
-                + File.separator+"Camera"+ File.separator;
+                + File.separator + "Camera" + File.separator;
 
         // 声明文件对象
         File file = null;
@@ -34,7 +34,7 @@ public class PictureUtil {
 
         try {
             // 如果有目标文件，直接获得文件对象，否则创建一个以filename为名称的文件
-            file = new File(galleryPath, picName+ ".jpg");
+            file = new File(galleryPath, picName + ".jpg");
 
             // 获得文件相对路径
             fileName = file.toString();
@@ -46,7 +46,7 @@ public class PictureUtil {
 
         } catch (Exception e) {
             e.getStackTrace();
-        }finally {
+        } finally {
             try {
                 if (outStream != null) {
                     outStream.close();
@@ -81,18 +81,18 @@ public class PictureUtil {
 
     public static Bitmap getBitmapFromURL(String src) {
         try {
-            Log.e("src",src);
+            Log.e("src", src);
             URL url = new URL(src);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setDoInput(true);
             connection.connect();
             InputStream input = connection.getInputStream();
             Bitmap myBitmap = BitmapFactory.decodeStream(input);
-            Log.e("Bitmap","returned");
+            Log.e("Bitmap", "returned");
             return myBitmap;
         } catch (IOException e) {
             e.printStackTrace();
-            Log.e("Exception",e.getMessage());
+            Log.e("Exception", e.getMessage());
             return null;
         }
     }

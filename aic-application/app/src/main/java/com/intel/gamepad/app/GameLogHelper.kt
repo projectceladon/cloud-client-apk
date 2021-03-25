@@ -36,7 +36,7 @@ object GameLogHelper {
 
     fun loadSingleTime(gameId: Int): String {
         val millis = FastSharedPreferences.get(FILE).getLong("singleTime_$gameId", 0)
-        return DateTimeUtils.millis2DayHourMinuteSec(millis,false)
+        return DateTimeUtils.millis2DayHourMinuteSec(millis, false)
     }
 
     fun saveTotalTime(gameId: Int, millis: Long) {
@@ -50,7 +50,7 @@ object GameLogHelper {
 
     fun getTotalTimeString(gameId: Int): String {
         val time = loadTotalTime(gameId)
-        return DateTimeUtils.millis2DayHourMinuteSec(time,false)
+        return DateTimeUtils.millis2DayHourMinuteSec(time, false)
     }
 
 }

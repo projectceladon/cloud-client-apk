@@ -32,7 +32,7 @@ class GameFragment : Fragment() {
         this.put("安卓", "android")
     }
 
-    private val listTab = listOf("射击", "即时战略", "赛车", "动作", "体育","安卓")
+    private val listTab = listOf("射击", "即时战略", "赛车", "动作", "体育", "安卓")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

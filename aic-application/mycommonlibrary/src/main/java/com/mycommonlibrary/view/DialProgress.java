@@ -110,7 +110,7 @@ public class DialProgress extends View {
 
     private void init(Context context, AttributeSet attrs) {
         mContext = context;
-        mDefaultSize = DensityUtils.dp2px( DialProgress.DEFAULT_SIZE);
+        mDefaultSize = DensityUtils.dp2px(DialProgress.DEFAULT_SIZE);
         mRectF = new RectF();
         mCenterPoint = new Point();
         initConfig(context, attrs);
@@ -290,6 +290,7 @@ public class DialProgress extends View {
 
     /**
      * 绘制刻度
+     *
      * @param canvas
      */
     private void drawDial(Canvas canvas) {

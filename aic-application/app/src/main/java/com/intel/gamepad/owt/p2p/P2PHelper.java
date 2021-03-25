@@ -11,6 +11,7 @@ import com.intel.gamepad.app.MyApp;
 
 import org.webrtc.EglBase;
 import org.webrtc.PeerConnection;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,10 +29,10 @@ import static owt.base.MediaCodecs.VideoCodec.VP8;
 import static owt.base.MediaCodecs.VideoCodec.VP9;
 
 public class P2PHelper {
-    public static String serverIP    = "http://153.35.78.77:8095/";
-    public static String peerId      = "server0";
-    public static String clientId    = "client0";
-    public static String stunAddr    = "stun:153.35.78.77:3478";
+    public static String serverIP = "http://153.35.78.77:8095/";
+    public static String peerId = "server0";
+    public static String clientId = "client0";
+    public static String stunAddr = "stun:153.35.78.77:3478";
     public static String turnAddrTCP = "turn:153.35.78.77:3478?transport=tcp";
     public static String turnAddrUDP = "turn:153.35.78.77:3478?transport=udp";
     public static String strIP = "153.35.78.77";
@@ -70,7 +71,7 @@ public class P2PHelper {
         VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
         VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);
         updateP2PServerIP();
-        List<PeerConnection.IceServer> iceServers =  new ArrayList();
+        List<PeerConnection.IceServer> iceServers = new ArrayList();
         List<String> urls = new ArrayList<>();
         urls.add(stunAddr);
         urls.add(turnAddrTCP);
@@ -79,10 +80,10 @@ public class P2PHelper {
         iceServers.add(iceServer);
         PeerConnection.RTCConfiguration rtcConf = new PeerConnection.RTCConfiguration(iceServers);
         p2pConfig = P2PClientConfiguration.builder()
-          //    .addVideoParameters(vp9)
+                //    .addVideoParameters(vp9)
                 .addVideoParameters(h264)
-          //      .addVideoParameters(vp8)
-          //      .addVideoParameters(h265)
+                //      .addVideoParameters(vp8)
+                //      .addVideoParameters(h265)
                 .setRTCConfiguration(rtcConf)
                 .build();
     }
@@ -100,25 +101,29 @@ public class P2PHelper {
             }
         });
     }
+
     public static P2PClient getClient() {
         return getInst().client;
     }
-    public static void closeP2PClient(){
+
+    public static void closeP2PClient() {
         getInst().client.stop(peerId);
-        getInst().client .disconnect();
+        getInst().client.disconnect();
     }
+
     public static void updateP2PServerIP() {
         Pattern pIp = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)\\:(\\d+)");
-        Matcher mIp =  pIp.matcher(serverIP);
-        if(mIp.find()) {
+        Matcher mIp = pIp.matcher(serverIP);
+        if (mIp.find()) {
             strIP = mIp.group(1);
             String strEP = mIp.group(2);
             stunAddr = "stun:" + strIP + ":3478";
-            turnAddrTCP = "turn:"+ strIP + ":3478?transport=tcp";
+            turnAddrTCP = "turn:" + strIP + ":3478?transport=tcp";
             turnAddrUDP = "turn:" + strIP + ":3478?transport=udp";
         }
 
     }
+
     public EglBase getRootEglBase() {
         return rootEglBase;
     }

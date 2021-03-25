@@ -1,13 +1,17 @@
 package com.mycommonlibrary.frame.http;
 
 import android.annotation.SuppressLint;
+
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
+
 import android.util.ArrayMap;
+
 import com.google.gson.*;
 import com.trello.lifecycle2.android.lifecycle.AndroidLifecycle;
 import com.trello.rxlifecycle2.LifecycleProvider;
 import com.trello.rxlifecycle2.LifecycleTransformer;
+
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.*;
 import okio.Buffer;

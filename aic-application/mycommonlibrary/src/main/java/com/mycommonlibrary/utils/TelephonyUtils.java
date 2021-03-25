@@ -4,8 +4,10 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.PermissionChecker;
+
 import android.telephony.TelephonyManager;
 
 /**
@@ -71,7 +73,6 @@ public class TelephonyUtils {
 
     /**
      * 获取本手机号码
-     *
      */
     public static String getPhoneNumber(Context context) {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED
@@ -84,7 +85,6 @@ public class TelephonyUtils {
 
     /**
      * 获取IMEI SV
-     *
      */
     public static String getIMEISV(Context context) {
         int chkResult = PermissionChecker.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE);
