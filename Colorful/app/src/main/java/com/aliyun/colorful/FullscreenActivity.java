@@ -38,6 +38,8 @@ public class FullscreenActivity extends AppCompatActivity {
     private static final int UI_ANIMATION_DELAY = 300;
     private final Handler mHideHandler = new Handler();
     private View mContentView;
+    private int mCounter = 0;
+    private int mBackGoundColor = 0;
     private final Runnable mHidePart2Runnable = new Runnable() {
         @SuppressLint("InlinedApi")
         @Override
@@ -99,21 +101,25 @@ public class FullscreenActivity extends AppCompatActivity {
         mVisible = true;
         mControlsView = findViewById(R.id.fullscreen_content_controls);
         mContentView = findViewById(R.id.fullscreen_content);
+        getWindow().getDecorView().setBackgroundColor(Color.BLUE);
 
 
         // Set up the user interaction to manually show or hide the system UI.
         mContentView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                Log.d(TAG, "touch: " + motionEvent.getAction());
-                if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
-                    mTouchCounter++;
-                    int r = (int)(255.0 * Math.random());
-                    int g = (int)(255.0 * Math.random());
-                    int b = (int)(255.0 * Math.random());
-                    view.setBackgroundColor(Color.rgb(r, g, b));
-                    ((TextView)mContentView).setText("Touch counter: " + mTouchCounter);
+                mCounter++;
+                if (mBackGoundColor == 0) {
+                    mBackGoundColor = 1;
+                    view.setBackgroundColor(Color.RED);
+                } else if (mBackGoundColor == 1) {
+                    mBackGoundColor = 2;
+                    view.setBackgroundColor(Color.GREEN);
+                } else if (mBackGoundColor == 2) {
+                    mBackGoundColor = 0;
+                    view.setBackgroundColor(Color.BLUE);
                 }
+                ((TextView) mContentView).setText("Touch counter: " + mCounter);
                 return true;
             }
         });
