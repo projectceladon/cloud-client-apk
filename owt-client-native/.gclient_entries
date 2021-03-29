@@ -247,7 +247,7 @@ entries = {
   'src/third_party/turbine:chromium/third_party/turbine': 'https://chrome-infra-packages.appspot.com/chromium/third_party/turbine@3UJ600difG3ThRhtYrN9AfZ5kh8wCYtBiii1-NMlCrMC',
   'src/third_party/ub-uiautomator/lib': 'https://chromium.googlesource.com/chromium/third_party/ub-uiautomator.git@00270549ce3161ae72ceb24712618ea28b4f9434',
   'src/third_party/usrsctp/usrsctplib': 'https://chromium.googlesource.com/external/github.com/sctplab/usrsctp@bee946a606752a443bd70bca1cb296527fed706d',
-  'src/third_party/webrtc': 'https://github.com/open-webrtc-toolkit/owt-deps-webrtc@decd29d05fff28a9a9ca4a305e417f39964aac05',
+  'src/third_party/webrtc': 'https://github.com/open-webrtc-toolkit/owt-deps-webrtc@f69fc88f4a5680a57f260f1b0902c12db212950e',
   'src/third_party/webrtc/examples/androidtests/third_party/gradle': 'https://chromium.googlesource.com/external/github.com/gradle/gradle.git@89af43c4d0506f69980f00dde78c97b2f81437f8',
   'src/third_party/xstream:chromium/third_party/xstream': 'https://chrome-infra-packages.appspot.com/chromium/third_party/xstream@4278b1b78b86ab7a1a29e64d5aec9a47a9aab0fe',
   'src/third_party/yasm/source/patched-yasm': 'https://chromium.googlesource.com/chromium/deps/yasm/patched-yasm.git@720b70524a4424b15fc57e82263568c8ba0496ad',

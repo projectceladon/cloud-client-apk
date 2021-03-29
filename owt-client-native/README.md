@@ -21,6 +21,7 @@ Download owt-client-native source code:
 4. Apply patch one by one:
     $ git am -3 ../patches/0001-Add-talk-owt-patches-0015-Adopt-SingletonSurfaceView.patch
     $ git am -3 ../patches/0002-Add-talk-owt-patches-0016-Use-AToU-to-print-trace.pa.patch
+    $ git am -3 ../patches/0003-Add-talk-owt-patches-0017-Support-OMX.Intel.hw_ve.h2.patch
 5. Patch the third_party project: $ gclient sync
 
 Compile:
