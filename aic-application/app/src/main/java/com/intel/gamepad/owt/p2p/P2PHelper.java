@@ -30,8 +30,8 @@ import static owt.base.MediaCodecs.VideoCodec.VP9;
 
 public class P2PHelper {
     public static String serverIP = "http://153.35.78.77:8095/";
-    public static String peerId = "server0";
-    public static String clientId = "client0";
+    public static String peerId = "s0";
+    public static String clientId = "c0";
     public static String stunAddr = "stun:153.35.78.77:3478";
     public static String turnAddrTCP = "turn:153.35.78.77:3478?transport=tcp";
     public static String turnAddrUDP = "turn:153.35.78.77:3478?transport=udp";
