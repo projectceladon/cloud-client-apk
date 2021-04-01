@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Trace;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -40,6 +41,7 @@ public class FullscreenActivity extends AppCompatActivity {
     private View mContentView;
     private int mCounter = 0;
     private int mBackGoundColor = 0;
+    private int nCountInput;
     private final Runnable mHidePart2Runnable = new Runnable() {
         @SuppressLint("InlinedApi")
         @Override
@@ -108,6 +110,11 @@ public class FullscreenActivity extends AppCompatActivity {
         mContentView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
+                if(motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    nCountInput++;
+                    Trace.beginSection("atou A1 ID: " + nCountInput);
+                    Trace.endSection();
+                }
                 mCounter++;
                 if (mBackGoundColor == 0) {
                     mBackGoundColor = 1;
