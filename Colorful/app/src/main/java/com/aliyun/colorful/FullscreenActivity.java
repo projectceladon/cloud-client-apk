@@ -112,7 +112,7 @@ public class FullscreenActivity extends AppCompatActivity {
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if(motionEvent.getAction() == MotionEvent.ACTION_UP) {
                     nCountInput++;
-                    Trace.beginSection("atou A1 ID: " + nCountInput + " size: " + 0);
+                    Trace.beginSection("atou A1 ID: " + nCountInput);
                     Trace.endSection();
                 }
                 mCounter++;
