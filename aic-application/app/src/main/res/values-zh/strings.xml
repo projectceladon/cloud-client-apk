@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Intel Cloud Game Plat Demo</string>
+    <string name="app_name">AIC</string>
     <string name="exit_login">退出登录</string>
     <string name="setting">设置</string>
     <string name="test_speed_choose_region">测速选区</string>
@@ -47,4 +47,5 @@
     <string name="show_log">显示调试窗口</string>
     <string name="net_delays">网络延时：</string>
     <string name="current_net_speed">当前网速：</string>
+    <string name="app_name2">AIC</string>
 </resources>
