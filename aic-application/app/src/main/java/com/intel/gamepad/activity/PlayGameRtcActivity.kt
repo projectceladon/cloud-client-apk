@@ -1,8 +1,10 @@
 package com.intel.gamepad.activity
 
 import android.app.Activity
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
+import android.hardware.input.InputManager
 import android.os.*
 import android.util.DisplayMetrics
 import android.util.Log
@@ -15,12 +17,17 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
 import com.intel.gamepad.R
 import com.intel.gamepad.app.AppConst
+import com.intel.gamepad.bean.MotionEventBean
+import com.intel.gamepad.bean.MotionEventBean.DataBean
+import com.intel.gamepad.bean.MotionEventBean.DataBean.ParametersBean
 import com.intel.gamepad.bean.MouseBean
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener
 import com.intel.gamepad.controller.webrtc.*
 import com.intel.gamepad.owt.p2p.P2PHelper
+import com.intel.gamepad.owt.p2p.P2PHelper.FailureCallBack
 import com.intel.gamepad.utils.AudioHelper
 import com.jeremy.fastsharedpreferences.FastSharedPreferences
 import com.mcxtzhang.commonadapter.rv.CommonAdapter
@@ -54,6 +61,7 @@ private const val SERVER_SCREEN_HEIGHT = 1080
 private const val DELAY_GET_STATUS = 3000L
 
 class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
+    InputManager.InputDeviceListener,
     CoroutineScope by MainScope() {
     companion object {
         const val RESULT_MSG = "resultMsg"
@@ -80,6 +88,19 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var handler: Handler? = null
     private var firstTimestamp = 0L
     private var isFirst = false
+    private lateinit var mIm: InputManager
+
+    val JOY_KEY_CODE_MAP_X = 307
+    val JOY_KEY_CODE_MAP_Y = 308
+    val JOY_KEY_CODE_MAP_A = 304
+    val JOY_KEY_CODE_MAP_B = 305
+    val JOY_KEY_CODE_MAP_L_ONE = 310
+    val JOY_KEY_CODE_MAP_L_TWO = 312
+    val JOY_KEY_CODE_MAP_R_ONE = 311
+    val JOY_KEY_CODE_MAP_R_TWO = 313
+    val JOY_KEY_CODE_MAP_SELECT = 314
+    val JOY_KEY_CODE_MAP_START = 315
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         initUIFeature()// 设置窗口特性
@@ -98,6 +119,8 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         chkStatusTitle.setOnClickListener {
             tvMyStatus.visibility = if (chkStatusTitle.isChecked) View.VISIBLE else View.GONE
         }
+        mIm = getSystemService(Context.INPUT_SERVICE) as InputManager
+        mIm.registerInputDeviceListener(this, null)
     }
 
     override fun onResume() {
@@ -335,6 +358,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                     runOnUiThread {
                         onCallRequest(P2PHelper.peerId);
                     }
+
                 }
 
                 override fun onFailure(error: OwtError) {
@@ -362,6 +386,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
             override fun onSuccess(result: Void?) {
                 LogEx.e("start message send success ${Thread.currentThread().name}")
                 sendSizeChange() // 发送窗口尺寸消息给信令服
+                initJoyStickDevices()
 
                 runOnUiThread {
                     // 实例一个消息机制用于定时刷新信令服状态
@@ -659,6 +684,92 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
      * 在线心跳包
      */
     private fun requestOnline(gameId: Int, gameName: String) {
+    }
+
+    private fun initJoyStickDevices() {
+        val devices = InputDevice.getDeviceIds()
+        for (i in devices.indices) {
+            val deviceId = devices[i]
+            val device = InputDevice.getDevice(deviceId)
+            if (device != null) {
+                if (device.sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK) {
+                    val joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId)
+                    sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId)
+                }
+            }
+        }
+    }
+
+    override fun onInputDeviceAdded(deviceId: Int) {
+        val device = InputDevice.getDevice(deviceId)
+        if ((device.productId == 0x09cc) && device.vendorId == 0x054c) {
+            val joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId)
+            sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId)
+        } else {
+            Log.d(
+                RTCControllerAndroid.TAG,
+                "Bluetooth Device source:  " + InputDevice.getDevice(deviceId)
+                    .sources
+            )
+        }
+    }
+
+    override fun onInputDeviceRemoved(deviceId: Int) {
+        val joyId = RTCControllerAndroid.updateDeviceSlot(deviceId)
+        if (joyId != -1) {
+            sendJoyStickEvent(BaseController.EV_NON, 0, 0, false, joyId)
+        } else {
+            Log.d(RTCControllerAndroid.TAG, "This is not joystick: $deviceId")
+        }
+
+        //Log.d(TAG, "Bluetooth Device name: " + InputDevice.getDevice(deviceId).getName());
+    }
+
+    override fun onInputDeviceChanged(deviceId: Int) {
+        Log.d(
+            RTCControllerAndroid.TAG,
+            "onInputDeviceChanged" + InputDevice.getDevice(deviceId).name
+        )
+    }
+
+    fun sendJoyStickEvent(
+        type: Int,
+        keyCode: Int,
+        keyValue: Int,
+        enableJoy: Boolean,
+        joyId: Int
+    ) {
+        val meb = MotionEventBean()
+        meb.type = "control"
+        meb.data = DataBean()
+        meb.data.event = "isGamepad"
+        meb.data.parameters = ParametersBean()
+        meb.data.parameters.setgpID(joyId)
+        if (BaseController.EV_NON == type) {
+            if (enableJoy) {
+                meb.data.parameters.setData("gpEnable")
+            } else {
+                meb.data.parameters.setData("gpDisable")
+            }
+        } else {
+            var data: String? = null
+            if (BaseController.EV_ABS == type) {
+                data = "a $keyCode $keyValue\n"
+            } else if (BaseController.EV_KEY == type) {
+                data = "k $keyCode $keyValue\n"
+            }
+            if (data != null) {
+                meb.data.parameters.setData(data)
+            }
+        }
+        val jsonString = Gson().toJson(meb, MotionEventBean::class.java)
+        //LogEx.d(jsonString);
+        P2PHelper.getClient()
+            .send(P2PHelper.peerId, jsonString, object : FailureCallBack<Void?>() {
+                override fun onFailure(owtError: OwtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString)
+                }
+            })
     }
 }
 
