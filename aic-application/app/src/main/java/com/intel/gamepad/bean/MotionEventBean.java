@@ -88,6 +88,8 @@ public class MotionEventBean {
             private float touchx;
             private float touchy;
             private int keycode;
+            private int gpID;
+            private String data;
 
             public static ParametersBean objectFromData(String str) {
 
@@ -132,6 +134,18 @@ public class MotionEventBean {
 
             public void setKeycode(int keycode) {
                 this.keycode = keycode;
+            }
+
+            public int getgpID() {
+                return keycode;
+            }
+
+            public void setgpID(int jsID) {
+                this.gpID = jsID;
+            }
+
+            public void setData(String msg) {
+                this.data = msg;
             }
         }
     }

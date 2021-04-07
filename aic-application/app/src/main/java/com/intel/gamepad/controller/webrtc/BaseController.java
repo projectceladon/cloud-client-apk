@@ -7,6 +7,7 @@ import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Trace;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -51,6 +52,33 @@ public abstract class BaseController implements OnTouchListener {
     public static long lastTouchMillis = 0L;
     private int lastPartition;
     private int nCountInput;
+
+    public final static int EV_NON = 0x00;
+    public final static int EV_KEY = 0x01;
+    public final static int EV_ABS = 0x03;
+    public final static int AXIS_LEFT_X = 0;
+    public final static int AXIS_LEFT_Y = 1;
+    public final static int AXIS_HAT_X = 16;
+    public final static int AXIS_HAT_Y = 17;
+    public final static int AXIS_RIGHT_X = 2;
+    public final static int AXIS_RIGHT_Y = 5;
+    public final static int JOY_KEY_CODE_MAP_DPAD_NORTH_SOUTH = 17;
+    public final static int JOY_KEY_CODE_MAP_DPAD_EAST_WEST = 16;
+    public final static int JOY_KEY_CODE_MAP_DPAD_NORTH_DOWN = -1;
+    public final static int JOY_KEY_CODE_MAP_DPAD_SOUTH_DOWN = 1;
+    public final static int JOY_KEY_CODE_MAP_DPAD_EAST_DOWN = -1;
+    public final static int JOY_KEY_CODE_MAP_DPAD_WEST_DOWN = 1;
+    public final static int JOY_KEY_CODE_MAP_DPAD_UP = 0;
+    public static final int JOY_KEY_CODE_MAP_X = 307;
+    public static final int JOY_KEY_CODE_MAP_Y = 308;
+    public static final int JOY_KEY_CODE_MAP_A = 304;
+    public static final int JOY_KEY_CODE_MAP_B = 305;
+    public static final int JOY_KEY_CODE_MAP_L_ONE = 310;
+    public static final int JOY_KEY_CODE_MAP_L_TWO = 312;
+    public static final int JOY_KEY_CODE_MAP_R_ONE = 311;
+    public static final int JOY_KEY_CODE_MAP_R_TWO = 313;
+    public static final int JOY_KEY_CODE_MAP_SELECT = 314;
+    public static final int JOY_KEY_CODE_MAP_START = 315;
 
     public BaseController(PlayGameRtcActivity act) {
         this.context = act.getApplicationContext();
@@ -859,4 +887,40 @@ public abstract class BaseController implements OnTouchListener {
     public static float filterMinValue(float value) {
         return (value > 0.1 || value < -0.1) ? value : 0.0f;
     }
+
+    public void sendJoyStickEvent(int type, int keyCode, int keyValue, Boolean enableJoy, int joyId) {
+        MotionEventBean meb = new MotionEventBean();
+        meb.setType("control");
+        meb.setData(new MotionEventBean.DataBean());
+        meb.getData().setEvent("isGamepad");
+        meb.getData().setParameters(new MotionEventBean.DataBean.ParametersBean());
+        meb.getData().getParameters().setgpID(joyId);
+        if(EV_NON == type) {
+            if(enableJoy) {
+                meb.getData().getParameters().setData("gpEnable");
+            } else {
+                meb.getData().getParameters().setData("gpDisable");
+            }
+        } else {
+            String data = null;
+            if(EV_ABS == type) {
+                data = "a " + keyCode + " " + keyValue + "\n";
+            } else if(EV_KEY == type) {
+                data = "k " + keyCode + " " + keyValue + "\n";
+            }
+            if(data != null) {
+                meb.getData().getParameters().setData(data);
+            }
+        }
+
+        String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+        //Log.d("test", "jsonString: " + jsonString);
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+            }
+        });
+    }
+
 }
