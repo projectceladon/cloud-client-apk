@@ -56,6 +56,7 @@ public abstract class BaseController implements OnTouchListener {
     public final static int EV_NON = 0x00;
     public final static int EV_KEY = 0x01;
     public final static int EV_ABS = 0x03;
+    public final static int EV_COMMIT = 0x03;
     public final static int AXIS_LEFT_X = 0;
     public final static int AXIS_LEFT_Y = 1;
     public final static int AXIS_HAT_X = 16;
@@ -913,6 +914,37 @@ public abstract class BaseController implements OnTouchListener {
             }
         }
 
+        String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+        //Log.d("test", "jsonString: " + jsonString);
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+            }
+        });
+
+        if(EV_NON != type) {
+            sendJoyStickEventCommit(EV_COMMIT, 0, 0, true, joyId);
+        }
+    }
+
+    public void sendJoyStickEventCommit(int type, int keyCode, int keyValue, Boolean enableJoy, int joyId) {
+        MotionEventBean meb = new MotionEventBean();
+        meb.setType("control");
+        meb.setData(new MotionEventBean.DataBean());
+        meb.getData().setEvent("isGamepad");
+        meb.getData().setParameters(new MotionEventBean.DataBean.ParametersBean());
+        meb.getData().getParameters().setgpID(joyId);
+        if (EV_NON == type) {
+            if (enableJoy) {
+                meb.getData().getParameters().setData("gpEnable");
+            } else {
+                meb.getData().getParameters().setData("gpDisable");
+            }
+        } else {
+            String data = "c\n";
+            meb.getData().getParameters().setData(data);
+        }
         String jsonString = new Gson().toJson(meb, MotionEventBean.class);
         //Log.d("test", "jsonString: " + jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {

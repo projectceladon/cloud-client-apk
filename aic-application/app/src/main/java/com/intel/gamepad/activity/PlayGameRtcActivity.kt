@@ -702,7 +702,9 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
 
     override fun onInputDeviceAdded(deviceId: Int) {
         val device = InputDevice.getDevice(deviceId)
-        if ((device.productId == 0x09cc) && device.vendorId == 0x054c) {
+        val source =  device.sources
+        if (source and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
+            || source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) {
             val joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId)
             sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId)
         } else {
