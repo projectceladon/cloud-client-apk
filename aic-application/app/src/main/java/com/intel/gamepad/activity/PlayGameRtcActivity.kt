@@ -1,10 +1,13 @@
 package com.intel.gamepad.activity
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.hardware.input.InputManager
+import android.location.*
 import android.os.*
 import android.util.DisplayMetrics
 import android.util.Log
@@ -12,6 +15,7 @@ import android.view.*
 import android.widget.PopupWindow
 import androidx.appcompat.app.AppCompatActivity
 import androidx.collection.SimpleArrayMap
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
@@ -29,6 +33,7 @@ import com.intel.gamepad.controller.webrtc.*
 import com.intel.gamepad.owt.p2p.P2PHelper
 import com.intel.gamepad.owt.p2p.P2PHelper.FailureCallBack
 import com.intel.gamepad.utils.AudioHelper
+import com.intel.gamepad.utils.LocationUtils
 import com.jeremy.fastsharedpreferences.FastSharedPreferences
 import com.mcxtzhang.commonadapter.rv.CommonAdapter
 import com.mcxtzhang.commonadapter.rv.ViewHolder
@@ -75,6 +80,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         }
     }
 
+    private val TAG: String = "PlayGameRtcActivity"
     private var peerId: String = ""
     private var inCalling = false
     private var remoteStream: RemoteStream? = null
@@ -90,17 +96,20 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var isFirst = false
     private lateinit var mIm: InputManager
 
-    val JOY_KEY_CODE_MAP_X = 307
-    val JOY_KEY_CODE_MAP_Y = 308
-    val JOY_KEY_CODE_MAP_A = 304
-    val JOY_KEY_CODE_MAP_B = 305
-    val JOY_KEY_CODE_MAP_L_ONE = 310
-    val JOY_KEY_CODE_MAP_L_TWO = 312
-    val JOY_KEY_CODE_MAP_R_ONE = 311
-    val JOY_KEY_CODE_MAP_R_TWO = 313
-    val JOY_KEY_CODE_MAP_SELECT = 314
-    val JOY_KEY_CODE_MAP_START = 315
+    var isGPSEnabled = false
+    var isNetworkEnabled = false
+    var requesPermissionFromServer = false
+    var satelliteCountCurrent = 0
 
+    private var mLocationListenerNetwork: LocationListener? = null
+    private var mLocationListenerGPS: LocationListener? = null
+    private var mStatusCallback: GnssStatus.Callback? = null
+    private var mOnNmeaMessageListener: OnNmeaMessageListener? = null
+    private val REQUEST_PERMISSIONS_REQUEST_CODE = 34
+    private var lastNetworkLocationTime: Long = 0
+    private var lastGpsLocationTime: Long = 0
+    private val TIME_INTERVAL_TO_GET_LOCATION: Long = 1000
+    private val TIME_INTERVAL_BETWEEN_NETWORK_GPS = 2 * TIME_INTERVAL_TO_GET_LOCATION
 
     override fun onCreate(savedInstanceState: Bundle?) {
         initUIFeature()// 设置窗口特性
@@ -121,6 +130,215 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         }
         mIm = getSystemService(Context.INPUT_SERVICE) as InputManager
         mIm.registerInputDeviceListener(this, null)
+        checkLocationPermission()
+    }
+
+    private fun checkLocationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ActivityCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    REQUEST_PERMISSIONS_REQUEST_CODE
+                )
+            } else {
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String?>,
+        grantResults: IntArray
+    ) {
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.size <= 0) {
+                // If user interaction was interrupted, the permission request is cancelled and you
+                // receive empty arrays.
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    longToast("The location permission has been granted")
+                    if (requesPermissionFromServer) {
+                        getPositionNetwork()
+                        getPositionGPS()
+                        requesPermissionFromServer = false
+                    }
+                }
+            } else {
+                // Permission denied.
+                requesPermissionFromServer = false
+                longToast("The location permission has not been granted")
+            }
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    private fun getPositionNetwork() {
+        val mLocationManagerNetwork =
+            this.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        isNetworkEnabled =
+            mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        if (isNetworkEnabled) {
+            if (mLocationListenerNetwork == null) {
+                mLocationListenerNetwork = object : LocationListener {
+                    override fun onLocationChanged(location: Location) {
+                        lastNetworkLocationTime = System.currentTimeMillis()
+                        if (lastNetworkLocationTime - lastGpsLocationTime > TIME_INTERVAL_BETWEEN_NETWORK_GPS) {
+                            val strNMEA = LocationUtils.buildComposedNmeaMessage(
+                                location.latitude,
+                                location.longitude
+                            )
+                            sendGPSData(strNMEA)
+                        }
+                    }
+
+                    override fun onStatusChanged(
+                        provider: String,
+                        status: Int,
+                        extras: Bundle
+                    ) {
+                    }
+
+                    override fun onProviderEnabled(provider: String) {
+                        Log.d(TAG, "onProviderEnabled")
+                    }
+
+                    override fun onProviderDisabled(provider: String) {
+                        Log.d(TAG, "onProviderDisabled")
+                    }
+                }
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        REQUEST_PERMISSIONS_REQUEST_CODE
+                    )
+                    requesPermissionFromServer = true
+                } else {
+                    isNetworkEnabled =
+                        mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                    if (mLocationManagerNetwork != null && isNetworkEnabled) {
+                        mLocationManagerNetwork.requestLocationUpdates(
+                            LocationManager.NETWORK_PROVIDER,
+                            TIME_INTERVAL_TO_GET_LOCATION,
+                            0f,
+                            mLocationListenerNetwork
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun getPositionGPS() {
+        val mLocationManagerGPS =
+            this.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        isGPSEnabled = mLocationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        if (isGPSEnabled) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                mStatusCallback =
+                    object : GnssStatus.Callback() {
+                        override fun onStarted() {}
+                        override fun onStopped() {}
+                        override fun onFirstFix(ttffMillis: Int) {}
+                        override fun onSatelliteStatusChanged(status: GnssStatus) {
+                            satelliteCountCurrent = status.satelliteCount
+                        }
+                    }
+            }
+            mOnNmeaMessageListener =
+                OnNmeaMessageListener { message: String, timestamp: Long ->
+                    if (satelliteCountCurrent > 0
+                        && message != null
+                        && !message.contains("GPGGA,,,,,,")
+                    ) {
+                        if (message.startsWith("$" + "GPGGA")) {
+                            lastGpsLocationTime = System.currentTimeMillis()
+                        }
+                        sendGPSData(message)
+                    }
+
+                }
+            mLocationListenerGPS = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+
+                }
+
+                override fun onStatusChanged(
+                    provider: String,
+                    status: Int,
+                    extras: Bundle
+                ) {
+                }
+
+                override fun onProviderEnabled(provider: String) {
+                    Log.d(TAG, "onProviderEnabled")
+                }
+
+                override fun onProviderDisabled(provider: String) {
+                    Log.d(TAG, "onProviderDisabled")
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                        REQUEST_PERMISSIONS_REQUEST_CODE
+                    )
+                    requesPermissionFromServer = true
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        mLocationManagerGPS.addNmeaListener(mOnNmeaMessageListener, null);
+                        mLocationManagerGPS.registerGnssStatusCallback(mStatusCallback, null)
+                    }
+
+                    mLocationManagerGPS.requestLocationUpdates(
+                        LocationManager.GPS_PROVIDER,
+                        TIME_INTERVAL_TO_GET_LOCATION,
+                        0f,
+                        mLocationListenerGPS
+                    )
+                }
+            }
+        }
+    }
+
+    private fun disableLocation() {
+        val mLocationManager =
+            this.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        if (mLocationListenerGPS != null) {
+            mLocationManager.removeUpdates(mLocationListenerGPS)
+        }
+
+        if (mLocationListenerNetwork != null) {
+            mLocationManager.removeUpdates(mLocationListenerNetwork)
+        }
+        if (mStatusCallback != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                mLocationManager.unregisterGnssStatusCallback(mStatusCallback)
+            }
+        }
+        satelliteCountCurrent = 0
+        requesPermissionFromServer = false
     }
 
     override fun onResume() {
@@ -131,6 +349,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
 
     override fun onDestroy() {
         super.onDestroy()
+        disableLocation()
         LogEx.e("RTC Activity onDestroy called");
         handler?.removeMessages(AppConst.MSG_SHOW_CONTROLLER)
         cancel()
@@ -185,9 +404,27 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         LogEx.e("initP2PClient called");
         P2PHelper.init(this, object : P2PClient.P2PClientObserver {
             override fun onDataReceived(peerId: String, message: String) {
-                if (!JSONObject(message).isNull("type")) {
-                    val type = JSONObject(message).getString("type")
+                if (message.startsWith("{")) {
+                    if (!JSONObject(message).isNull("type")) {
+                        val type = JSONObject(message).getString("type")
+                    }
+                    if (!JSONObject(message).isNull("key")) {
+                        val key = JSONObject(message).getString("key")
+                        if (key.equals("gps-start")) {
+                            runOnUiThread {
+                                getPositionNetwork()
+                                getPositionGPS()
+                            }
+                        } else if (key.equals("gps-stop")) {
+                            runOnUiThread {
+                                disableLocation()
+                            }
+                        }
+                    }
+                } else {
+                    // Do nothing.
                 }
+
             }
 
             override fun onStreamAdded(remoteStream: RemoteStream) {
@@ -702,9 +939,10 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
 
     override fun onInputDeviceAdded(deviceId: Int) {
         val device = InputDevice.getDevice(deviceId)
-        val source =  device.sources
+        val source = device.sources
         if (source and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
-            || source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) {
+            || source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD
+        ) {
             val joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId)
             sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId)
         } else {
@@ -723,8 +961,6 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         } else {
             Log.d(RTCControllerAndroid.TAG, "This is not joystick: $deviceId")
         }
-
-        //Log.d(TAG, "Bluetooth Device name: " + InputDevice.getDevice(deviceId).getName());
     }
 
     override fun onInputDeviceChanged(deviceId: Int) {
@@ -764,6 +1000,28 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                 meb.data.parameters.setData(data)
             }
         }
+        val jsonString = Gson().toJson(meb, MotionEventBean::class.java)
+        //LogEx.d(jsonString);
+        P2PHelper.getClient()
+            .send(P2PHelper.peerId, jsonString, object : FailureCallBack<Void?>() {
+                override fun onFailure(owtError: OwtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString)
+                }
+            })
+    }
+
+    fun sendGPSData(
+        strNMEA: String
+    ) {
+        val meb = MotionEventBean()
+        meb.type = "control"
+        meb.data = DataBean()
+        meb.data.event = "isGps"
+        meb.data.parameters = ParametersBean()
+        // $GPGGA,061120.00,2922.413610,N,10848.823876,E,1,04,1.5,0,M,-27.8,M,,*4D
+        // $GPBWC,220516,5130.02,N,00046.34,W,213.8,T,218.0,M,0004.6,N,EGLM*11
+        // $GPGGA,131001,3104.2960,N,12122.9367,E,1,06,,2e+01,M,0.,M,,,*47
+        meb.data.parameters.setData(strNMEA)
         val jsonString = Gson().toJson(meb, MotionEventBean::class.java)
         //LogEx.d(jsonString);
         P2PHelper.getClient()
