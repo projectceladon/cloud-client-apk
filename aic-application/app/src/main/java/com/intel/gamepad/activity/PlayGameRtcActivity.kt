@@ -109,7 +109,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var lastNetworkLocationTime: Long = 0
     private var lastGpsLocationTime: Long = 0
     private val TIME_INTERVAL_TO_GET_LOCATION: Long = 1000
-    private val TIME_INTERVAL_BETWEEN_NETWORK_GPS = 2 * TIME_INTERVAL_TO_GET_LOCATION
+    private val TIME_INTERVAL_BETWEEN_NETWORK_GPS = 10 * TIME_INTERVAL_TO_GET_LOCATION
 
     override fun onCreate(savedInstanceState: Bundle?) {
         initUIFeature()// 设置窗口特性
@@ -266,7 +266,12 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                         && message != null
                         && !message.contains("GPGGA,,,,,,")
                     ) {
-                        if (message.startsWith("$" + "GPGGA")) {
+                        if (message.startsWith("$" + "GPGGA")
+                            || message.startsWith("$" + "GNGGA")
+                            || message.startsWith("$" + "GNRMC")
+                            || message.startsWith("$" + "GPRMC")
+                        ) {
+
                             lastGpsLocationTime = System.currentTimeMillis()
                         }
                         sendGPSData(message)
