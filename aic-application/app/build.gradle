@@ -136,6 +136,7 @@ dependencies {
     implementation 'com.tencent.bugly:nativecrashreport:latest.release'
     // PhotoView
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation 'org.apache.commons:commons-text:1.7'
 }
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
