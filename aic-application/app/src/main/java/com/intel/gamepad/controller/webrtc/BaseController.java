@@ -722,7 +722,7 @@ public abstract class BaseController implements OnTouchListener {
     /**
      * 发送安卓端的原始事件信息
      */
-    public void sendAndroidEvent(int action, float x, float y) {
+    public void sendAndroidEvent(int action, float x, float y, int pointId) {
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
@@ -731,6 +731,7 @@ public abstract class BaseController implements OnTouchListener {
         meb.getData().getParameters().setAction(action);
         meb.getData().getParameters().setTouchx(x);
         meb.getData().getParameters().setTouchy(y);
+        meb.getData().getParameters().setFingerID(pointId);
 
         String jsonString = new Gson().toJson(meb, MotionEventBean.class);
         //LogEx.d(jsonString);
