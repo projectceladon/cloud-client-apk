@@ -89,6 +89,7 @@ public class MotionEventBean {
             private float touchy;
             private int keycode;
             private int gpID;
+            private int fingerId;
             private String data;
 
             public static ParametersBean objectFromData(String str) {
@@ -126,6 +127,10 @@ public class MotionEventBean {
 
             public void setTouchy(float touchy) {
                 this.touchy = touchy;
+            }
+
+            public void setFingerID(int fID) {
+                this.fingerId = fID;
             }
 
             public int getKeycode() {

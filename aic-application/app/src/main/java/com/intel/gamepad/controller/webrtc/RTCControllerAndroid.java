@@ -90,12 +90,15 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         LogEx.i(">>>>" + v + " " + evt);
         this.updateLastTouchEvent();
         int action = evt.getActionMasked();
-        float x = evt.getX();
-        float y = evt.getY();
-        float width = 32767, height = 32767;
-        int nRomoteX = Math.round((x * width) / v.getWidth());
-        int nRomoteY = Math.round((y * height) / v.getHeight());
-        sendAndroidEvent(action, nRomoteX, nRomoteY);
+        int pointerCount = evt.getPointerCount();
+        for(int i = 0; i < pointerCount; i++) {
+            float x = evt.getX();
+            float y = evt.getY();
+            float width = 32767, height = 32767;
+            int nRomoteX = Math.round((x * width) / v.getWidth());
+            int nRomoteY = Math.round((y * height) / v.getHeight());
+            sendAndroidEvent(action, nRomoteX, nRomoteY, i);
+        }
         return true;
     }
 
@@ -145,7 +148,15 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             int indexSlot =  RTCControllerAndroid.getDeviceSlotIndex(event.getDeviceId());
             processJoystickInput(event, -1, indexSlot);
         } else {
-            sendAndroidEvent(event.getAction(), event.getX(), event.getY());
+            int pointerCount = event.getPointerCount();
+            for(int i = 0; i < pointerCount; i++) {
+                float x = event.getX();
+                float y = event.getY();
+                float width = 32767, height = 32767;
+                int nRomoteX = Math.round((x * width) / v.getWidth());
+                int nRomoteY = Math.round((y * height) / v.getHeight());
+                sendAndroidEvent(event.getAction(), nRomoteX, nRomoteY, i);
+            }
             leftAxisX = event.getAxisValue(MotionEvent.AXIS_X);
             leftAsixY = event.getAxisValue(MotionEvent.AXIS_Y);
             rightAxisX = event.getAxisValue(MotionEvent.AXIS_Z);

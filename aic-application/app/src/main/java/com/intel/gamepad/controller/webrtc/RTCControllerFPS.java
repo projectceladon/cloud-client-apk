@@ -141,12 +141,12 @@ public class RTCControllerFPS extends BaseController implements
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        sendAndroidEvent(event.getAction(), event.getX(), event.getY());
+        sendAndroidEvent(event.getAction(), event.getX(), event.getY(), 0);
         updateLastTouchEvent();
         int action = event.getActionMasked();
         float x = event.getX();
         float y = event.getY();
-        sendAndroidEvent(action, x, y);
+        sendAndroidEvent(action, x, y, 0);
 
         if (v == btnShootLeft || v == btnShootRight) {
             return handleMouseButtonTouch(action, MouseConst.LEFT, x, y, v);
@@ -282,7 +282,7 @@ public class RTCControllerFPS extends BaseController implements
 
     @Override
     public boolean onGenericMotion(View v, MotionEvent event) {
-        sendAndroidEvent(event.getAction(), event.getX(), event.getY());
+        sendAndroidEvent(event.getAction(), event.getX(), event.getY(), 0);
         showMouse = false;
 
         leftAxisX = event.getAxisValue(MotionEvent.AXIS_X);

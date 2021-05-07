@@ -249,7 +249,7 @@ public class RTCControllerXBox extends BaseController implements
 
     @Override
     public boolean onGenericMotion(View v, MotionEvent evt) {
-        sendAndroidEvent(evt.getAction(), evt.getX(), evt.getY());
+        sendAndroidEvent(evt.getAction(), evt.getX(), evt.getY(), 0);
         leftAxisX = evt.getAxisValue(MotionEvent.AXIS_X);
         leftAsixY = evt.getAxisValue(MotionEvent.AXIS_Y);
         rightAxisX = evt.getAxisValue(MotionEvent.AXIS_Z);

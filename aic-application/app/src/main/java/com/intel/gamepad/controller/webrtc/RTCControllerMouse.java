@@ -123,7 +123,7 @@ public class RTCControllerMouse extends BaseController implements MouseMotionEve
         int action = evt.getActionMasked();
         float x = evt.getX();
         float y = evt.getY();
-        sendAndroidEvent(action, x, y);
+        sendAndroidEvent(action, x, y, 0);
 
         if (v == btnEsc)
             return handleButtonTouch(action, KeyConst.VK_ESCAPE, v);
@@ -293,7 +293,7 @@ public class RTCControllerMouse extends BaseController implements MouseMotionEve
      */
     @Override
     public boolean onGenericMotion(View v, MotionEvent event) {
-        sendAndroidEvent(event.getAction(), event.getX(), event.getY());
+        sendAndroidEvent(event.getAction(), event.getX(), event.getY(), 0);
         leftAxisX = event.getAxisValue(MotionEvent.AXIS_X);
         leftAsixY = event.getAxisValue(MotionEvent.AXIS_Y);
         rightAxisX = event.getAxisValue(MotionEvent.AXIS_Z);
