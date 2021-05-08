@@ -92,8 +92,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         int action = evt.getActionMasked();
         int pointerCount = evt.getPointerCount();
         for(int i = 0; i < pointerCount; i++) {
-            float x = evt.getX();
-            float y = evt.getY();
+            float x = evt.getX(i);
+            float y = evt.getY(i);
             float width = 32767, height = 32767;
             int nRomoteX = Math.round((x * width) / v.getWidth());
             int nRomoteY = Math.round((y * height) / v.getHeight());
