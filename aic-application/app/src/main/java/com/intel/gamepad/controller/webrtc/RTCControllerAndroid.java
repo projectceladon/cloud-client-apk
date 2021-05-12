@@ -90,15 +90,14 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         LogEx.i(">>>>" + v + " " + evt);
         this.updateLastTouchEvent();
         int action = evt.getActionMasked();
-        int pointerCount = evt.getPointerCount();
-        for(int i = 0; i < pointerCount; i++) {
-            float x = evt.getX(i);
-            float y = evt.getY(i);
-            float width = 32767, height = 32767;
-            int nRomoteX = Math.round((x * width) / v.getWidth());
-            int nRomoteY = Math.round((y * height) / v.getHeight());
-            sendAndroidEvent(action, nRomoteX, nRomoteY, i);
-        }
+        int index =  evt.getActionIndex();
+        int pointId = evt.getPointerId(index);
+        float x = evt.getX(index);
+        float y = evt.getY(index);
+        float width = 32767, height = 32767;
+        int nRomoteX = Math.round((x * width) / v.getWidth());
+        int nRomoteY = Math.round((y * height) / v.getHeight());
+        sendAndroidEvent(action, nRomoteX, nRomoteY, pointId);
         return true;
     }
 
