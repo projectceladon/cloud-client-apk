@@ -31,7 +31,6 @@ import com.intel.gamepad.utils.TimeDelayUtils;
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 import com.mycommonlibrary.utils.LogEx;
 import com.mycommonlibrary.utils.ToastUtils;
-
 import owt.base.OwtError;
 
 /**
@@ -47,6 +46,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     public static final int deviceSlotIndexZero = 0;
     public static final int deviceSlotIndexOne = 1;
     public static int[] deviceSlot = {invalidDeviceId, invalidDeviceId};
+    private int nPointCount = 0;
+    private int[] pointArray =  new int[10];
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -94,22 +95,39 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         float y;
         int nRomoteX;
         int nRomoteY;
+        int pointId;
         float width = 32767, height = 32767;
         int action = evt.getActionMasked();
+        if(action == MotionEvent.ACTION_UP || action ==  MotionEvent.ACTION_CANCEL) {
+            for (int i = 0; i < nPointCount; i++) {
+                sendAndroidEvent(action, 0, 0, pointArray[i]);
+            }
+            return true;
+        } else {
+            nPointCount =  evt.getPointerCount();
+            if(nPointCount > 10) {
+                nPointCount = 10;
+            }
+            for (int i = 0; i < nPointCount; i++) {
+                int pointIdTmp = evt.getPointerId(i);
+                pointArray[i] = pointIdTmp;
+            }
+        }
         if (action == MotionEvent.ACTION_MOVE) {
             int pointerCount = evt.getPointerCount();
             for (int i = 0; i < pointerCount; i++) {
+                pointId = evt.getPointerId(i);
                 x = evt.getX(i);
                 y = evt.getY(i);
                 nRomoteX = Math.round((x * width) / v.getWidth());
                 nRomoteY = Math.round((y * height) / v.getHeight());
-                sendAndroidEvent(action, nRomoteX, nRomoteY, i);
+                sendAndroidEvent(action, nRomoteX, nRomoteY, pointId);
             }
             return true;
         }
 
         index = evt.getActionIndex();
-        int pointId = evt.getPointerId(index);
+        pointId = evt.getPointerId(index);
         x = evt.getX(index);
         y = evt.getY(index);
         nRomoteX = Math.round((x * width) / v.getWidth());
