@@ -89,14 +89,31 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     public boolean onTouch(View v, MotionEvent evt) {
         LogEx.i(">>>>" + v + " " + evt);
         this.updateLastTouchEvent();
-        int action = evt.getActionMasked();
-        int index =  evt.getActionIndex();
-        int pointId = evt.getPointerId(index);
-        float x = evt.getX(index);
-        float y = evt.getY(index);
+        int index;
+        float x;
+        float y;
+        int nRomoteX;
+        int nRomoteY;
         float width = 32767, height = 32767;
-        int nRomoteX = Math.round((x * width) / v.getWidth());
-        int nRomoteY = Math.round((y * height) / v.getHeight());
+        int action = evt.getActionMasked();
+        if (action == MotionEvent.ACTION_MOVE) {
+            int pointerCount = evt.getPointerCount();
+            for (int i = 0; i < pointerCount; i++) {
+                x = evt.getX(i);
+                y = evt.getY(i);
+                nRomoteX = Math.round((x * width) / v.getWidth());
+                nRomoteY = Math.round((y * height) / v.getHeight());
+                sendAndroidEvent(action, nRomoteX, nRomoteY, i);
+            }
+            return true;
+        }
+
+        index = evt.getActionIndex();
+        int pointId = evt.getPointerId(index);
+        x = evt.getX(index);
+        y = evt.getY(index);
+        nRomoteX = Math.round((x * width) / v.getWidth());
+        nRomoteY = Math.round((y * height) / v.getHeight());
         sendAndroidEvent(action, nRomoteX, nRomoteY, pointId);
         return true;
     }
@@ -144,13 +161,13 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         if ((((eventSource & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD) ||
                 ((eventSource & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK))
                 && event.getAction() == MotionEvent.ACTION_MOVE) {
-            int indexSlot =  RTCControllerAndroid.getDeviceSlotIndex(event.getDeviceId());
+            int indexSlot = RTCControllerAndroid.getDeviceSlotIndex(event.getDeviceId());
             processJoystickInput(event, -1, indexSlot);
         } else {
             int pointerCount = event.getPointerCount();
-            for(int i = 0; i < pointerCount; i++) {
-                float x = event.getX();
-                float y = event.getY();
+            for (int i = 0; i < pointerCount; i++) {
+                float x = event.getX(i);
+                float y = event.getY(i);
                 float width = 32767, height = 32767;
                 int nRomoteX = Math.round((x * width) / v.getWidth());
                 int nRomoteY = Math.round((y * height) / v.getHeight());
@@ -181,8 +198,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         int eventSource = event.getSource();
-        if(((eventSource & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)
-                ||((eventSource & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)){
+        if (((eventSource & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)
+                || ((eventSource & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
             int keyMapCode = -1;
             int actionDown = JOY_KEY_CODE_MAP_DPAD_UP;
             Boolean bDpad = false;
@@ -238,22 +255,22 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                     keyMapCode = JOY_KEY_CODE_MAP_L_TWO;
                     break;
                 default:
-                    Log.e(TAG,"Bluetooth Event : " + event.toString());
+                    Log.e(TAG, "Bluetooth Event : " + event.toString());
                     break;
             }
             int indexSlot = getDeviceSlotIndex(event.getDeviceId());
-            if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                if(bDpad) {
-                    sendJoyStickEvent(RTCControllerAndroid.EV_ABS, keyMapCode, actionDown,true, indexSlot);
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (bDpad) {
+                    sendJoyStickEvent(RTCControllerAndroid.EV_ABS, keyMapCode, actionDown, true, indexSlot);
                 } else {
-                    sendJoyStickEvent(RTCControllerAndroid.EV_KEY, keyMapCode, 1,true, indexSlot);
+                    sendJoyStickEvent(RTCControllerAndroid.EV_KEY, keyMapCode, 1, true, indexSlot);
                 }
                 return true;
             } else {
-                if(bDpad) {
-                    sendJoyStickEvent(RTCControllerAndroid.EV_ABS, keyMapCode, JOY_KEY_CODE_MAP_DPAD_UP,true, indexSlot);
+                if (bDpad) {
+                    sendJoyStickEvent(RTCControllerAndroid.EV_ABS, keyMapCode, JOY_KEY_CODE_MAP_DPAD_UP, true, indexSlot);
                 } else {
-                    sendJoyStickEvent(RTCControllerAndroid.EV_KEY, keyMapCode, 0,true, indexSlot);
+                    sendJoyStickEvent(RTCControllerAndroid.EV_KEY, keyMapCode, 0, true, indexSlot);
                 }
                 return true;
             }
@@ -268,7 +285,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     }
 
     public static int getDeviceSlotIndex(int deviceId) {
-        if(deviceSlot[deviceSlotIndexZero] == deviceId) {
+        if (deviceSlot[deviceSlotIndexZero] == deviceId) {
             return deviceSlotIndexZero;
         } else if (deviceSlot[deviceSlotIndexOne] == deviceId) {
             return deviceSlotIndexOne;
@@ -283,7 +300,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     }
 
     public static int updateDeviceSlot(int deviceId) {
-        if(deviceSlot[deviceSlotIndexZero] == deviceId) {
+        if (deviceSlot[deviceSlotIndexZero] == deviceId) {
             deviceSlot[deviceSlotIndexZero] = invalidDeviceId;
             return deviceSlotIndexZero;
         } else if (deviceSlot[deviceSlotIndexOne] == deviceId) {
@@ -304,26 +321,26 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
 
         InputDevice mInputDevice = event.getDevice();
         int typeX = AXIS_LEFT_X;
-        int  x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos)*128);
+        int x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos) * 128);
         if (x == 0) {
             x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_X, historyPos));
             typeX = AXIS_HAT_X;
         }
         if (x == 0) {
-            x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos)*128);
+            x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos) * 128);
             typeX = AXIS_RIGHT_X;
         }
 
         sendJoyStickEvent(BaseController.EV_ABS, typeX, x, true, indexDeviceSlot);
 
         int typeY = BaseController.AXIS_LEFT_Y;
-        int y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos)*128);
+        int y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos) * 128);
         if (y == 0) {
             y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_Y, historyPos));
             typeY = BaseController.AXIS_HAT_Y;
         }
         if (y == 0) {
-            y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos)*128);
+            y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos) * 128);
             typeY = BaseController.AXIS_RIGHT_Y;
         }
         sendJoyStickEvent(BaseController.EV_ABS, typeY, y, true, indexDeviceSlot);
