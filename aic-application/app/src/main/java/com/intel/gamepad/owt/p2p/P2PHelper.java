@@ -83,7 +83,7 @@ public class P2PHelper {
                 //    .addVideoParameters(vp9)
                 .addVideoParameters(h264)
                 //      .addVideoParameters(vp8)
-                //      .addVideoParameters(h265)
+                .addVideoParameters(h265)
                 .setRTCConfiguration(rtcConf)
                 .build();
     }
