@@ -1,0 +1,61 @@
+From 1aa4e3193130921f328c74e45d85d264c7b24db1 Mon Sep 17 00:00:00 2001
+From: "Liu, Kai1" <kai1.liu@intel.com>
+Date: Thu, 20 May 2021 09:45:38 +0800
+Subject: [PATCH] Add
+ talk/owt/patches/0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch.
+
+Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
+---
+ scripts/prepare_dev.py                        |  3 ++-
+ ...OMX.Intel.hw_ve.h265-for-android-app.patch | 25 +++++++++++++++++++
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+ create mode 100644 talk/owt/patches/0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index 1440822..f3de997 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -45,7 +45,8 @@ patchList = [
+     ('0014-Fix-missing-ffmpeg-configure-item-for-msvc-build.patch', FFMPEG_PATH),
+     ('0015-Adopt-SingletonSurfaceView.patch', WEBRTC_PATH),
+     ('0016-Use-AToU-to-print-trace.patch', WEBRTC_PATH),
+-    ('0017-Support-OMX.Intel.hw_ve.h264-for-android-app.patch', WEBRTC_PATH)
++    ('0017-Support-OMX.Intel.hw_ve.h264-for-android-app.patch', WEBRTC_PATH),
++    ('0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch', WEBRTC_PATH)
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch b/talk/owt/patches/0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch
+new file mode 100644
+index 0000000..d93e8de
+--- /dev/null
++++ b/talk/owt/patches/0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch
+@@ -0,0 +1,25 @@
++From 6b724612d225db7b86d88db538281b7f7bd4e36f Mon Sep 17 00:00:00 2001
++From: "Liu, Kai1" <kai1.liu@intel.com>
++Date: Thu, 20 May 2021 09:17:17 +0800
++Subject: [PATCH] Support OMX.Intel.hw_ve.h265 for android app
++
++Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
++---
++ sdk/android/api/org/webrtc/HardwareVideoEncoderFactory.java | 1 +
++ 1 file changed, 1 insertion(+)
++
++diff --git a/sdk/android/api/org/webrtc/HardwareVideoEncoderFactory.java b/sdk/android/api/org/webrtc/HardwareVideoEncoderFactory.java
++index 306c29df70..45826f5e82 100644
++--- a/sdk/android/api/org/webrtc/HardwareVideoEncoderFactory.java
+++++ b/sdk/android/api/org/webrtc/HardwareVideoEncoderFactory.java
++@@ -264,6 +264,7 @@ public class HardwareVideoEncoderFactory implements VideoEncoderFactory {
++            // Hisi VP8 encoder seems to be supported. Needs more testing.
++            || (name.startsWith(HISI_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
++            || (name.startsWith(IMG_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
+++           || (name.startsWith(INTEL_PREFIX) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT)
++            || vcp.isExtraHardwareSupported(name, "video/hevc", vcp.parseWithTag(vcp.loadWithDom(extraMediaCodecFile), "Encoders"));
++   }
++ 
++-- 
++2.25.1
++
+-- 
+2.25.1
+
