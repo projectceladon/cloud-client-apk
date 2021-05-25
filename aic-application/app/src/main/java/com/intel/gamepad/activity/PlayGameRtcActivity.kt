@@ -8,11 +8,13 @@ import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.hardware.input.InputManager
 import android.location.*
+import android.media.MediaCodecList
 import android.os.*
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.PopupWindow
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.collection.SimpleArrayMap
 import androidx.core.app.ActivityCompat
@@ -110,6 +112,10 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var lastGpsLocationTime: Long = 0
     private val TIME_INTERVAL_TO_GET_LOCATION: Long = 1000
     private val TIME_INTERVAL_BETWEEN_NETWORK_GPS = 10 * TIME_INTERVAL_TO_GET_LOCATION
+    private val TYPE_MEDIA_HEVC = "hevc"
+    private val TYPE_MEDIA_ENCODER = "encoder"
+    private val TYPE_MEDIA_DECODER = "decoder"
+    private val TYPE_MEDIA_H264 = "h264"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         initUIFeature()// 设置窗口特性
@@ -131,6 +137,46 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         mIm = getSystemService(Context.INPUT_SERVICE) as InputManager
         mIm.registerInputDeviceListener(this, null)
         checkLocationPermission()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            checkMediaCodecSupportTypes()
+        }
+    }
+
+    fun checkMediaCodecSupportTypes() {
+        val mediaCodecList = MediaCodecList(MediaCodecList.ALL_CODECS)
+        var bHEVCEncoder = false
+        var bHEVCDecoder = false
+        var bH264Encoder = false
+        var bH264Decoder = false
+        for (mediaCodecInfo in mediaCodecList.codecInfos) {
+            val mediaCodecName = mediaCodecInfo.name.toLowerCase(Locale.ROOT)
+            if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
+                && mediaCodecName.contains(TYPE_MEDIA_ENCODER)
+            ) {
+                bHEVCEncoder = true
+            }
+            if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
+                && mediaCodecName.contains(TYPE_MEDIA_DECODER)
+            ) {
+                bHEVCDecoder = true
+            }
+            if (mediaCodecName.contains(TYPE_MEDIA_H264)
+                && mediaCodecName.contains(TYPE_MEDIA_ENCODER)
+            ) {
+                bH264Encoder = true
+            }
+            if (mediaCodecName.contains(TYPE_MEDIA_H264)
+                && mediaCodecName.contains(TYPE_MEDIA_DECODER)
+            ) {
+                bH264Decoder = true
+            }
+        }
+        if (!(bHEVCEncoder && bHEVCDecoder)) {
+            longToast(R.string.no_hevc)
+        }
+        if (!(bH264Encoder && bH264Decoder)) {
+            longToast(R.string.no_h264)
+        }
     }
 
     private fun checkLocationPermission() {

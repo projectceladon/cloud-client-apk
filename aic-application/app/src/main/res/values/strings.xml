@@ -50,4 +50,6 @@
     <string name="show_log">Show Log Window</string>
     <string name="net_delays">Net Delays：</string>
     <string name="current_net_speed">Net Speed：</string>
+    <string name="no_hevc">The device does not support hevc</string>
+    <string name="no_h264">The device does not Support h264</string>
 </resources>
