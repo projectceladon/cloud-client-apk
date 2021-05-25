@@ -48,4 +48,6 @@
     <string name="net_delays">网络延时：</string>
     <string name="current_net_speed">当前网速：</string>
     <string name="app_name2">AIC</string>
+    <string name="no_hevc">设备不支持hevc</string>
+    <string name="no_h264">设备不支持h264</string>
 </resources>
