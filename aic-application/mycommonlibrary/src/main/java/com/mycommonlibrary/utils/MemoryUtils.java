@@ -29,16 +29,27 @@ public class MemoryUtils {
             String str1 = "/proc/meminfo";// 系统内存信息文件
             String str2;
             String[] arrayOfString;
+            FileReader localFileReader = null;
             try {
-                FileReader localFileReader = new FileReader(str1);
+                localFileReader = new FileReader(str1);
                 BufferedReader localBufferedReader = new BufferedReader(localFileReader, 8192);
                 str2 = localBufferedReader.readLine();// 读取meminfo第一行，系统总内存大小
-
+                if(str2 == null) {
+                    return initial_memory;
+                }
                 arrayOfString = str2.split("\\s+");
-                initial_memory = Integer.valueOf(arrayOfString[1]).intValue() * 1024;// 获得系统总内存，单位是KB，乘以1024转换为Byte
+                initial_memory = Integer.parseInt(arrayOfString[1]) * 1024;// 获得系统总内存，单位是KB，乘以1024转换为Byte
                 localBufferedReader.close();
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                if(localFileReader != null) {
+                    try {
+                        localFileReader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         } else {
             ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);

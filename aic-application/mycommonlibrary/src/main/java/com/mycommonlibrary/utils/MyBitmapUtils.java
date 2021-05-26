@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
@@ -59,14 +60,27 @@ public class MyBitmapUtils {
      * 从指定的文件名中获取图像
      */
     public static Bitmap parseBitmap(String fileName, int sampleSize) {
+        InputStream is = null;
         try {
-            InputStream is = new FileInputStream(new File(fileName));
+            is = new FileInputStream(new File(fileName));
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inSampleSize = sampleSize;
-            return BitmapFactory.decodeStream(is, null, options);
+            Bitmap bitmap = BitmapFactory.decodeStream(is, null, options);
+            is.close();
+            return bitmap;
         } catch (FileNotFoundException e) {
             System.err.println(CLZ + ".parseBitmap exception:" + e.getMessage());
             e.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
         }
         return null;
     }
@@ -83,8 +97,9 @@ public class MyBitmapUtils {
      */
     public static int calcSampleSize(String fileName, int width, int height) {
         int sampleSize = 1;
+        InputStream is = null;
         try {
-            InputStream is = new FileInputStream(new File(fileName));
+            is = new FileInputStream(new File(fileName));
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true; // 立即解码图像的尺寸
             BitmapFactory.decodeStream(is, null, options);
@@ -99,9 +114,19 @@ public class MyBitmapUtils {
                 sampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
             }
             options.inJustDecodeBounds = false;
+            is.close();
         } catch (FileNotFoundException e) {
+            if(is != null) {
+                try {
+                    is.close();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
             System.err.println(CLZ + ".calcSampleSize exception:" + e.getMessage());
             e.printStackTrace();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
         return sampleSize;
     }
@@ -130,6 +155,7 @@ public class MyBitmapUtils {
     public static boolean saveBitmap2File(Bitmap bmp, File file, int size) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int compress = 100;// 设置一个默认的压缩率
+        FileOutputStream fos = null;
         bmp.compress(Bitmap.CompressFormat.JPEG, compress, baos);
         while (baos.toByteArray().length / 1024 > size) {
             baos.reset();
@@ -137,12 +163,19 @@ public class MyBitmapUtils {
             bmp.compress(Bitmap.CompressFormat.JPEG, compress, baos);
         }
         try {
-            FileOutputStream fos = new FileOutputStream(file);
+            fos = new FileOutputStream(file);
             fos.write(baos.toByteArray());
             fos.flush();
             fos.close();
             return true;
         } catch (Exception e) {
+            if(fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            }
             e.printStackTrace();
             System.err.println(CLZ + ".saveBitmap2File exception:" + e.getMessage());
             return false;
@@ -161,7 +194,13 @@ public class MyBitmapUtils {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        return bmp.compress(format, quality, stream);
+        boolean bCompress = bmp.compress(format, quality, stream);
+        try {
+            stream.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        return bCompress;
     }
 
     /**
