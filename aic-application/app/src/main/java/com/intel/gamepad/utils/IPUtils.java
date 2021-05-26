@@ -4,12 +4,17 @@ import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 import com.mycommonlibrary.utils.LogEx;
 
 public class IPUtils {
-    public static final String DEFAULT_IP = "http://153.35.78.77:8095/";
+    public static final String DEFAULT_IP = "http://10.239.93.183:30000/";
+    public static final String DEFAULT_COTURN_IP = "10.239.93.183";
     public static final String DEFAULT_PEERID = "s0";
     public static final String DEFAULT_TOKENID = "c0";
 
     public static void saveip(String IP) {
         FastSharedPreferences.get("ip_file").edit().putString("ip", IP).commit();
+    }
+
+    public static void saveCoturn(String IP) {
+        FastSharedPreferences.get("ip_file").edit().putString("coturnip", IP).commit();
     }
 
     public static void savepeerid(String peerid) {
@@ -22,6 +27,12 @@ public class IPUtils {
 
     public static String loadIP() {
         String ip = FastSharedPreferences.get("ip_file").getString("ip", DEFAULT_IP);
+        LogEx.i(ip);
+        return ip;
+    }
+
+    public static String loadCoturnIP() {
+        String ip = FastSharedPreferences.get("ip_file").getString("coturnip", DEFAULT_COTURN_IP);
         LogEx.i(ip);
         return ip;
     }

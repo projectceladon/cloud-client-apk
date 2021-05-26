@@ -94,6 +94,23 @@ class GameDetailActivity : BaseActvitiy(), CoroutineScope by MainScope() {
             }
         })
 
+        etCoturnIP.setText(IPUtils.loadCoturnIP())
+        P2PHelper.strCoturn = IPUtils.loadCoturnIP()
+        etCoturnIP.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+            }
+
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                s?.let {
+                    IPUtils.saveCoturn(it.toString())
+                    P2PHelper.strCoturn = IPUtils.loadCoturnIP()
+                }
+            }
+        })
+
         etPeerID.setText(IPUtils.loadPeerID())
         P2PHelper.peerId = IPUtils.loadPeerID()
         etPeerID.addTextChangedListener(object : TextWatcher {
