@@ -36,6 +36,7 @@ public class P2PHelper {
     public static String turnAddrTCP = "turn:153.35.78.77:3478?transport=tcp";
     public static String turnAddrUDP = "turn:153.35.78.77:3478?transport=udp";
     public static String strIP = "153.35.78.77";
+    public static String strCoturn = "153.35.78.77";
 
     private P2PClientConfiguration p2pConfig;
     private P2PClient client;
@@ -70,7 +71,7 @@ public class P2PHelper {
         VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
         VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
         VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);
-        updateP2PServerIP();
+        updateP2PCoturnIP();
         List<PeerConnection.IceServer> iceServers = new ArrayList();
         List<String> urls = new ArrayList<>();
         urls.add(stunAddr);
@@ -122,6 +123,12 @@ public class P2PHelper {
             turnAddrUDP = "turn:" + strIP + ":3478?transport=udp";
         }
 
+    }
+
+    public static void updateP2PCoturnIP() {
+        stunAddr = "stun:" + strCoturn + ":3478";
+        turnAddrTCP = "turn:" + strCoturn + ":3478?transport=tcp";
+        turnAddrUDP = "turn:" + strCoturn + ":3478?transport=udp";
     }
 
     public EglBase getRootEglBase() {

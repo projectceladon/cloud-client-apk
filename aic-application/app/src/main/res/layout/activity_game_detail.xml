@@ -95,6 +95,29 @@
                         android:background="@drawable/bg_bottom_white"
                         android:divider="@drawable/divider_hor_1x"
                         android:orientation="horizontal"
+                        android:padding="@dimen/side2x"
+                        android:showDividers="middle">
+                        <TextView
+                            style="@style/text_16_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Coturn IP" />
+
+                        <EditText
+                            android:id="@+id/etCoturnIP"
+                            style="@style/text_16_black"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@color/white"
+                            android:hint="Config Coturn IP"
+                            android:text="192.168.1.4" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_bottom_white"
+                        android:divider="@drawable/divider_hor_1x"
+                        android:orientation="horizontal"
                         android:padding="12dp"
                         android:showDividers="middle">
                         <TextView
