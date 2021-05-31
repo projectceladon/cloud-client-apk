@@ -520,7 +520,9 @@ public class PlayGameRtspActivity extends Activity implements SurfaceHolder.Call
             @Override
             public void convert(ViewHolder vh, String ctrlDesc) {
                 vh.setText(R.id.chkController, ctrlDesc);
-                vh.setChecked(R.id.chkController, controller.getDescription().equals(ctrlDesc));
+                if(controller.getDescription() != null) {
+                    vh.setChecked(R.id.chkController, controller.getDescription().equals(ctrlDesc));
+                }
                 vh.setOnClickListener(R.id.chkController, v -> {
                     pw.dismiss();
                     if (ctrlDesc.equals(GAControllerKeyBoard.DESC)) {
