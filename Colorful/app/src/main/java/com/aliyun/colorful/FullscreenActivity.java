@@ -110,23 +110,23 @@ public class FullscreenActivity extends AppCompatActivity {
         mContentView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                if(motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
                     nCountInput++;
                     Trace.beginSection("atou A1 ID: " + nCountInput);
                     Trace.endSection();
+                    mCounter++;
+                    if (mBackGoundColor == 0) {
+                        mBackGoundColor = 1;
+                        view.setBackgroundColor(Color.RED);
+                    } else if (mBackGoundColor == 1) {
+                        mBackGoundColor = 2;
+                        view.setBackgroundColor(Color.GREEN);
+                    } else if (mBackGoundColor == 2) {
+                        mBackGoundColor = 0;
+                        view.setBackgroundColor(Color.BLUE);
+                    }
+                    ((TextView) mContentView).setText("Touch counter: " + mCounter);
                 }
-                mCounter++;
-                if (mBackGoundColor == 0) {
-                    mBackGoundColor = 1;
-                    view.setBackgroundColor(Color.RED);
-                } else if (mBackGoundColor == 1) {
-                    mBackGoundColor = 2;
-                    view.setBackgroundColor(Color.GREEN);
-                } else if (mBackGoundColor == 2) {
-                    mBackGoundColor = 0;
-                    view.setBackgroundColor(Color.BLUE);
-                }
-                ((TextView) mContentView).setText("Touch counter: " + mCounter);
                 return true;
             }
         });
