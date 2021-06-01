@@ -29,30 +29,59 @@ public class Base64Utils {
      *
      * @param path 文件路径
      */
-    public static String fileToBase64(String path) throws IOException {
+    public static String fileToBase64(String path) {
         File file = new File(path);
-        FileInputStream inputStream = new FileInputStream(file);
-        byte[] buffer = new byte[5120];
-        int len;
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        while ((len = inputStream.read(buffer)) != -1) {
-            bos.write(buffer, 0, len);
+        FileInputStream inputStream = null;
+        try {
+            inputStream = new FileInputStream(file);
+            byte[] buffer = new byte[5120];
+            int len;
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            while ((len = inputStream.read(buffer)) != -1) {
+                bos.write(buffer, 0, len);
+            }
+            String str = new String(Base64.encode(bos.toByteArray(), Base64.NO_WRAP));
+            inputStream.close();
+            return str;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-        String str = new String(Base64.encode(bos.toByteArray(), Base64.NO_WRAP));
-        inputStream.close();
-        return str;
+        return null;
     }
 
     /**
      * 将BASE64格式的字符串保存到指定的文件中
      */
-    public static File base64ToFile(String base64, String path) throws IOException {
-        File file = new File(path);
-        FileOutputStream outputStream = new FileOutputStream(file);
-        outputStream.write(Base64.decode(base64, Base64.NO_WRAP));
-        outputStream.flush();
-        outputStream.close();
-        return file;
+    public static File base64ToFile(String base64, String path) {
+        FileOutputStream outputStream = null;
+        try {
+            File file = new File(path);
+            outputStream = new FileOutputStream(file);
+            outputStream.write(Base64.decode(base64, Base64.NO_WRAP));
+            outputStream.flush();
+            outputStream.close();
+            return file;
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+
     }
 
     /**
@@ -68,10 +97,10 @@ public class Base64Utils {
             bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
 
             baos.flush();
-            baos.close();
 
             byte[] bitmapBytes = baos.toByteArray();
             result = encodeToString(bitmapBytes, Base64.DEFAULT);
+            baos.close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

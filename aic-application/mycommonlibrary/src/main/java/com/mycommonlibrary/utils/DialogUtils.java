@@ -402,7 +402,7 @@ public class DialogUtils {
         final EditText et = new EditText(new ContextThemeWrapper(context, theme));
         et.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         et.setText(tv != null ? tv.getText() + "" : "");
-        et.setHint(TextUtils.isEmpty(tv.getHint() + "") ? "" : tv.getHint());
+        et.setHint(TextUtils.isEmpty(tv != null ? tv.getHint() + "" : "") ? "" : (tv != null ? tv.getHint() : ""));
         et.setInputType(inputType);
         layout.addView(et);
 

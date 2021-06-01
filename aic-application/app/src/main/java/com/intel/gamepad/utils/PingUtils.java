@@ -11,8 +11,9 @@ import java.io.InputStreamReader;
 public class PingUtils {
 
     public static String getPing(String ipAddress) {
+        Process p = null;
         try {
-            Process p = Runtime.getRuntime().exec("ping -c 4 " + ipAddress);
+            p = Runtime.getRuntime().exec("ping -c 4 " + ipAddress);
             BufferedReader buf = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String str;
             StringBuilder builder = new StringBuilder();
@@ -20,9 +21,18 @@ public class PingUtils {
                 builder.append(str + "\n");
             }
             LogEx.i(builder.toString());
+            p.getInputStream().close();
             return builder.toString();
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if (p != null) {
+                try {
+                    p.getInputStream().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         return "";
     }

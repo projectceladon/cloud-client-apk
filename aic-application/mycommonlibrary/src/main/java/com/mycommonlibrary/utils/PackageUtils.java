@@ -39,21 +39,36 @@ public class PackageUtils {
      * 返回当前应用的版本号，版本号整型
      */
     public static int getVersionCode(Context context) {
-        return getPackageInfo(context).versionCode;
+        PackageInfo info = getPackageInfo(context);
+        if(info != null) {
+            return info.versionCode;
+        } else {
+            return 0;
+        }
     }
 
     /**
      * 返回当前应用的版本号，版本号为字符串（主要给用户看）
      */
     public static String getVersionName(Context context) {
-        return getPackageInfo(context).versionName;
+        PackageInfo info = getPackageInfo(context);
+        if(info != null) {
+            return info.versionName;
+        } else {
+            return null;
+        }
     }
 
     /**
      * 返回当前应用的包名
      */
     public static String getPackageName(Context context) {
-        return getPackageInfo(context).packageName;
+        PackageInfo info = getPackageInfo(context);
+        if(info != null) {
+            return info.packageName;
+        } else {
+            return null;
+        }
     }
 
     /**

@@ -86,6 +86,7 @@ public class SmsUtils {
             } else {
                 listSms = null;
             }
+            cur.close();
         } catch (SQLiteException ex) {
             Log.d(TAG, ex.getMessage());
         }

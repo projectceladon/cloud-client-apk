@@ -292,16 +292,18 @@ public class CameraGalleyActivity extends AppCompatActivity implements OnClickLi
         if (requestCode == GALLERY_RESULT && resultCode == Activity.RESULT_OK) {
             // 获取图片的本地路径
             String sourceFile = GalleryUtils.getPath(this, data);
-            // 再将文件复制到当前项目指定的路径
-            copyImageFile(new File(sourceFile));
-            if (isCrop) {
-                gotoCropImage(mFileUri, outputX, outputY);
-            } else {
-                data.putExtra("imageUrl", mImageFile);
-                data.putExtra("bitmap", (Bundle) data.getExtras().getParcelable("data"));
-                setResult(resultCode, data);
-                LogEx.i(mImageFile + " " + data.getExtras().getParcelable("data"));
-                finish();
+            if (sourceFile != null) {
+                // 再将文件复制到当前项目指定的路径
+                copyImageFile(new File(sourceFile));
+                if (isCrop) {
+                    gotoCropImage(mFileUri, outputX, outputY);
+                } else {
+                    data.putExtra("imageUrl", mImageFile);
+                    data.putExtra("bitmap", (Bundle) data.getExtras().getParcelable("data"));
+                    setResult(resultCode, data);
+                    LogEx.i(mImageFile + " " + data.getExtras().getParcelable("data"));
+                    finish();
+                }
             }
         }
     }
@@ -331,38 +333,47 @@ public class CameraGalleyActivity extends AppCompatActivity implements OnClickLi
             } else
                 mFileUri = Uri.fromFile(imagePath);
         }
-        try {
-            copyFile(sourceFile, new File(mImageFile));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        copyFile(sourceFile, new File(mImageFile));
     }
 
     /**
      * 文件复制
      */
-    private void copyFile(File sourceFile, File targetFile) throws IOException {
+    private void copyFile(File sourceFile, File targetFile) {
         // 新建文件输入流并对它进行缓冲
-        FileInputStream input = new FileInputStream(sourceFile);
-        BufferedInputStream inBuff = new BufferedInputStream(input);
+        FileInputStream input = null;
+        try {
+            input = new FileInputStream(sourceFile);
+            BufferedInputStream inBuff = new BufferedInputStream(input);
 
-        // 新建文件输出流并对它进行缓冲
-        FileOutputStream output = new FileOutputStream(targetFile);
-        BufferedOutputStream outBuff = new BufferedOutputStream(output);
+            // 新建文件输出流并对它进行缓冲
+            FileOutputStream output = new FileOutputStream(targetFile);
+            BufferedOutputStream outBuff = new BufferedOutputStream(output);
 
-        // 缓冲数组
-        byte[] b = new byte[1024 * 5];
-        int len;
-        while ((len = inBuff.read(b)) != -1) {
-            outBuff.write(b, 0, len);
+            // 缓冲数组
+            byte[] b = new byte[1024 * 5];
+            int len;
+            while ((len = inBuff.read(b)) != -1) {
+                outBuff.write(b, 0, len);
+            }
+            // 刷新此缓冲的输出流
+            outBuff.flush();
+            // 关闭流
+            inBuff.close();
+            outBuff.close();
+            output.close();
+            input.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-        // 刷新此缓冲的输出流
-        outBuff.flush();
-        // 关闭流
-        inBuff.close();
-        outBuff.close();
-        output.close();
-        input.close();
     }
 
 }

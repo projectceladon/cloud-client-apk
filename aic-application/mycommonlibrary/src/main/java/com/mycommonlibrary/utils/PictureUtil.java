@@ -80,13 +80,14 @@ public class PictureUtil {
     }
 
     public static Bitmap getBitmapFromURL(String src) {
+        InputStream input = null;
         try {
             Log.e("src", src);
             URL url = new URL(src);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setDoInput(true);
             connection.connect();
-            InputStream input = connection.getInputStream();
+            input = connection.getInputStream();
             Bitmap myBitmap = BitmapFactory.decodeStream(input);
             Log.e("Bitmap", "returned");
             return myBitmap;
@@ -94,6 +95,14 @@ public class PictureUtil {
             e.printStackTrace();
             Log.e("Exception", e.getMessage());
             return null;
+        } finally {
+            if(input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

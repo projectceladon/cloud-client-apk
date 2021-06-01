@@ -94,7 +94,7 @@ public class LogEx {
     public static void w(Throwable tr) {
         if (!isDebug) return;
         String tag = generateTag();
-        printLog("w", tag, null, tr);
+        printLog("w", tag, "", tr);
     }
 
 
@@ -113,7 +113,7 @@ public class LogEx {
     public static void wtf(Throwable tr) {
         if (!isDebug) return;
         String tag = generateTag();
-        printLog("wtf", tag, null, tr);
+        printLog("wtf", tag, "", tr);
     }
 
     private static void printLog(String type, String tag, String content, Throwable tr) {

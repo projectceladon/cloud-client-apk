@@ -86,11 +86,13 @@ public class FileUtils {
         if (dir == null || !dir.exists() || dir.isFile()) {
             return false;
         }
-        for (File file : dir.listFiles()) {
-            if (file.isFile()) {
-                file.delete();
-            } else if (file.isDirectory()) {
-                deleteDirection(file);//递归
+        if (dir.listFiles() != null) {
+            for (File file : dir.listFiles()) {
+                if (file.isFile()) {
+                    file.delete();
+                } else if (file.isDirectory()) {
+                    deleteDirection(file);//递归
+                }
             }
         }
         dir.delete();
@@ -234,6 +236,7 @@ public class FileUtils {
      * @param isAppend true从尾部写入，false从头覆盖写入
      */
     public static void writeFile(String text, String fileStr, boolean isAppend) {
+        FileOutputStream f = null;
         try {
             File file = new File(fileStr);
             File parentFile = file.getParentFile();
@@ -243,12 +246,20 @@ public class FileUtils {
             if (!file.exists()) {
                 file.createNewFile();
             }
-            FileOutputStream f = new FileOutputStream(fileStr, isAppend);
+            f = new FileOutputStream(fileStr, isAppend);
             f.write(text.getBytes());
             f.close();
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+        } finally {
+            if (f != null) {
+                try {
+                    f.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -280,9 +291,11 @@ public class FileUtils {
         }
         File destFileDir = new File(destDir);
         destFileDir.mkdirs();
+        FileOutputStream fos = null;
+        FileInputStream fis = null;
         try {
-            FileInputStream fis = new FileInputStream(srcPath);
-            FileOutputStream fos = new FileOutputStream(destFile);
+            fis = new FileInputStream(srcPath);
+            fos = new FileOutputStream(destFile);
             byte[] buf = new byte[1024];
             int c;
             while ((c = fis.read(buf)) != -1) {
@@ -293,6 +306,21 @@ public class FileUtils {
             flag = true;
         } catch (IOException e) {
             e.printStackTrace();
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (fis != null) {
+                try {
+                    fis.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
         return flag;
     }
@@ -337,10 +365,14 @@ public class FileUtils {
             //如果是目录则递归计算其内容的总大小
             if (file.isDirectory()) {
                 File[] children = file.listFiles();
-                double size = 0;
-                for (File f : children)
-                    size += getDirSize(f);
-                return size;
+                if (children != null) {
+                    double size = 0;
+                    for (File f : children)
+                        size += getDirSize(f);
+                    return size;
+                } else {
+                    return 0.0;
+                }
             } else {//如果是文件则直接返回其大小,以“兆”为单位
                 return (double) file.length() / 1024 / 1024;
             }
@@ -465,11 +497,13 @@ public class FileUtils {
         if (!(rslt = file.delete())) {// 先尝试直接删除
             // 若文件夹非空。枚举、递归删除里面内容
             final File subs[] = file.listFiles();
-            final int size = subs.length - 1;
-            for (int i = 0; i <= size; i++) {
-                if (subs[i].isDirectory())
-                    deleteDirectoryAllFile(subs[i]);// 递归删除子文件夹内容
-                rslt = subs[i].delete();// 删除子文件夹本身
+            if (subs != null) {
+                final int size = subs.length - 1;
+                for (int i = 0; i <= size; i++) {
+                    if (subs[i].isDirectory())
+                        deleteDirectoryAllFile(subs[i]);// 递归删除子文件夹内容
+                    rslt = subs[i].delete();// 删除子文件夹本身
+                }
             }
             // rslt = file.delete();// 删除此文件夹本身
         }

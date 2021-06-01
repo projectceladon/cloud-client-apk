@@ -127,7 +127,7 @@ public class GAConfigHelper extends SQLiteOpenHelper {
                 db = helper.getWritableDatabase();
                 if (key.trim().equals(""))
                     break;
-                if (config.get("host").trim().equals(""))
+                if (config.get("host") != null && config.get("host").trim().equals(""))
                     break;
                 if (isUpdate == false) {
                     // check existing?
@@ -135,6 +135,7 @@ public class GAConfigHelper extends SQLiteOpenHelper {
                             "name = '" + key + "'",
                             null, null, null, null);
                     if (c.moveToFirst() != false) {
+                        c.close();
                         break;
                     }
                     c.close();
@@ -232,10 +233,11 @@ public class GAConfigHelper extends SQLiteOpenHelper {
                 //
                 db.execSQL("UPDATE profile SET name = '" + newName + "' WHERE name = '" + key + "'");
                 ret = true;
+                c.close();
             } catch (Exception e) {
+                if (c != null) c.close();
             }
         } while (false);
-        if (c != null) c.close();
         if (db != null) db.close();
         if (helper != null) helper.close();
         return ret;
