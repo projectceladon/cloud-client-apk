@@ -97,10 +97,10 @@ public class Base64Utils {
             bitmap.compress(Bitmap.CompressFormat.JPEG, quality, baos);
 
             baos.flush();
-            baos.close();
 
             byte[] bitmapBytes = baos.toByteArray();
             result = encodeToString(bitmapBytes, Base64.DEFAULT);
+            baos.close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

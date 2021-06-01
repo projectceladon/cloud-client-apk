@@ -128,10 +128,12 @@ public class PermissionPageUtils {
             ex.printStackTrace();
             return null;
         } finally {
-            try {
-                input.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if(input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
         return line;
