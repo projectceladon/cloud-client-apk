@@ -18,6 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import owt.base.ActionCallback;
+import owt.base.AudioCodecParameters;
+import owt.base.AudioEncodingParameters;
 import owt.base.ContextInitialization;
 import owt.base.VideoEncodingParameters;
 import owt.p2p.P2PClient;
@@ -27,6 +29,7 @@ import static owt.base.MediaCodecs.VideoCodec.H264;
 import static owt.base.MediaCodecs.VideoCodec.H265;
 import static owt.base.MediaCodecs.VideoCodec.VP8;
 import static owt.base.MediaCodecs.VideoCodec.VP9;
+import static owt.base.MediaCodecs.AudioCodec.OPUS;
 
 public class P2PHelper {
     public static String serverIP = "http://153.35.78.77:8095/";
@@ -71,6 +74,8 @@ public class P2PHelper {
         VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
         VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
         VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);
+        AudioCodecParameters opusCodec = new AudioCodecParameters(OPUS);
+        AudioEncodingParameters opus = new AudioEncodingParameters(opusCodec);
         updateP2PCoturnIP();
         List<PeerConnection.IceServer> iceServers = new ArrayList();
         List<String> urls = new ArrayList<>();
@@ -85,6 +90,7 @@ public class P2PHelper {
                 .addVideoParameters(h264)
                 //      .addVideoParameters(vp8)
                 .addVideoParameters(h265)
+                .addAudioParameters(opus)
                 .setRTCConfiguration(rtcConf)
                 .build();
     }

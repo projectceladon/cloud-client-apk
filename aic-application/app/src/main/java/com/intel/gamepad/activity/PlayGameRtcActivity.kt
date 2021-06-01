@@ -51,8 +51,11 @@ import org.json.JSONObject
 import org.webrtc.RTCStatsReport
 import org.webrtc.SingletonSurfaceView
 import owt.base.ActionCallback
+import owt.base.LocalStream
+import owt.base.MediaConstraints
 import owt.base.OwtError
 import owt.p2p.P2PClient
+import owt.p2p.Publication
 import owt.p2p.RemoteStream
 import java.io.DataInputStream
 import java.io.IOException
@@ -62,6 +65,8 @@ import java.nio.ByteBuffer
 import java.util.*
 import java.util.regex.Matcher
 import java.util.regex.Pattern
+import kotlin.collections.ArrayList
+
 
 private const val SERVER_SCREEN_WIDTH = 1920
 private const val SERVER_SCREEN_HEIGHT = 1080
@@ -86,6 +91,8 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var peerId: String = ""
     private var inCalling = false
     private var remoteStream: RemoteStream? = null
+    private lateinit var localStream: LocalStream
+    private var publication: Publication? = null
     private var remoteStreamEnded = false
     private var controller: BaseController? = null
     private var viewWidth = DensityUtils.getmScreenWidth()
@@ -136,7 +143,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         }
         mIm = getSystemService(Context.INPUT_SERVICE) as InputManager
         mIm.registerInputDeviceListener(this, null)
-        checkLocationPermission()
+        checkPermissions()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             checkMediaCodecSupportTypes()
         }
@@ -179,48 +186,76 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         }
     }
 
-    private fun checkLocationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    REQUEST_PERMISSIONS_REQUEST_CODE
-                )
-            } else {
+    private fun checkPermissions() {
+        LogEx.d("checkPermissions called");
+
+        val permissions: Array<String> = arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.RECORD_AUDIO
+        );
+
+        var permissionsToAskFor = arrayOfNulls<String>(permissions.size)
+        var i: Int = 0
+
+        permissions.forEach { perm ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        perm
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permissionsToAskFor[i++] = perm;
+                    LogEx.d("permissions to ask for: ${perm}");
+                }
             }
         }
+
+        if (i > 0) { // there is at least 1 permission to ask for.
+            ActivityCompat.requestPermissions(
+                this,
+                permissionsToAskFor,
+                REQUEST_PERMISSIONS_REQUEST_CODE
+            )
+        } else
+            LogEx.d(
+                "No need to request permissions to user, " +
+                        "as App already has all the required permissions"
+            )
     }
 
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String?>,
         grantResults: IntArray
     ) {
-        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-            if (grantResults.size <= 0) {
-                // If user interaction was interrupted, the permission request is cancelled and you
-                // receive empty arrays.
-            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    longToast("The location permission has been granted")
-                    if (requesPermissionFromServer) {
-                        getPositionNetwork()
-                        getPositionGPS()
-                        requesPermissionFromServer = false
+        if (grantResults.size <= 0) {
+            // If user interaction was interrupted, the permission request is cancelled and you
+            // receive empty arrays.
+        }
+        for (i in permissions.indices) {
+            if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+                if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    if (permissions[i]?.let { perm ->
+                            ActivityCompat.checkSelfPermission(
+                                this, perm
+                            )
+                        } == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        longToast("The ${permissions[i]} permission has been granted")
+                        if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) &&
+                            requesPermissionFromServer
+                        ) {
+                            getPositionNetwork()
+                            getPositionGPS()
+                            requesPermissionFromServer = false
+                        }
+                    } else {
+                        // Permission denied.
+                        longToast("The ${permissions[i]} permission has been denied")
+
+                        if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION))
+                            requesPermissionFromServer = false
                     }
                 }
-            } else {
-                // Permission denied.
-                requesPermissionFromServer = false
-                longToast("The location permission has not been granted")
             }
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -470,12 +505,49 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                             runOnUiThread {
                                 disableLocation()
                             }
-                        }
-                    }
-                } else {
-                    // Do nothing.
-                }
+                        } else if (key.equals("start-audio")) {
+                            LogEx.d("Received start-audio")
+                            val thread = Thread(Runnable {
+                                LogEx.d("publishing audio-only localStream")
+                                publication = null
+                                localStream = LocalStream(MediaConstraints.AudioTrackConstraints())
+                                localStream.enableAudio()
+                                LogEx.d("localStream id: " + localStream?.id())
+                                P2PHelper.getClient()
+                                    .publish(
+                                        P2PHelper.peerId,
+                                        localStream,
+                                        object : ActionCallback<Publication?> {
 
+                                            override fun onSuccess(result: Publication?) {
+                                                publication = result;
+
+                                                LogEx.d("onSuccess localStream published!!")
+                                                publication!!.addObserver(object :
+                                                    Publication.PublicationObserver {
+                                                    override fun onEnded() {
+                                                        LogEx.e("publication onEnded ")
+                                                    }
+                                                })
+                                            }
+
+                                            override fun onFailure(error: OwtError) {
+                                                LogEx.e("onFailure: " + error.errorMessage)
+                                            }
+
+                                        });
+                            });
+                            thread.start()
+                        } else if (key.equals("stop-audio")) {
+                            LogEx.d("Received stop-audio")
+                            LogEx.d("stopping localStream")
+                            localStream?.disableAudio()
+                            publication?.stop()
+                        }
+                    } else {
+                        // Do nothing.
+                    }
+                }
             }
 
             override fun onStreamAdded(remoteStream: RemoteStream) {
