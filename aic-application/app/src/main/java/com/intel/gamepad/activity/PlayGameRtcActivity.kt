@@ -527,23 +527,19 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                     while (i < 4) {
                         val res = mInputStream.read()
                         if (res < 0) {
-                            Log.d("test", "initTCPListener: read length failed")
                             break
                         }
                         length += res shl i * 8
                         i++
                     }
                     if (length <= 0 || length > 512) {
-                        Log.d("test", "initTCPListener: read length is not right")
                         break
                     } else {
                         val buf = ByteArray(length)
                         val ret = mInputStream.read(buf, 0, length)
                         val strRev = String(buf)
                         if (ret < 0) {
-                            Log.d("test", "initTCPListener------read failed")
                         } else {
-                            //Log.d("test", "From Server :        " + strRev)
                             nCountInput++
                             val strSplit: Array<String> =
                                 strRev.split("size ".toRegex()).toTypedArray()
