@@ -93,8 +93,9 @@ public class GAClient {
         setObjectPath(gaconfig.get("object"));
         setRTPOverTCP(Integer.parseInt(gaconfig.get("rtpovertcp")) != 0);
         setCtrlEnable(Integer.parseInt(gaconfig.get("ctrlenable")) != 0);
-        if(gaconfig.get("ctrlprotocol") != null) {
-            setCtrlProtocol(gaconfig.get("ctrlprotocol").equals("tcp") ? true : false);
+        String strCtl = gaconfig.get("ctrlprotocol");
+        if (strCtl != null) {
+            setCtrlProtocol(strCtl.equals("tcp") ? true : false);
         }
         setCtrlPort(Integer.parseInt(gaconfig.get("ctrlport")));
         setAudioCodec(

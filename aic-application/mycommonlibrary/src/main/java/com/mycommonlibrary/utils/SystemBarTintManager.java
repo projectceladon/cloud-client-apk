@@ -252,6 +252,10 @@ public class SystemBarTintManager {
         }
     }
 
+    public View getStatusBarTintView () {
+        return mStatusBarTintView;
+    }
+
     /**
      * Apply the specified drawable to the system navigation bar.
      *

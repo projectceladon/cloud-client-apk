@@ -116,7 +116,7 @@ public class MyBitmapUtils {
             options.inJustDecodeBounds = false;
             is.close();
         } catch (FileNotFoundException e) {
-            if(is != null) {
+            if (is != null) {
                 try {
                     is.close();
                 } catch (IOException ioe) {
@@ -169,7 +169,7 @@ public class MyBitmapUtils {
             fos.close();
             return true;
         } catch (Exception e) {
-            if(fos != null) {
+            if (fos != null) {
                 try {
                     fos.close();
                 } catch (IOException ioe) {
@@ -196,7 +196,9 @@ public class MyBitmapUtils {
         }
         boolean bCompress = bmp.compress(format, quality, stream);
         try {
-            stream.close();
+            if (stream != null) {
+                stream.close();
+            }
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }

@@ -37,12 +37,13 @@ public class SmsUtils {
      */
     public static List<SmsInfo> getMessages(Context context, String smsUri) {
         List<SmsInfo> listSms = new ArrayList<>();
+        Cursor cur = null;
         try {
             ContentResolver cr = context.getContentResolver();
             String[] projection = new String[]{"_id", "address", "person",
                     "body", "date", "type"};
             Uri uri = Uri.parse(smsUri == null ? SMS_URI_ALL : smsUri);
-            Cursor cur = cr.query(uri, projection, null, null, "date desc");
+            cur = cr.query(uri, projection, null, null, "date desc");
 
             if (cur.moveToFirst()) {
                 String name;
@@ -89,6 +90,10 @@ public class SmsUtils {
             cur.close();
         } catch (SQLiteException ex) {
             Log.d(TAG, ex.getMessage());
+        } finally {
+            if(cur != null) {
+                cur.close();
+            }
         }
         return listSms;
     }
