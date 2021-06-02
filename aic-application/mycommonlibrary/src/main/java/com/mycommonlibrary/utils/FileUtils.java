@@ -85,18 +85,20 @@ public class FileUtils {
     public static boolean deleteDirection(File dir) {
         if (dir == null || !dir.exists() || dir.isFile()) {
             return false;
-        }
-        if (dir.listFiles() != null) {
-            for (File file : dir.listFiles()) {
-                if (file.isFile()) {
-                    file.delete();
-                } else if (file.isDirectory()) {
-                    deleteDirection(file);//递归
+        } else {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        file.delete();
+                    } else if (file.isDirectory()) {
+                        deleteDirection(file);//递归
+                    }
                 }
             }
+            dir.delete();
+            return true;
         }
-        dir.delete();
-        return true;
     }
 
     /**

@@ -730,24 +730,27 @@ public abstract class BaseController implements OnTouchListener {
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
-            meb.getData().getParameters().setAction(action);
-            meb.getData().getParameters().setTouchx(x);
-            meb.getData().getParameters().setTouchy(y);
-            meb.getData().getParameters().setFingerID(pointId);
+            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+            if (parameters != null) {
+                parameters.setAction(action);
+                parameters.setTouchx(x);
+                parameters.setTouchy(y);
+                parameters.setFingerID(pointId);
 
-            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            //LogEx.d(jsonString);
-            if (action == MotionEvent.ACTION_UP) {
-                nCountInput++;
-                Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
-                Trace.endSection();
-            }
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                @Override
-                public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+                //LogEx.d(jsonString);
+                if (action == MotionEvent.ACTION_UP) {
+                    nCountInput++;
+                    Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
+                    Trace.endSection();
                 }
-            });
+                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    }
+                });
+            }
         }
     }
 
@@ -759,17 +762,20 @@ public abstract class BaseController implements OnTouchListener {
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
-            meb.getData().getParameters().setAction(action);
-            meb.getData().getParameters().setKeycode(keyCode);
+            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+            if (parameters != null) {
+                parameters.setAction(action);
+                parameters.setKeycode(keyCode);
 
-            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            LogEx.d(jsonString);
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                @Override
-                public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                }
-            });
+                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+                LogEx.d(jsonString);
+                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    }
+                });
+            }
         }
     }
 
@@ -904,36 +910,39 @@ public abstract class BaseController implements OnTouchListener {
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
-            meb.getData().getParameters().setgpID(joyId);
-            if (EV_NON == type) {
-                if (enableJoy) {
-                    meb.getData().getParameters().setData("gpEnable");
+            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+            if (parameters != null) {
+                parameters.setgpID(joyId);
+                if (EV_NON == type) {
+                    if (enableJoy) {
+                        parameters.setData("gpEnable");
+                    } else {
+                        parameters.setData("gpDisable");
+                    }
                 } else {
-                    meb.getData().getParameters().setData("gpDisable");
+                    String data = null;
+                    if (EV_ABS == type) {
+                        data = "a " + keyCode + " " + keyValue + "\n";
+                    } else if (EV_KEY == type) {
+                        data = "k " + keyCode + " " + keyValue + "\n";
+                    }
+                    if (data != null) {
+                        parameters.setData(data);
+                    }
                 }
-            } else {
-                String data = null;
-                if (EV_ABS == type) {
-                    data = "a " + keyCode + " " + keyValue + "\n";
-                } else if (EV_KEY == type) {
-                    data = "k " + keyCode + " " + keyValue + "\n";
-                }
-                if (data != null) {
-                    meb.getData().getParameters().setData(data);
-                }
-            }
 
-            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            //Log.d("test", "jsonString: " + jsonString);
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                @Override
-                public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                }
-            });
+                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+                //Log.d("test", "jsonString: " + jsonString);
+                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    }
+                });
 
-            if (EV_NON != type) {
-                sendJoyStickEventCommit(EV_COMMIT, 0, 0, true, joyId);
+                if (EV_NON != type) {
+                    sendJoyStickEventCommit(EV_COMMIT, 0, 0, true, joyId);
+                }
             }
         }
     }
@@ -946,25 +955,28 @@ public abstract class BaseController implements OnTouchListener {
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
-            meb.getData().getParameters().setgpID(joyId);
-            if (EV_NON == type) {
-                if (enableJoy) {
-                    meb.getData().getParameters().setData("gpEnable");
+            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+            if (parameters != null) {
+                parameters.setgpID(joyId);
+                if (EV_NON == type) {
+                    if (enableJoy) {
+                        parameters.setData("gpEnable");
+                    } else {
+                        parameters.setData("gpDisable");
+                    }
                 } else {
-                    meb.getData().getParameters().setData("gpDisable");
+                    String data = "c\n";
+                    parameters.setData(data);
                 }
-            } else {
-                String data = "c\n";
-                meb.getData().getParameters().setData(data);
+                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+                //Log.d("test", "jsonString: " + jsonString);
+                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    }
+                });
             }
-            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            //Log.d("test", "jsonString: " + jsonString);
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                @Override
-                public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                }
-            });
         }
     }
 

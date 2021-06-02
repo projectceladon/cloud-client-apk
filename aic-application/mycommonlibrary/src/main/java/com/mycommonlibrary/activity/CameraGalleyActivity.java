@@ -342,13 +342,15 @@ public class CameraGalleyActivity extends AppCompatActivity implements OnClickLi
     private void copyFile(File sourceFile, File targetFile) {
         // 新建文件输入流并对它进行缓冲
         FileInputStream input = null;
+        FileOutputStream output = null;
+        BufferedOutputStream outBuff = null;
         try {
             input = new FileInputStream(sourceFile);
             BufferedInputStream inBuff = new BufferedInputStream(input);
 
             // 新建文件输出流并对它进行缓冲
-            FileOutputStream output = new FileOutputStream(targetFile);
-            BufferedOutputStream outBuff = new BufferedOutputStream(output);
+            output = new FileOutputStream(targetFile);
+            outBuff = new BufferedOutputStream(output);
 
             // 缓冲数组
             byte[] b = new byte[1024 * 5];
@@ -369,6 +371,20 @@ public class CameraGalleyActivity extends AppCompatActivity implements OnClickLi
             if (input != null) {
                 try {
                     input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (output != null) {
+                try {
+                    output.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (outBuff != null) {
+                try {
+                    outBuff.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

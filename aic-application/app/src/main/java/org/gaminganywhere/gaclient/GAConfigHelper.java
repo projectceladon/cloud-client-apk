@@ -127,7 +127,7 @@ public class GAConfigHelper extends SQLiteOpenHelper {
                 db = helper.getWritableDatabase();
                 if (key.trim().equals(""))
                     break;
-                if (config.get("host") != null && config.get("host").trim().equals(""))
+                if (config != null && config.get("host") != null && config.get("host").trim().equals(""))
                     break;
                 if (isUpdate == false) {
                     // check existing?
@@ -236,6 +236,10 @@ public class GAConfigHelper extends SQLiteOpenHelper {
                 c.close();
             } catch (Exception e) {
                 if (c != null) c.close();
+            } finally {
+                if (c != null) {
+                    c.close();
+                }
             }
         } while (false);
         if (db != null) db.close();

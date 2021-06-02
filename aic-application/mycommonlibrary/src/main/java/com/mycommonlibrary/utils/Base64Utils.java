@@ -106,7 +106,6 @@ public class Base64Utils {
         } finally {
             try {
                 if (baos != null) {
-                    baos.flush();
                     baos.close();
                 }
             } catch (IOException e) {

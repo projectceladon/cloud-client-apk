@@ -12,9 +12,10 @@ public class PingUtils {
 
     public static String getPing(String ipAddress) {
         Process p = null;
+        BufferedReader buf = null;
         try {
             p = Runtime.getRuntime().exec("ping -c 4 " + ipAddress);
-            BufferedReader buf = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            buf = new BufferedReader(new InputStreamReader(p.getInputStream()));
             String str;
             StringBuilder builder = new StringBuilder();
             while ((str = buf.readLine()) != null) {
@@ -29,6 +30,13 @@ public class PingUtils {
             if (p != null) {
                 try {
                     p.getInputStream().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (buf != null) {
+                try {
+                    buf.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
