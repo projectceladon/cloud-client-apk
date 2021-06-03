@@ -127,56 +127,59 @@ public class GAConfigHelper extends SQLiteOpenHelper {
                 db = helper.getWritableDatabase();
                 if (key.trim().equals(""))
                     break;
-                if (config != null && config.get("host") != null && config.get("host").trim().equals(""))
+                if(config != null) {
+                    String strHost = config.get("host");
+                    if (strHost != null && strHost.trim().equals(""))
                     break;
-                if (isUpdate == false) {
-                    // check existing?
-                    Cursor c = db.query("profile", null,
-                            "name = '" + key + "'",
-                            null, null, null, null);
-                    if (c.moveToFirst() != false) {
+                    if (isUpdate == false) {
+                        // check existing?
+                        Cursor c = db.query("profile", null,
+                                "name = '" + key + "'",
+                                null, null, null, null);
+                        if (c.moveToFirst() != false) {
+                            c.close();
+                            break;
+                        }
                         c.close();
-                        break;
+                        // create new
+                        db.execSQL("INSERT INTO profile ("
+                                + "name, protocol, host, port, object, rtpovertcp, "
+                                + "ctrlenable, ctrlprotocol, ctrlport, ctrlrelative, "
+                                + "audio_channels, audio_samplerate) "
+                                + "VALUES ("
+                                + "'" + config.get("name") + "', "
+                                + "'" + config.get("protocol") + "', "
+                                + "'" + config.get("host") + "', "
+                                + config.get("port") + ", "
+                                + "'" + config.get("object") + "', "
+                                + config.get("rtpovertcp") + ", "
+                                + config.get("ctrlenable") + ", "
+                                + "'" + config.get("ctrlprotocol") + "', "
+                                + config.get("ctrlport") + ", "
+                                + config.get("ctrlrelative") + ", "
+                                + config.get("audio_channels") + ", "
+                                + config.get("audio_samplerate")
+                                + ")");
+                    } else {
+                        // update existing
+                        db.execSQL("UPDATE profile SET "
+                                // server
+                                + "protocol = '" + config.get("protocol") + "',"
+                                + "host = '" + config.get("host") + "',"
+                                + "port = " + config.get("port") + ","
+                                + "object = '" + config.get("object") + "',"
+                                + "rtpovertcp = " + config.get("rtpovertcp") + ","
+                                // controller
+                                + "ctrlenable = " + config.get("ctrlenable") + ","
+                                + "ctrlprotocol = '" + config.get("ctrlprotocol") + "',"
+                                + "ctrlport = " + config.get("ctrlport") + ","
+                                + "ctrlrelative = " + config.get("ctrlrelative") + ","
+                                // decoders
+                                + "audio_channels = " + config.get("audio_channels") + ","
+                                + "audio_samplerate = " + config.get("audio_samplerate") + " "
+                                //
+                                + "WHERE name = '" + config.get("name") + "'");
                     }
-                    c.close();
-                    // create new
-                    db.execSQL("INSERT INTO profile ("
-                            + "name, protocol, host, port, object, rtpovertcp, "
-                            + "ctrlenable, ctrlprotocol, ctrlport, ctrlrelative, "
-                            + "audio_channels, audio_samplerate) "
-                            + "VALUES ("
-                            + "'" + config.get("name") + "', "
-                            + "'" + config.get("protocol") + "', "
-                            + "'" + config.get("host") + "', "
-                            + config.get("port") + ", "
-                            + "'" + config.get("object") + "', "
-                            + config.get("rtpovertcp") + ", "
-                            + config.get("ctrlenable") + ", "
-                            + "'" + config.get("ctrlprotocol") + "', "
-                            + config.get("ctrlport") + ", "
-                            + config.get("ctrlrelative") + ", "
-                            + config.get("audio_channels") + ", "
-                            + config.get("audio_samplerate")
-                            + ")");
-                } else {
-                    // update existing
-                    db.execSQL("UPDATE profile SET "
-                            // server
-                            + "protocol = '" + config.get("protocol") + "',"
-                            + "host = '" + config.get("host") + "',"
-                            + "port = " + config.get("port") + ","
-                            + "object = '" + config.get("object") + "',"
-                            + "rtpovertcp = " + config.get("rtpovertcp") + ","
-                            // controller
-                            + "ctrlenable = " + config.get("ctrlenable") + ","
-                            + "ctrlprotocol = '" + config.get("ctrlprotocol") + "',"
-                            + "ctrlport = " + config.get("ctrlport") + ","
-                            + "ctrlrelative = " + config.get("ctrlrelative") + ","
-                            // decoders
-                            + "audio_channels = " + config.get("audio_channels") + ","
-                            + "audio_samplerate = " + config.get("audio_samplerate") + " "
-                            //
-                            + "WHERE name = '" + config.get("name") + "'");
                 }
                 ret = true;
             } catch (Exception e) {
