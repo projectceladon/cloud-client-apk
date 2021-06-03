@@ -131,9 +131,6 @@ dependencies {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'
     }
-    // Bugly
-    implementation 'com.tencent.bugly:crashreport:latest.release'
-    implementation 'com.tencent.bugly:nativecrashreport:latest.release'
     // PhotoView
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'org.apache.commons:commons-text:1.7'

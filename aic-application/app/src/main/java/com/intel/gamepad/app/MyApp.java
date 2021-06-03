@@ -21,7 +21,6 @@ import com.lzy.okgo.cookie.store.SPCookieStore;
 import com.lzy.okgo.interceptor.HttpLoggingInterceptor;
 import com.mycommonlibrary.application.UtilsApplication;
 import com.mycommonlibrary.utils.LogEx;
-import com.tencent.bugly.crashreport.CrashReport;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
