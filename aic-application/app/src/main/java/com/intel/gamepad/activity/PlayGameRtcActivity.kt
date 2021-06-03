@@ -194,8 +194,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
             Manifest.permission.RECORD_AUDIO
         );
 
-        var permissionsToAskFor = arrayOfNulls<String>(permissions.size)
-        var i: Int = 0
+        var permissionsToAskFor: ArrayList<String> = arrayListOf();
 
         permissions.forEach { perm ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -204,16 +203,16 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                         perm
                     ) != PackageManager.PERMISSION_GRANTED
                 ) {
-                    permissionsToAskFor[i++] = perm;
-                    LogEx.d("permissions to ask for: ${perm}");
+                    permissionsToAskFor.add(perm);
                 }
             }
         }
 
-        if (i > 0) { // there is at least 1 permission to ask for.
+        if (!permissionsToAskFor.isEmpty()) { // there is at least 1 permission to ask for.
+            permissionsToAskFor.forEach { perm -> LogEx.d("permissions to ask for: ${perm}") }
             ActivityCompat.requestPermissions(
                 this,
-                permissionsToAskFor,
+                permissionsToAskFor.toTypedArray(),
                 REQUEST_PERMISSIONS_REQUEST_CODE
             )
         } else
