@@ -9,7 +9,8 @@
     <application android:allowBackup="true">
         <activity
             android:name=".activity.CameraGalleyActivity"
-            android:theme="@style/CameraGalleryTheme"> <!-- 此界面设为背景透明 -->
+            android:theme="@style/CameraGalleryTheme"
+            tools:ignore="ExportedActivity"> <!-- 此界面设为背景透明 -->
             <intent-filter>
                 <action android:name="${applicationId}.CameraGalleyActivity" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -17,7 +18,8 @@
         </activity>
         <activity
             android:name=".activity.calendar.CalendarActivity"
-            android:label="选择日期">
+            android:label="选择日期"
+            tools:ignore="ExportedActivity">
             <intent-filter>
                 <action android:name="${applicationId}.CalendarActivity" />
                 <category android:name="android.intent.category.DEFAULT" />
