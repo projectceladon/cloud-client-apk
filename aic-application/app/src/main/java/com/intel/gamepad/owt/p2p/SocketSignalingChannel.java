@@ -11,6 +11,7 @@ import android.util.Log;
 
 import com.mycommonlibrary.utils.LogEx;
 
+import okhttp3.OkHttpClient;
 import owt.base.ActionCallback;
 import owt.base.Const;
 import owt.base.OwtError;
@@ -25,9 +26,20 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import io.socket.client.Ack;
 import io.socket.client.IO;
@@ -52,6 +64,8 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
     private Socket socketIOClient;
     private List<SignalingChannelObserver> signalingChannelObservers;
     private ActionCallback<String> connectCallback;
+    static SSLContext sslContext;
+    static HostnameVerifier hostnameVerifier;
 
     // Socket.IO events.
     private Listener onConnectErrorCallback = args -> {
@@ -153,9 +167,54 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
             opt.forceNew = true;
             opt.reconnection = true;
             opt.reconnectionAttempts = MAX_RECONNECT_ATTEMPTS;
-            if (socketIOClient != null) {
-                Log.d(TAG, "stop reconnecting the former url");
-                socketIOClient.disconnect();
+            if (url.contains("https")) {
+                Log.d(TAG, "url: " + url);
+                opt.secure = true;
+                if (socketIOClient != null) {
+                    Log.d(TAG, "stop reconnecting the former url");
+                    socketIOClient.disconnect();
+                }
+                OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+                hostnameVerifier = new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String hostname, SSLSession session) {
+                        return true;
+                    }
+                };
+
+                TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
+                    @Override
+                    public void checkClientTrusted(X509Certificate[] chain, String authType)
+                            throws CertificateException {
+                    }
+
+                    @Override
+                    public void checkServerTrusted(X509Certificate[] chain, String authType)
+                            throws CertificateException {
+                    }
+
+                    @Override
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+                }};
+
+                try {
+                    sslContext = SSLContext.getInstance("TLS");
+                    sslContext.init(null, trustManagers, null);
+                } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                    e.printStackTrace();
+                }
+
+                if (sslContext != null) {
+                    clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagers[0]);
+                }
+                if (hostnameVerifier != null) {
+                    clientBuilder.hostnameVerifier(hostnameVerifier);
+                }
+                OkHttpClient httpClient = clientBuilder.build();
+                opt.callFactory = httpClient;
+                opt.webSocketFactory = httpClient;
             }
             socketIOClient = IO.socket(url, opt);
 
@@ -167,7 +226,6 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
                     .on(FORCE_DISCONNECT, onForceDisconnectCallback);
 
             socketIOClient.connect();
-
         } catch (JSONException e) {
             if (callback != null) {
                 callback.onFailure(new OwtError(P2P_CLIENT_ILLEGAL_ARGUMENT.value, e.getMessage()));
