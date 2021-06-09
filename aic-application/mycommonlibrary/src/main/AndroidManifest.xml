@@ -9,18 +9,10 @@
         <activity
             android:name=".activity.CameraGalleyActivity"
             android:theme="@style/CameraGalleryTheme"> <!-- 此界面设为背景透明 -->
-            <intent-filter>
-                <action android:name="${applicationId}.CameraGalleyActivity" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
         </activity>
         <activity
             android:name=".activity.calendar.CalendarActivity"
             android:label="选择日期">
-            <intent-filter>
-                <action android:name="${applicationId}.CalendarActivity" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
         </activity>
 
         <provider
