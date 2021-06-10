@@ -17,18 +17,66 @@ import com.lzy.okgo.model.Response
 import com.mycommonlibrary.utils.LogEx
 import com.mycommonlibrary.utils.StatusBarUtil
 import com.mycommonlibrary.view.loadingDialog.LoadingDialog
+import org.jetbrains.anko.longToast
+import java.io.BufferedReader
+import java.io.File
+import java.io.InputStreamReader
 
 class SplashActivity : BaseActvitiy() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         windowFullScreen()
         super.onCreate(savedInstanceState)
+        if(isDeviceRooted()) {
+            longToast("This is rooted device!")
+        }
         setContentView(R.layout.activity_splash)
     }
 
     override fun onStart() {
         super.onStart()
         GameDetailActivity.actionStart(this)
+    }
+
+    fun isDeviceRooted(): Boolean {
+        return checkRootMethodOne() || checkRootMethodTwo() || checkRootMethodThree()
+    }
+
+    private fun checkRootMethodOne(): Boolean {
+        val buildTags = Build.TAGS
+        return buildTags != null && buildTags.contains("test-keys")
+    }
+
+    private fun checkRootMethodTwo(): Boolean {
+        val paths = arrayOf(
+            "/system/app/Superuser.apk",
+            "/sbin/su",
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/data/local/xbin/su",
+            "/data/local/bin/su",
+            "/system/sd/xbin/su",
+            "/system/bin/failsafe/su",
+            "/data/local/su",
+            "/su/bin/su"
+        )
+        for (path in paths) {
+            if (File(path).exists()) return true
+        }
+        return false
+    }
+
+    private fun checkRootMethodThree(): Boolean {
+        var process: Process? = null
+        return try {
+            process = Runtime.getRuntime().exec(arrayOf("/system/xbin/which", "su"))
+            val `in` = BufferedReader(InputStreamReader(process.inputStream))
+            if (`in`.readLine() != null) true else false
+        } catch (t: Throwable) {
+            false
+        } finally {
+            process?.destroy()
+        }
     }
 
     private fun windowFullScreen() {
