@@ -7,6 +7,10 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.ColorDrawable
 import android.hardware.input.InputManager
+import android.hardware.SensorManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
 import android.location.*
 import android.media.MediaCodecList
 import android.os.*
@@ -74,6 +78,7 @@ private const val DELAY_GET_STATUS = 3000L
 
 class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     InputManager.InputDeviceListener,
+    SensorEventListener,
     CoroutineScope by MainScope() {
     companion object {
         const val RESULT_MSG = "resultMsg"
@@ -123,6 +128,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private val TYPE_MEDIA_ENCODER = "encoder"
     private val TYPE_MEDIA_DECODER = "decoder"
     private val TYPE_MEDIA_H264 = "h264"
+    private var mSensorManager: SensorManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         initUIFeature()// 设置窗口特性
@@ -142,6 +148,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
             tvMyStatus.visibility = if (chkStatusTitle.isChecked) View.VISIBLE else View.GONE
         }
         mIm = getSystemService(Context.INPUT_SERVICE) as InputManager
+        mSensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         mIm.registerInputDeviceListener(this, null)
         checkPermissions()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -435,6 +442,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     override fun onDestroy() {
         super.onDestroy()
         disableLocation()
+        mSensorManager?.unregisterListener(this)
         LogEx.e("RTC Activity onDestroy called");
         handler?.removeMessages(AppConst.MSG_SHOW_CONTROLLER)
         cancel()
@@ -542,6 +550,18 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                             LogEx.d("stopping localStream")
                             localStream?.disableAudio()
                             publication?.stop()
+                        } else if (key.equals("sensor-start")) {
+                            LogEx.d("Received sensor start")
+                            if (!JSONObject(message).isNull("sType")) {
+                                val type = JSONObject(message).getInt("sType")
+                                registerSensorEvents(type);
+                            }
+                        } else if (key.equals("sensor-stop")) {
+                            LogEx.d("Received sensor stop")
+                            if (!JSONObject(message).isNull("sType")) {
+                                val type = JSONObject(message).getInt("sType")
+                                deRegisterSensorEvents(type)
+                            }
                         }
                     } else {
                         // Do nothing.
@@ -742,6 +762,7 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                 LogEx.e("start message send success ${Thread.currentThread().name}")
                 sendSizeChange() // 发送窗口尺寸消息给信令服
                 initJoyStickDevices()
+                sensorsInit()
 
                 runOnUiThread {
                     // 实例一个消息机制用于定时刷新信令服状态
@@ -1086,6 +1107,72 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
             RTCControllerAndroid.TAG,
             "onInputDeviceChanged" + InputDevice.getDevice(deviceId).name
         )
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        Log.d(TAG, "onAccuracyChanged sensor type: " + sensor?.name)
+    }
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event == null)
+            return
+
+        var data: String = """{"sensor_info":{"count":1,"data":[[""" +
+                                    event.sensor.type.toString() + ","
+        when (event.sensor.type) {
+            Sensor.TYPE_ACCELEROMETER ,
+            Sensor.TYPE_MAGNETIC_FIELD,
+            Sensor.TYPE_GYROSCOPE ->
+                data += event.values[0].toString() + "," +
+                        event.values[1].toString() + "," + event.values[2].toString()
+
+            Sensor.TYPE_ACCELEROMETER_UNCALIBRATED,
+            Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED,
+            Sensor.TYPE_GYROSCOPE_UNCALIBRATED ->
+                data += event.values[0].toString() + "," + event.values[1].toString() + "," +
+                        event.values[2].toString() + "," + event.values[3].toString() + "," +
+                        event.values[4].toString() + "," + event.values[5].toString()
+
+            Sensor.TYPE_LIGHT,
+            Sensor.TYPE_PROXIMITY,
+            Sensor.TYPE_AMBIENT_TEMPERATURE ->
+                data += event.values[0].toString()
+
+            else -> data = "";
+        }
+
+        if (data.isNotEmpty()) {
+            data += "]]}}";
+            P2PHelper.getClient()
+                .send(P2PHelper.peerId, data, object : FailureCallBack<Void?>() {
+                    override fun onFailure(owtError: OwtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + data)
+                    }
+                })
+        }
+    }
+
+    fun sensorsInit() {
+        P2PHelper.getClient()
+            ?.send(P2PHelper.peerId, """{"sensor_ctrl" : "check"}""",
+                                object : P2PHelper.FailureCallBack<Void>() {
+                override fun onFailure(err: OwtError?) {
+                    LogEx.e("${err?.errorMessage} ${err?.errorCode} Failure at sensorsInit")
+                }
+            })
+    }
+
+    fun registerSensorEvents(sensorType : Int) {
+        Log.d(TAG, "Register sensor events for sensor type: " + sensorType)
+        mSensorManager?.registerListener(this,
+            mSensorManager?.getDefaultSensor(sensorType),
+            SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+    fun deRegisterSensorEvents(sensorType : Int) {
+       Log.d(TAG, "UnRegister sensor events for sensor type: " + sensorType)
+        mSensorManager?.unregisterListener(this,
+            mSensorManager?.getDefaultSensor(sensorType))
     }
 
     fun sendJoyStickEvent(
