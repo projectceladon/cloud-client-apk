@@ -71,7 +71,7 @@ public class P2PHelper {
                 .initialize();
 
         VideoEncodingParameters h264 = new VideoEncodingParameters(H264);
-        VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
+//        VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
         VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
         VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);
         AudioCodecParameters opusCodec = new AudioCodecParameters(OPUS);
@@ -89,7 +89,7 @@ public class P2PHelper {
                 //    .addVideoParameters(vp9)
                 .addVideoParameters(h264)
                 //      .addVideoParameters(vp8)
-                .addVideoParameters(h265)
+//                .addVideoParameters(h265)
                 .addAudioParameters(opus)
                 .setRTCConfiguration(rtcConf)
                 .build();
