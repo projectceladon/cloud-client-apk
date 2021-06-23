@@ -38,6 +38,7 @@ import com.intel.gamepad.controller.impl.DeviceSwitchListtener
 import com.intel.gamepad.controller.webrtc.*
 import com.intel.gamepad.owt.p2p.P2PHelper
 import com.intel.gamepad.owt.p2p.P2PHelper.FailureCallBack
+import com.intel.gamepad.utils.AicVideoCapturer
 import com.intel.gamepad.utils.AudioHelper
 import com.intel.gamepad.utils.LocationUtils
 import com.jeremy.fastsharedpreferences.FastSharedPreferences
@@ -96,8 +97,11 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
     private var peerId: String = ""
     private var inCalling = false
     private var remoteStream: RemoteStream? = null
-    private lateinit var localStream: LocalStream
-    private var publication: Publication? = null
+    private lateinit var localAudioStream: LocalStream
+    private var localVideoStream: LocalStream? = null
+    private var audioPublication: Publication? = null
+    private var videoPublication: Publication? = null
+    private var videoCapturer: AicVideoCapturer? = null
     private var remoteStreamEnded = false
     private var controller: BaseController? = null
     private var viewWidth = DensityUtils.getmScreenWidth()
@@ -198,7 +202,9 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
 
         val permissions: Array<String> = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
         );
 
         var permissionsToAskFor: ArrayList<String> = arrayListOf();
@@ -515,25 +521,26 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                         } else if (key.equals("start-audio")) {
                             LogEx.d("Received start-audio")
                             val thread = Thread(Runnable {
-                                LogEx.d("publishing audio-only localStream")
-                                publication = null
-                                localStream = LocalStream(MediaConstraints.AudioTrackConstraints())
-                                localStream.enableAudio()
-                                LogEx.d("localStream id: " + localStream?.id())
+                                LogEx.d("publishing localAudioStream")
+                                audioPublication = null
+                                localAudioStream =
+                                    LocalStream(MediaConstraints.AudioTrackConstraints())
+                                localAudioStream.enableAudio()
+                                LogEx.d("localAudioStream id: " + localAudioStream?.id())
                                 P2PHelper.getClient()
                                     .publish(
                                         P2PHelper.peerId,
-                                        localStream,
+                                        localAudioStream,
                                         object : ActionCallback<Publication?> {
 
                                             override fun onSuccess(result: Publication?) {
-                                                publication = result;
+                                                audioPublication = result;
 
-                                                LogEx.d("onSuccess localStream published!!")
-                                                publication!!.addObserver(object :
+                                                LogEx.d("onSuccess localAudioStream published!!")
+                                                audioPublication!!.addObserver(object :
                                                     Publication.PublicationObserver {
                                                     override fun onEnded() {
-                                                        LogEx.e("publication onEnded ")
+                                                        LogEx.e("audioPublication onEnded ")
                                                     }
                                                 })
                                             }
@@ -547,22 +554,23 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                             thread.start()
                         } else if (key.equals("stop-audio")) {
                             LogEx.d("Received stop-audio")
-                            LogEx.d("stopping localStream")
-                            localStream?.disableAudio()
-                            publication?.stop()
-                        } else if (key.equals("sensor-start")) {
-                            LogEx.d("Received sensor start")
-                            if (!JSONObject(message).isNull("sType")) {
-                                val type = JSONObject(message).getInt("sType")
-                                registerSensorEvents(type);
+                            LogEx.d("stopping localAudioStream")
+                            localAudioStream?.disableAudio()
+                            audioPublication?.stop()
+                        } else
+                            if (key.equals("start-camera-preview")) {
+                                LogEx.d("Received start-camera-preview")
+                                val thread = Thread(Runnable {
+                                    publishLocalVideo()
+                                });
+                                thread.start()
+                            } else if (key.equals("stop-camera-preview")) {
+                                LogEx.d("Received stop-camera-preview")
+                                LogEx.d("stopping localVideoStream")
+                                localVideoStream?.disableVideo()
+                                videoPublication?.stop()
+                                videoCapturer?.stopCapture();
                             }
-                        } else if (key.equals("sensor-stop")) {
-                            LogEx.d("Received sensor stop")
-                            if (!JSONObject(message).isNull("sType")) {
-                                val type = JSONObject(message).getInt("sType")
-                                deRegisterSensorEvents(type)
-                            }
-                        }
                     } else {
                         // Do nothing.
                     }
@@ -593,6 +601,45 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
         })
 
         initFullRender()
+    }
+
+    private fun createLocalStream(capturer: AicVideoCapturer?): LocalStream {
+        val localCameraStream = LocalStream(capturer, null);
+        if (localCameraStream != null) {
+            LogEx.d(
+                "localVideoStream id: " + localCameraStream?.id() +
+                        " hasVideo: " + localCameraStream.hasVideo()
+            )
+        }
+        return localCameraStream
+    }
+
+    private fun publishLocalVideo() {
+        LogEx.d("publishing localVideoStream.")
+        videoPublication = null
+        videoCapturer = AicVideoCapturer.create(640, 480)
+        localVideoStream = createLocalStream(videoCapturer)
+        P2PHelper.getClient()
+            .publish(
+                P2PHelper.peerId,
+                localVideoStream,
+                object : ActionCallback<Publication?> {
+
+                    override fun onSuccess(result: Publication?) {
+                        videoPublication = result;
+                        LogEx.d("onSuccess localVideoStream published!!")
+                        videoPublication!!.addObserver(object :
+                            Publication.PublicationObserver {
+                            override fun onEnded() {
+                                LogEx.e("videoPublication onEnded ")
+                            }
+                        })
+                    }
+
+                    override fun onFailure(error: OwtError) {
+                        LogEx.e("onFailure: " + error.errorMessage)
+                    }
+                });
     }
 
     private fun initTCPListener() {
