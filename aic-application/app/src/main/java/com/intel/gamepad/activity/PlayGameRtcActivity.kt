@@ -557,20 +557,31 @@ class PlayGameRtcActivity : AppCompatActivity(), DeviceSwitchListtener,
                             LogEx.d("stopping localAudioStream")
                             localAudioStream?.disableAudio()
                             audioPublication?.stop()
-                        } else
-                            if (key.equals("start-camera-preview")) {
-                                LogEx.d("Received start-camera-preview")
-                                val thread = Thread(Runnable {
-                                    publishLocalVideo()
-                                });
+                        } else if (key.equals("start-camera-preview")) {
+                            LogEx.d("Received start-camera-preview")
+                            val thread = Thread(Runnable {
+                                publishLocalVideo()
+                            });
                                 thread.start()
-                            } else if (key.equals("stop-camera-preview")) {
-                                LogEx.d("Received stop-camera-preview")
-                                LogEx.d("stopping localVideoStream")
-                                localVideoStream?.disableVideo()
-                                videoPublication?.stop()
-                                videoCapturer?.stopCapture();
+                        } else if (key.equals("stop-camera-preview")) {
+                            LogEx.d("Received stop-camera-preview")
+                            LogEx.d("stopping localVideoStream")
+                            localVideoStream?.disableVideo()
+                            videoPublication?.stop()
+                            videoCapturer?.stopCapture();
+                        } else if (key.equals("sensor-start")) {
+                            LogEx.d("Received sensor start")
+                            if (!JSONObject(message).isNull("sType")) {
+                                val type = JSONObject(message).getInt("sType")
+                                registerSensorEvents(type);
                             }
+                        } else if (key.equals("sensor-stop")) {
+                            LogEx.d("Received sensor stop")
+                            if (!JSONObject(message).isNull("sType")) {
+                                val type = JSONObject(message).getInt("sType")
+                                deRegisterSensorEvents(type)
+                            }
+                        }
                     } else {
                         // Do nothing.
                     }
