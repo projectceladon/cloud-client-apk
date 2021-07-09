@@ -124,7 +124,7 @@ class HomeFragment : Fragment() {
                     vh.setText(R.id.tvTitle, p1.title)
                     // 点击后跳详情界面
                     vh.itemView.setOnClickListener {
-                        GameDetailActivity.actionFragment(this@HomeFragment, p1)
+                       // GameDetailActivity.actionFragment(this@HomeFragment, p1)
                     }
                     // 游戏封面
                     p1.imageUrl?.let { loadImage(vh.itemView.ivGame, it) }
