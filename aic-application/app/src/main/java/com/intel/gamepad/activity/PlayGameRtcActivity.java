@@ -292,8 +292,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             } else if (key.equals("stop-audio")) {
                                 LogEx.d("Received stop-audio");
                                 LogEx.d("stopping localAudioStream");
-                                localAudioStream.disableAudio();
-                                audioPublication.stop();
+                                if(localAudioStream != null) {
+                                    localAudioStream.disableAudio();
+                                }
+                                if(audioPublication != null) {
+                                    audioPublication.stop();
+                                }
+
                             } else if (key.equals("start-camera-preview")) {
                                 LogEx.d("Received start-camera-preview");
                                 Thread thread = new Thread(new Runnable() {
@@ -306,9 +311,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             } else if (key.equals("stop-camera-preview")) {
                                 LogEx.d("Received stop-camera-preview");
                                 LogEx.d("stopping localVideoStream");
-                                localVideoStream.disableVideo();
-                                videoPublication.stop();
-                                videoCapturer.stopCapture();
+                                if(localVideoStream != null) {
+                                    localVideoStream.disableVideo();
+                                }
+                                if(videoPublication != null) {
+                                    videoPublication.stop();
+                                }
+                                if(videoCapturer != null) {
+                                    videoCapturer.stopCapture();
+                                }
                             } else if (key.equals("sensor-start")) {
                                 LogEx.d("Received sensor start");
                                 if(!jsonObject.isNull("sType")) {
