@@ -94,7 +94,7 @@ class RoomDialogFragment : DialogFragment() {
             LiveEventBus.get("roomCount").post(rc)
             // 调加入游戏接口
             val act = it as GameDetailActivity
-            act.requestJoinGame()
+           // act.requestJoinGame()
             // 关对话框
             dismiss()
         }
@@ -102,7 +102,7 @@ class RoomDialogFragment : DialogFragment() {
 
     private fun onCreateRoom() {
         activity?.let {
-            (it as GameDetailActivity).requestStartGame(true)
+           // (it as GameDetailActivity).requestStartGame(true)
             dismiss()
         }
     }

@@ -90,7 +90,7 @@ class GameListFragment : Fragment() {
             object : CommonAdapter<GameListBean>(context, listGame, R.layout.item_game_adapter) {
                 override fun convert(vh: ViewHolder, p1: GameListBean) {
                     vh.itemView.setOnClickListener {
-                        GameDetailActivity.actionFragment(this@GameListFragment, p1)
+                       // GameDetailActivity.actionFragment(this@GameListFragment, p1)
                     }
                     vh.setText(R.id.tvTitle, p1.title)
                     vh.setText(R.id.tvDesc, p1.intro)

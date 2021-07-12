@@ -50,4 +50,5 @@
     <string name="app_name2">AIC</string>
     <string name="no_hevc">设备不支持hevc</string>
     <string name="no_h264">设备不支持h264</string>
+    <string name="connect_failed">连接服务器失败: </string>
 </resources>

@@ -52,4 +52,5 @@
     <string name="current_net_speed">Net Speed：</string>
     <string name="no_hevc">The device does not support hevc</string>
     <string name="no_h264">The device does not Support h264</string>
+    <string name="connect_failed">Connect server failed: </string>
 </resources>
