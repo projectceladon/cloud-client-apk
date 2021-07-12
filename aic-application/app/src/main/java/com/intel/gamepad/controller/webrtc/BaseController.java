@@ -122,6 +122,7 @@ public abstract class BaseController implements OnTouchListener {
     protected void initBackButton(View btnBack) {
         if (btnBack == null) return;
         btnBack.setOnClickListener(view -> {
+            P2PHelper.closeP2PClient();
             onBackPress();
         });
     }
