@@ -28,7 +28,7 @@ import kotlin.coroutines.CoroutineContext;
 import kotlinx.coroutines.CoroutineScope;
 
 public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
-    private boolean useWebRTC =  true;
+    private boolean useWebRTC = true;
     private GameListBean bean = null;
     private CheckBox chkAndroid;
     private EditText etServerIP;
@@ -60,7 +60,7 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(s != null) {
+                if (s != null) {
                     IPUtils.saveip(s.toString());
                     P2PHelper.serverIP = IPUtils.loadIP();
                 }
@@ -82,7 +82,7 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(s != null) {
+                if (s != null) {
                     IPUtils.saveCoturn(s.toString());
                     P2PHelper.strCoturn = IPUtils.loadCoturnIP();
                 }
@@ -104,7 +104,7 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(s != null) {
+                if (s != null) {
                     IPUtils.savepeerid(s.toString());
                     P2PHelper.peerId = IPUtils.loadPeerID();
                 }
@@ -126,7 +126,7 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if(s != null) {
+                if (s != null) {
                     IPUtils.savetoken(s.toString());
                     P2PHelper.clientId = IPUtils.loadTokenID();
                 }
@@ -149,7 +149,7 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
         super.onDestroy();
     }
 
-    private void initView(){
+    private void initView() {
         initBackButton(R.id.ibtnBack);
         chkAndroid = findViewById(R.id.chkAndroid);
         MaterialButton btnPlay = findViewById(R.id.btnPlay);
@@ -162,9 +162,9 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
         btnPlay.requestFocus();
     }
 
-    private  void requestStartGame(Boolean isCreateRoom) {
+    private void requestStartGame(Boolean isCreateRoom) {
         LoadingDialog dlg = (LoadingDialog) LoadingDialog.show(this);
-        if(isCreateRoom) {
+        if (isCreateRoom) {
             Toast.makeText(this, "room is not supported", Toast.LENGTH_LONG);
         } else {
             gotoGamePlay();
@@ -173,10 +173,10 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
     }
 
     private void gotoGamePlay() {
-        if(bean != null) {
-            if(useWebRTC) {
+        if (bean != null) {
+            if (useWebRTC) {
                 bean.setAddurl("fps");
-                if(chkAndroid.isChecked()) {
+                if (chkAndroid.isChecked()) {
                     bean.setAddurl("android");
                 }
                 String ctrlName;
@@ -205,9 +205,10 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
             }
         }
     }
+
     private void loadData() {
         bean = getIntent().getParcelableExtra(PARAM_BEAN);
-        if(bean == null) {
+        if (bean == null) {
             bean = new GameListBean();
             bean.setIid(1);
             bean.setConf("rts");
