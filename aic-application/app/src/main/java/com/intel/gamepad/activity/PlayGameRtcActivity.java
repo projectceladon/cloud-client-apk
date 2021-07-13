@@ -140,7 +140,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         initUIFeature();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_game_rtc);
-        fullRenderer = (SurfaceView)findViewById(R.id.fullRenderer);
+        fullRenderer = (SurfaceView) findViewById(R.id.fullRenderer);
         initAudioManager();
         initP2PClient();
         DisplayMetrics outMetrics = new DisplayMetrics();
@@ -150,18 +150,18 @@ public class PlayGameRtcActivity extends AppCompatActivity
         controller = selectGamePad();
         onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
         tvMyStatus = (TextView) findViewById(R.id.tvMyStatus);
-        chkStatusTitle = (CheckBox)findViewById(R.id.chkStatusTitle);
+        chkStatusTitle = (CheckBox) findViewById(R.id.chkStatusTitle);
         chkStatusTitle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(chkStatusTitle.isChecked()) {
+                if (chkStatusTitle.isChecked()) {
                     tvMyStatus.setVisibility(View.VISIBLE);
                 } else {
                     tvMyStatus.setVisibility(View.GONE);
                 }
             }
         });
-        mIm = (InputManager)getSystemService(Context.INPUT_SERVICE);
+        mIm = (InputManager) getSystemService(Context.INPUT_SERVICE);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mIm.registerInputDeviceListener(this, null);
         checkPermissions();
@@ -192,16 +192,16 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private void hideStatusBar() {
         this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
-        | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+                | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
             View v = this.getWindow().getDecorView();
             v.setSystemUiVisibility(View.GONE);
-        } else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             View v = this.getWindow().getDecorView();
             v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            | View.SYSTEM_UI_FLAG_FULLSCREEN
-            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
         }
     }
 
@@ -240,13 +240,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
             @Override
             public void onDataReceived(String s, String s1) {
-                if(s1.startsWith("{")) {
+                if (s1.startsWith("{")) {
                     try {
                         JSONObject jsonObject = new JSONObject(s1);
-                        if(!jsonObject.isNull("type")) {
+                        if (!jsonObject.isNull("type")) {
                             String type = jsonObject.getString("type");
                         }
-                        if(!jsonObject.isNull("key")) {
+                        if (!jsonObject.isNull("key")) {
                             String key = jsonObject.getString("key");
                             if (key.equals("gps-start")) {
                                 runOnUiThread(() -> {
@@ -257,7 +257,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                 runOnUiThread(() -> {
                                     disableLocation();
                                 });
-                            }  else if (key.equals("start-audio")) {
+                            } else if (key.equals("start-audio")) {
                                 LogEx.d("Received start-audio");
                                 Thread thread = new Thread(new Runnable() {
                                     @Override
@@ -292,10 +292,10 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             } else if (key.equals("stop-audio")) {
                                 LogEx.d("Received stop-audio");
                                 LogEx.d("stopping localAudioStream");
-                                if(localAudioStream != null) {
+                                if (localAudioStream != null) {
                                     localAudioStream.disableAudio();
                                 }
-                                if(audioPublication != null) {
+                                if (audioPublication != null) {
                                     audioPublication.stop();
                                 }
 
@@ -311,24 +311,24 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             } else if (key.equals("stop-camera-preview")) {
                                 LogEx.d("Received stop-camera-preview");
                                 LogEx.d("stopping localVideoStream");
-                                if(localVideoStream != null) {
+                                if (localVideoStream != null) {
                                     localVideoStream.disableVideo();
                                 }
-                                if(videoPublication != null) {
+                                if (videoPublication != null) {
                                     videoPublication.stop();
                                 }
-                                if(videoCapturer != null) {
+                                if (videoCapturer != null) {
                                     videoCapturer.stopCapture();
                                 }
                             } else if (key.equals("sensor-start")) {
                                 LogEx.d("Received sensor start");
-                                if(!jsonObject.isNull("sType")) {
+                                if (!jsonObject.isNull("sType")) {
                                     int type = jsonObject.getInt("sType");
                                     registerSensorEvents(type);
                                 }
                             } else if (key.equals("sensor-stop")) {
                                 LogEx.d("Received sensor stop");
-                                if(!jsonObject.isNull("sType")) {
+                                if (!jsonObject.isNull("sType")) {
                                     int type = jsonObject.getInt("sType");
                                     deRegisterSensorEvents(type);
                                 }
@@ -347,7 +347,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         LocationManager mLocationManagerNetwork = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         isNetworkEnabled =
                 mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-        if(isNetworkEnabled) {
+        if (isNetworkEnabled) {
             if (mLocationListenerNetwork == null) {
                 mLocationListenerNetwork = new LocationListener() {
                     public void onLocationChanged(Location location) {
@@ -372,7 +372,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 };
             }
 
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(this,
                             new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
@@ -381,7 +381,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 } else {
                     isNetworkEnabled =
                             mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                    if(mLocationManagerNetwork != null && isNetworkEnabled) {
+                    if (mLocationManagerNetwork != null && isNetworkEnabled) {
                         mLocationManagerNetwork.requestLocationUpdates(
                                 LocationManager.NETWORK_PROVIDER,
                                 TIME_INTERVAL_TO_GET_LOCATION,
@@ -393,20 +393,24 @@ public class PlayGameRtcActivity extends AppCompatActivity
             }
         }
     }
+
     private void getPositionGPS() {
         LocationManager mLocationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         isGPSEnabled = mLocationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        if(isGPSEnabled) {
+        if (isGPSEnabled) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 mStatusCallback = new GnssStatus.Callback() {
                     @Override
-                    public void onStarted() { }
+                    public void onStarted() {
+                    }
 
                     @Override
-                    public void onStopped() { }
+                    public void onStopped() {
+                    }
 
                     @Override
-                    public void onFirstFix(int ttffMillis) { }
+                    public void onFirstFix(int ttffMillis) {
+                    }
 
                     @Override
                     public void onSatelliteStatusChanged(GnssStatus status) {
@@ -444,7 +448,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
             };
 
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     ActivityCompat.requestPermissions(this,
                             new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
@@ -516,7 +520,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         if (localCameraStream != null) {
             LogEx.d(
                     "localVideoStream id: " + localCameraStream.id() +
-                    " hasVideo: " + localCameraStream.hasVideo()
+                            " hasVideo: " + localCameraStream.hasVideo()
             );
         }
         return localCameraStream;
@@ -539,13 +543,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
         viewWidth = fullRenderer.getWidth();
         viewHeight = fullRenderer.getHeight();
         int paddingWidth = 0;
-        if(viewWidth > SERVER_SCREEN_WIDTH) {
+        if (viewWidth > SERVER_SCREEN_WIDTH) {
             paddingWidth = viewWidth - (SERVER_SCREEN_WIDTH * viewHeight / SERVER_SCREEN_HEIGHT);
         } else {
             paddingWidth = 0;
         }
         int paddingHeight = 0;
-        if(viewHeight > SERVER_SCREEN_HEIGHT) {
+        if (viewHeight > SERVER_SCREEN_HEIGHT) {
             paddingHeight = viewHeight - SERVER_SCREEN_HEIGHT;
         } else {
             paddingHeight = 0;
@@ -587,9 +591,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     public class GameHandler extends Handler {
         private final WeakReference<PlayGameRtcActivity> activity;
-        public GameHandler(PlayGameRtcActivity act){
+
+        public GameHandler(PlayGameRtcActivity act) {
             activity = new WeakReference<>(act);
         }
+
         @Override
         public void handleMessage(@NonNull @NotNull Message msg) {
             super.handleMessage(msg);
@@ -632,7 +638,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private BaseController selectGamePad() {
         String controller = Objects.requireNonNull(getIntent().getStringExtra("controller")).toUpperCase();
-        switch(controller) {
+        switch (controller) {
             case RTCControllerXBox.NAME:
                 return new RTCControllerXBox(this, getHandler(), this);
             case RTCControllerFPS.NAME:
@@ -656,7 +662,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         String jsonLogin = new Gson().toJson(mapKey, mapKey.getClass());
         LogEx.e("jsonLogin: " + jsonLogin);
         P2PClient client = P2PHelper.getClient();
-        if(client != null) {
+        if (client != null) {
             client.addAllowedRemotePeer(peerId);
             client.connect(jsonLogin, new ActionCallback<String>() {
                 @Override
@@ -682,7 +688,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         this.peerId = peerId;
         LogEx.e("onCallRequest called");
         P2PClient client = P2PHelper.getClient();
-        if(client != null) {
+        if (client != null) {
             client.addAllowedRemotePeer(peerId);
             client.stop(peerId);
             client.send(peerId, "start", new ActionCallback<Void>() {
@@ -694,7 +700,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     runOnUiThread(() -> {
                         getLifecycle().addObserver(new LifecycleObserver() {
                             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-                            public void onDestroy(){
+                            public void onDestroy() {
                                 LogEx.e(" webrtc onDestroy called");
                             }
                         });
@@ -730,11 +736,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 Manifest.permission.CAMERA,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         };
-        ArrayList<String>  permissionsToAskFor= new ArrayList<String>();
-        for(int i  = 0; i < permissions.length; i++) {
+        ArrayList<String> permissionsToAskFor = new ArrayList<String>();
+        for (int i = 0; i < permissions.length; i++) {
             String permission = permissions[i];
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if(ActivityCompat.checkSelfPermission(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (ActivityCompat.checkSelfPermission(
                         this,
                         permission
                 ) != PackageManager.PERMISSION_GRANTED) {
@@ -742,8 +748,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
             }
         }
-        if(!permissionsToAskFor.isEmpty()) {
-            String [] arrayAskfor = new String[permissionsToAskFor.size()];
+        if (!permissionsToAskFor.isEmpty()) {
+            String[] arrayAskfor = new String[permissionsToAskFor.size()];
             arrayAskfor = permissionsToAskFor.toArray(arrayAskfor);
             ActivityCompat.requestPermissions(
                     this,
@@ -766,12 +772,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
             // If user interaction was interrupted, the permission request is cancelled and you
             // receive empty arrays.
         } else {
-            for(int i = 0; i < permissions.length; i++) {
+            for (int i = 0; i < permissions.length; i++) {
                 if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-                    if(grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                         if (ActivityCompat.checkSelfPermission(this, permissions[i]) == PackageManager.PERMISSION_GRANTED) {
                             Toast.makeText(this, "The " + permissions[i] + "has been granted", Toast.LENGTH_LONG);
-                            if(permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) && requesPermissionFromServer) {
+                            if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) && requesPermissionFromServer) {
                                 getPositionNetwork();
                                 getPositionGPS();
                                 requesPermissionFromServer = false;
@@ -793,7 +799,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         for (int i = 0; i < devices.length; i++) {
             int deviceId = devices[i];
             InputDevice device = InputDevice.getDevice(deviceId);
-            if(device != null) {
+            if (device != null) {
                 if ((device.getSources() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
                     int joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId);
                     sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId);
@@ -804,9 +810,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     @Override
     public void onInputDeviceAdded(int deviceId) {
-        InputDevice device =  InputDevice.getDevice(deviceId);
+        InputDevice device = InputDevice.getDevice(deviceId);
         int source = device.getSources();
-        if((source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
+        if ((source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
                 || ((source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
             int joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId);
             sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId);
@@ -818,7 +824,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     @Override
     public void onInputDeviceRemoved(int deviceId) {
         int joyId = RTCControllerAndroid.updateDeviceSlot(deviceId);
-        if(joyId != -1) {
+        if (joyId != -1) {
             sendJoyStickEvent(BaseController.EV_NON, 0, 0, false, joyId);
         } else {
             Log.d(TAG, "This is not joystick: " + deviceId);
@@ -852,12 +858,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if(event == null) {
+        if (event == null) {
             return;
         }
-        String data =  "{\"sensor_info\":{\"count\":1,\"data\":[[" +
+        String data = "{\"sensor_info\":{\"count\":1,\"data\":[[" +
                 String.valueOf(event.sensor.getType()) + ",";
-        switch(event.sensor.getType()){
+        switch (event.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
             case Sensor.TYPE_MAGNETIC_FIELD:
             case Sensor.TYPE_GYROSCOPE:
@@ -881,7 +887,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
         }
 
-        if(!data.isEmpty()) {
+        if (!data.isEmpty()) {
             data += "]]}}";
             String finalData = data;
             P2PHelper.getClient().send(P2PHelper.peerId, data, new P2PHelper.FailureCallBack<Void>() {
@@ -897,6 +903,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
+
     void sendGPSData(String strNMEA) {
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
@@ -906,7 +913,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
             MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if(parameters != null) {
+            if (parameters != null) {
                 parameters.setData(strNMEA);
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
                 //Log.d("test", "jsonString: " + jsonString);
