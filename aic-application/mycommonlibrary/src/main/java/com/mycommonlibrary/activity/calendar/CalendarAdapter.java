@@ -316,7 +316,7 @@ public class CalendarAdapter extends RecyclerView.Adapter {
                         areaPositionRight = -1;
                         areaPositionLeft = position;
                         notifyItemChanged(areaPositionLeft);
-                        ToastUtils.show( "请选择结束日期");
+                        ToastUtils.show( R.string.select_end_date);
                     } else {
                         if (areaPositionRight == -1) {
                             if (position > areaPositionLeft) {
@@ -330,7 +330,7 @@ public class CalendarAdapter extends RecyclerView.Adapter {
                                 areaPositionLeft = position;
                                 notifyItemChanged(temp);
                                 notifyItemChanged(areaPositionLeft);
-                                ToastUtils.show( "请选择结束日期");
+                                ToastUtils.show( R.string.select_end_date);
                             }
                         } else {
                             int tempL = areaPositionLeft;
@@ -339,7 +339,7 @@ public class CalendarAdapter extends RecyclerView.Adapter {
                             areaPositionRight = -1;
                             notifyItemRangeChanged(tempL, tempR - tempL + 1);
                             notifyItemChanged(areaPositionLeft);
-                            ToastUtils.show( "请选择结束日期");
+                            ToastUtils.show( R.string.select_end_date);
                         }
                     }
                 }

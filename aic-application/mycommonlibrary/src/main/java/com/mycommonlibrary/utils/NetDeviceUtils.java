@@ -8,6 +8,8 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.widget.Toast;
 
+import com.mycommonlibrary.R;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,7 +51,7 @@ public class NetDeviceUtils {
             return true;
         }
         if (isPrompt)
-            Toast.makeText(context, "网络设备未打开或无信号！", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, R.string.no_network, Toast.LENGTH_LONG).show();
         return false;
     }
 
@@ -95,7 +97,7 @@ public class NetDeviceUtils {
             return true;
         }
         if (isPrompt)
-            Toast.makeText(context, "WIFI设备未打开或无法收到信号！", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, R.string.no_wifi, Toast.LENGTH_LONG).show();
         return false;
     }
 
@@ -134,7 +136,7 @@ public class NetDeviceUtils {
             return true;
         }
         if (isPrompt)
-            Toast.makeText(context, "移动网络未开启或设备未接收到信号！", Toast.LENGTH_LONG).show();
+            Toast.makeText(context, R.string.no_mobile_network, Toast.LENGTH_LONG).show();
         return false;
     }
 

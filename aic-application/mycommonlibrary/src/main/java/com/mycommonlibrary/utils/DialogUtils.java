@@ -27,6 +27,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import com.mycommonlibrary.R;
+
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.Calendar;
@@ -583,7 +585,7 @@ public class DialogUtils {
                                 handler.sendMessage(msg);
                             }
                         } else {
-                            ToastUtils.show(context, "输入的手机号码无效！");
+                            ToastUtils.show(context, R.string.invalid_phone_number );
                         }
                     }
                 }).create();
@@ -648,7 +650,7 @@ public class DialogUtils {
                                 handler.sendMessage(msg);
                             }
                         } else {
-                            ToastUtils.show(context, "输入的邮箱地址无效！");
+                            ToastUtils.show(context, R.string.invalid_email_address);
                         }
                     }
                 }).create();

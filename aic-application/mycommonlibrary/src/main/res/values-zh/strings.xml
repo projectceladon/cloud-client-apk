@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">My Common Library</string>
+    <string name="no_network">网络设备未打开或无信号</string>
+    <string name="no_wifi">WIFI设备未打开或无法收到信号</string>
+    <string name="no_mobile_network">WIFI设备未打开或无法收到信号!</string>
+    <string name="invalid_phone_number">输入的手机号码无效！</string>
+    <string name="invalid_email_address">输入的邮箱地址无效！</string>
+    <string name="jump_failed">跳转失败</string>
+    <string name="no_positioning_permission">定位权限关闭，无法获取地理位置</string>
+    <string name="select_end_date">请选择结束日期</string>
+    <string name="loading">加载中... </string>
+</resources>

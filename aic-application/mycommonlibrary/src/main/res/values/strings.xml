@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">My Common Library</string>
+    <string name="no_network">Network is not turned on or no signal </string>
+    <string name="no_wifi">WIFI is not turned on or no signal</string>
+    <string name="no_mobile_network">Mobile network is not turned on or the device is not receiving a signal</string>
+    <string name="invalid_phone_number">The phone number is invalid!</string>
+    <string name="invalid_email_address">The email address is invalid</string>
+    <string name="jump_failed">Jump failed</string>
+    <string name="no_positioning_permission">Positioning permission is closed, unable to obtain geographic location </string>
+    <string name="select_end_date">Please select an end date </string>
+    <string name="loading">loading... </string>
 </resources>

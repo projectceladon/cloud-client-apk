@@ -24,7 +24,7 @@ public class LoadingDialog extends Dialog {
     }
 
     public static Dialog show(Context context) {
-        return LoadingDialog.show(context, "加载中...");
+        return LoadingDialog.show(context, context.getString(R.string.loading));
     }
 
     private View contentView;
