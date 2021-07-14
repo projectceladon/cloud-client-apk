@@ -13,6 +13,8 @@ import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.mycommonlibrary.R;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -81,7 +83,7 @@ public class PermissionPageUtils {
             intent.setComponent(comp);
             mContext.startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(mContext, "跳转失败", Toast.LENGTH_LONG).show();
+            Toast.makeText(mContext, R.string.jump_failed, Toast.LENGTH_LONG).show();
             e.printStackTrace();
             goIntentSetting();
         }
@@ -94,7 +96,7 @@ public class PermissionPageUtils {
             intent.setComponent(comp);
             mContext.startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(mContext, "跳转失败", Toast.LENGTH_LONG).show();
+            Toast.makeText(mContext, R.string.jump_failed, Toast.LENGTH_LONG).show();
             e.printStackTrace();
             goIntentSetting();
         }
@@ -108,7 +110,7 @@ public class PermissionPageUtils {
             intent.setComponent(comp);
             mContext.startActivity(intent);
         } catch (Exception e) {
-            Toast.makeText(mContext, "跳转失败", Toast.LENGTH_LONG).show();
+            Toast.makeText(mContext, R.string.jump_failed, Toast.LENGTH_LONG).show();
             e.printStackTrace();
             goIntentSetting();
         }

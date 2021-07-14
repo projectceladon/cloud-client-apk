@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.mycommonlibrary.R;
+
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.List;
@@ -40,7 +42,7 @@ public class LocationUtils {
         String strLocation = "0,0";
         DecimalFormat df = new DecimalFormat("#####0.0000");
         if (!checkPermission(context, permission.ACCESS_COARSE_LOCATION)) {
-            Toast.makeText(context, "定位权限关闭，无法获取地理位置", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, R.string.no_positioning_permission, Toast.LENGTH_SHORT).show();
         }
         try {
             //获取系统的服务，
