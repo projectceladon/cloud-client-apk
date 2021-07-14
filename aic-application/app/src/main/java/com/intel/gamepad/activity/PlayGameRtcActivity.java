@@ -919,7 +919,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
             if (parameters != null) {
                 parameters.setData(strNMEA);
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                //Log.d("test", "jsonString: " + jsonString);
                 P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                     @Override
                     public void onFailure(OwtError owtError) {
@@ -960,7 +959,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
 
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                //Log.d("test", "jsonString: " + jsonString);
                 P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                     @Override
                     public void onFailure(OwtError owtError) {
