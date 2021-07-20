@@ -178,6 +178,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        P2PHelper.closeP2PClient();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         disableLocation();
