@@ -17,6 +17,8 @@ import android.location.LocationManager;
 import android.location.OnNmeaMessageListener;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -176,7 +178,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         hideStatusBar();
-        if(!bFirstStart) {
+        if (!bFirstStart) {
             onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
         }
         LogEx.e("RTC Activity onResume called");
@@ -229,6 +231,10 @@ public class PlayGameRtcActivity extends AppCompatActivity
             @Override
             public void onServerDisconnected() {
                 LogEx.e("服务连接断开");
+                if (!isNetworkAvailable()) {
+                    Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT)
+                            .sendToTarget();
+                }
             }
 
             @Override
@@ -819,6 +825,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
             }
         }
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager
+                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        return networkInfo != null && networkInfo.isConnected();
     }
 
     @Override
