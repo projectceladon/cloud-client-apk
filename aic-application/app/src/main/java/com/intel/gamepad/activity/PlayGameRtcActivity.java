@@ -128,6 +128,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private SurfaceView fullRenderer = null;
     private CheckBox chkStatusTitle = null;
     private TextView tvMyStatus = null;
+    private Boolean bFirstStart = true;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -168,12 +169,16 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mIm.registerInputDeviceListener(this, null);
         checkPermissions();
         checkMediaCodecSupportTypes();
+        bFirstStart = true;
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         hideStatusBar();
+        if(!bFirstStart) {
+            onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
+        }
         LogEx.e("RTC Activity onResume called");
     }
 
@@ -181,6 +186,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     protected void onPause() {
         super.onPause();
         P2PHelper.closeP2PClient();
+        bFirstStart = false;
     }
 
     @Override
@@ -223,8 +229,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
             @Override
             public void onServerDisconnected() {
                 LogEx.e("服务连接断开");
-                Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT)
-                        .sendToTarget();
             }
 
             @Override
