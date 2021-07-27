@@ -28,16 +28,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <receiver
-            android:name=".activity.MyReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter android:priority="999">
-                <action android:name="com.intel.gamepad.sendfiletoaic" />
-                <action android:name="com.intel.gamepad.sendfiletoapp" />
-            </intent-filter>
-        </receiver>
-
         <activity
             android:name=".activity.PlayGameRtcActivity"
             android:screenOrientation="landscape" />
