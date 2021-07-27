@@ -38,20 +38,20 @@
             android:layout_height="35dp"
             android:layout_marginTop="@dimen/side2x"
             android:layout_marginEnd="@dimen/side2x"
-            android:visibility="gone"
             android:background="@drawable/btn_pad_rect_selector"
             android:padding="@dimen/side1x"
-            android:src="@drawable/ic_keyboard_white_24dp" />
+            android:src="@drawable/ic_keyboard_white_24dp"
+            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/ibtnShowDPad"
             android:layout_width="wrap_content"
             android:layout_height="35dp"
             android:layout_marginTop="@dimen/side2x"
-            android:visibility="gone"
             android:background="@drawable/btn_pad_rect_selector"
             android:padding="@dimen/side1x"
-            android:src="@drawable/ic_videogame_asset_white_24dp" />
+            android:src="@drawable/ic_videogame_asset_white_24dp"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/btnEsc"
@@ -60,9 +60,9 @@
             android:layout_margin="@dimen/side2x"
             android:background="@drawable/btn_pad_rect_selector"
             android:text="ESC"
-            android:visibility="gone"
             android:textColor="@color/white"
-            android:textSize="@dimen/ft12" />
+            android:textSize="@dimen/ft12"
+            android:visibility="gone" />
     </LinearLayout>
 
 

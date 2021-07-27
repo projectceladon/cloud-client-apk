@@ -15,6 +15,7 @@ import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.intel.gamepad.R;
@@ -29,11 +30,19 @@ import com.mycommonlibrary.utils.LogEx;
 
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.nio.charset.Charset;
 
 import owt.base.OwtError;
+import owt.base.ActionCallback;
 
 public abstract class BaseController implements OnTouchListener {
     //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
@@ -125,6 +134,198 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.closeP2PClient();
             onBackPress();
         });
+    }
+
+    public static byte[] ConvertIntToBytes(int n) {
+        byte[] arr = new byte[4];
+        arr[0] = (byte) (n & 0xff);
+        arr[1] = (byte) (n >> 8 & 0xff);
+        arr[2] = (byte) (n >> 16 & 0xff);
+        arr[3] = (byte) (n >> 24 & 0xff);
+        return arr;
+    }
+
+    public static byte[] ConvertLongToBytes(Long n) {
+        byte[] arr = new byte[8];
+        arr[0] = (byte) (n & 0xff);
+        arr[1] = (byte) (n >> 8 & 0xff);
+        arr[2] = (byte) (n >> 16 & 0xff);
+        arr[3] = (byte) (n >> 24 & 0xff);
+        arr[4] = (byte) (n >> 32 & 0xff);
+        arr[5] = (byte) (n >> 40 & 0xff);
+        arr[6] = (byte) (n >> 48 & 0xff);
+        arr[7] = (byte) (n >> 56 & 0xff);
+        return arr;
+    }
+
+    private final Object sendFileLock = new Object();
+    private boolean send_block_success_ = false;
+    private boolean send_block_failed_ = false;
+
+    public void sendFile(String fileName) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                send_block_success_ = false;
+                send_block_failed_ = false;
+
+                File file = new File(fileName);
+                if (!file.exists()) {
+                    LogEx.d("There is no file");
+                    return;
+                }
+                //send header
+                Long file_length = file.length();
+                String file_name = file.getName();
+
+                Map<String, Object> mapKey = new HashMap<>();
+                Map<String, Object> mapData = new HashMap<>();
+                Map<String, Object> mapDataForFileBegin = new HashMap<>();
+                mapKey.put("type", "control");
+                mapKey.put("data", mapData);
+                mapData.put("event", "file");
+                mapData.put("parameters", mapDataForFileBegin);
+                mapDataForFileBegin.put("file_name", file.getName());
+                mapDataForFileBegin.put("file_size", String.valueOf(file_length));
+                mapDataForFileBegin.put("indicator", "begin");
+                String jsonString = new JSONObject(mapKey).toString();
+                P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Log.e("BaseController", "Send begin success");
+                        synchronized (sendFileLock) {
+                            send_block_success_ = true;
+                            sendFileLock.notify();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                        synchronized (sendFileLock) {
+                            send_block_failed_ = true;
+                            sendFileLock.notify();
+                        }
+                    }
+                });
+
+                synchronized (sendFileLock) {
+                    while (!send_block_failed_ && !send_block_success_) {
+                        try {
+                            sendFileLock.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if (send_block_failed_) {
+                        Log.e("BaseController", "Send begin failed, return directly");
+                        return;
+                    }
+                }
+
+                int size = 32 * 1024;
+                byte[] buf = new byte[size];
+                try {
+                    FileInputStream in = new FileInputStream(file);
+                    int byteread = 0;
+                    while ((byteread = in.read(buf)) != -1) {
+
+                        send_block_success_ = false;
+
+                        Log.e("BaseController", "liukai: read = " + byteread);
+                        Map<String, Object> mapDataForFileContent = new HashMap<>();
+                        mapData.put("parameters", mapDataForFileContent);
+                        mapDataForFileContent.put("file_name", file.getName());
+                        mapDataForFileContent.put("block_size", String.valueOf(byteread));
+                        mapDataForFileContent.put("indicator", "sending");
+
+                        String block = new String(buf, 0, byteread, Charset.forName("ISO-8859-1"));
+                        mapDataForFileContent.put("block", block);
+                        jsonString = new JSONObject(mapKey).toString();
+                        P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                                Log.e("BaseController", "Send one of block success");
+                                synchronized (sendFileLock) {
+                                    send_block_success_ = true;
+                                    sendFileLock.notify();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(OwtError owtError) {
+                                LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                                synchronized (sendFileLock) {
+                                    send_block_failed_ = true;
+                                    sendFileLock.notify();
+                                }
+                            }
+                        });
+
+                        synchronized (sendFileLock) {
+                            while (!send_block_failed_ && !send_block_success_) {
+                                try {
+                                    sendFileLock.wait();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                            if (send_block_failed_) {
+                                Log.e("BaseController", "Send block failed, return directly");
+                                return;
+                            }
+                        }
+                    }
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                send_block_success_ = false;
+                Map<String, Object> mapDataForFileEnd = new HashMap<>();
+                mapData.put("parameters", mapDataForFileEnd);
+                mapDataForFileEnd.put("file_name", file.getName());
+                mapDataForFileEnd.put("indicator", "end");
+                jsonString = new JSONObject(mapKey).toString();
+                P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Log.e("BaseController", "Send end success");
+                        synchronized (sendFileLock) {
+                            send_block_success_ = true;
+                            sendFileLock.notify();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                        synchronized (sendFileLock) {
+                            send_block_failed_ = true;
+                            sendFileLock.notify();
+                        }
+                    }
+                });
+
+                synchronized (sendFileLock) {
+                    while (!send_block_failed_ && !send_block_success_) {
+                        try {
+                            sendFileLock.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if (send_block_failed_) {
+                        return;
+                    }
+                }
+            }
+        }).start();
     }
 
     /**
