@@ -2,8 +2,10 @@ package com.intel.gamepad.activity;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -131,6 +133,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private CheckBox chkStatusTitle = null;
     private TextView tvMyStatus = null;
     private Boolean bFirstStart = true;
+    DynamicReceiver dynamicReceiver;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -172,6 +175,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
         checkPermissions();
         checkMediaCodecSupportTypes();
         bFirstStart = true;
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("com.intel.gamepad.sendfiletoaic");
+        filter.addAction("com.intel.gamepad.sendfiletoapp");
+        dynamicReceiver = new DynamicReceiver();
+        registerReceiver(dynamicReceiver,filter);
     }
 
     @Override
@@ -1030,4 +1039,32 @@ public class PlayGameRtcActivity extends AppCompatActivity
             }
         }
     }
+
+    class DynamicReceiver extends BroadcastReceiver{
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // TODO: This method is called when the BroadcastReceiver is receiving
+            // an Intent broadcast.
+            String action = intent.getAction();
+            if(action.equals("com.intel.gamepad.sendfiletoaic")) {
+                String uri = intent.getStringExtra("uri");
+                Log.e("MyReceiver", "To aic uri = " + uri);
+                sendFiletoAIC(uri);
+            } else if (action.equals("com.intel.gamepad.sendfiletoapp")) {
+                String uri = intent.getStringExtra("uri");
+                Log.e("MyReceiver", "To app uri = " + uri);
+                sendFiletoApp(uri);
+            }
+            //throw new UnsupportedOperationException("Not yet implemented");
+        }
+
+        private void sendFiletoAIC(String uri){
+            controller.sendFile(uri);
+        }
+
+        private void sendFiletoApp(String uri){
+            controller.sendFile(uri);
+        }
+    }
+
 }
