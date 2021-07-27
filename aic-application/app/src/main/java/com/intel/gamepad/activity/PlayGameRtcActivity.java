@@ -68,8 +68,13 @@ import com.mycommonlibrary.utils.DensityUtils;
 import com.mycommonlibrary.utils.LogEx;
 import com.mycommonlibrary.utils.StatusBarUtil;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -134,6 +139,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private TextView tvMyStatus = null;
     private Boolean bFirstStart = true;
     DynamicReceiver dynamicReceiver;
+    private File requestFile = null;
+    private FileOutputStream fileOutputStream = null;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -365,6 +372,93 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
+                }
+            }
+
+            @Override
+            public void onDataReceived2(String s, String s1) {
+                try {
+                    String type = "";
+                    JSONObject jsonObject = new JSONObject(s1);
+                    if (!jsonObject.isNull("type")) {
+                        type = jsonObject.getString("type");
+                    }
+
+                    if (!type.equals("control")) {
+                        return;
+                    }
+
+                    JSONObject data = jsonObject.getJSONObject("data");
+                    String event = "";
+                    if (!data.isNull("event")) {
+                        event = data.getString("event");
+                    }
+
+                    if (event.equals("file")) {
+                        JSONObject parameters = data.getJSONObject("parameters");
+                        String file_name = parameters.getString("file_name");
+                        String indicator = parameters.getString("indicator");
+                        if (indicator.equals("begin")) {
+                            Long file_size = Long.valueOf(parameters.getString("file_size"));
+                            if (file_size <= 0) {
+                                return;
+                            }
+
+                            if (requestFile != null) {
+                                try {
+                                    if (fileOutputStream != null) {
+                                        fileOutputStream.close();
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                fileOutputStream = null;
+                                requestFile = null;
+                            }
+
+                            requestFile = new File("/sdcard/" + file_name);
+                            try {
+                                fileOutputStream = new FileOutputStream(requestFile);
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
+                            }
+                        } else if (indicator.equals("end")) {
+                            try {
+                                if (fileOutputStream != null) {
+                                    fileOutputStream.close();
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            fileOutputStream = null;
+                            requestFile = null;
+                        } else if (indicator.equals("sending")) {
+                            Long block_size = Long.valueOf(parameters.getString("block_size"));
+                            if (block_size <= 0) {
+                                return;
+                            }
+
+                            String block = parameters.getString("block");
+                            byte[] buf = Base64.getDecoder().decode(block);
+
+                            if (buf.length != block_size) {
+                                Log.e(TAG, "The real size is not same as size in message");
+                            }
+
+                            try {
+                                if (fileOutputStream != null) {
+                                    fileOutputStream.write(buf);
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            Log.e(TAG, "Cannot support indicator: " + indicator);
+                        }
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
                 }
             }
         });
