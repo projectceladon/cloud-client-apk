@@ -234,14 +234,16 @@ public abstract class BaseController implements OnTouchListener {
 
                         send_block_success_ = false;
 
-                        Log.e("BaseController", "liukai: read = " + byteread);
+                        Log.e("BaseController", "read = " + byteread);
                         Map<String, Object> mapDataForFileContent = new HashMap<>();
                         mapData.put("parameters", mapDataForFileContent);
                         mapDataForFileContent.put("file_name", file.getName());
                         mapDataForFileContent.put("block_size", String.valueOf(byteread));
                         mapDataForFileContent.put("indicator", "sending");
 
-                        String block = new String(buf, 0, byteread, Charset.forName("ISO-8859-1"));
+                        byte[] buf_copy = new byte[byteread];
+                        System.arraycopy(buf, 0, buf_copy, 0, byteread);
+                        String block = Base64.getEncoder().encodeToString(buf_copy);
                         mapDataForFileContent.put("block", block);
                         jsonString = new JSONObject(mapKey).toString();
                         P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
