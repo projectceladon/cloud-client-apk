@@ -714,11 +714,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mapParams.put("mode", "stretch");
         Map<String, Object> mapData = new HashMap<String, Object>();
         mapData.put("event", "sizechange");
-        mapParams.put("parameters", mapParams);
+        mapData.put("parameters", mapParams);
         Map<String, Object> mapKey = new HashMap<String, Object>();
-        mapData.put("type", "control");
-        mapParams.put("parameters", mapData);
-        String jsonString = new Gson().toJson(mapKey, mapKey.getClass());
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        JSONObject json = new JSONObject(mapKey);
+        String jsonString = json.toString();
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
