@@ -91,6 +91,7 @@ public class MotionEventBean {
             private int gpID;
             private int fingerId;
             private String data;
+            private String file_name;
 
             public static ParametersBean objectFromData(String str) {
 
@@ -147,6 +148,10 @@ public class MotionEventBean {
 
             public void setgpID(int jsID) {
                 this.gpID = jsID;
+            }
+
+            public  void setFileName(String fileName) {
+                this.file_name = fileName;
             }
 
             public void setData(String msg) {

@@ -1179,7 +1179,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         }
 
         private void sendFiletoApp(String uri){
-            controller.sendFile(uri);
+            controller.sendFileNameToStreamer(uri);
         }
     }
 
