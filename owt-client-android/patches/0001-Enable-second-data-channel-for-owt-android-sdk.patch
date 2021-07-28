@@ -1,0 +1,369 @@
+From 93b3a97d41547db0eaa6242bccc116492219a54d Mon Sep 17 00:00:00 2001
+From: "Liu, Kai1" <kai1.liu@intel.com>
+Date: Tue, 27 Jul 2021 16:11:11 +0800
+Subject: [PATCH] Enable second data channel for owt android sdk
+
+Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
+---
+ .../java/owt/sample/p2p/MainActivity.java     |  4 +
+ .../java/owt/base/PeerConnectionChannel.java  | 81 +++++++++++++++++--
+ .../java/owt/conference/ConferenceClient.java |  5 ++
+ .../p2p/src/main/java/owt/p2p/P2PClient.java  | 65 +++++++++++++++
+ .../owt/p2p/P2PPeerConnectionChannel.java     | 39 ++++++++-
+ 5 files changed, 184 insertions(+), 10 deletions(-)
+
+diff --git a/src/sample/p2p/src/main/java/owt/sample/p2p/MainActivity.java b/src/sample/p2p/src/main/java/owt/sample/p2p/MainActivity.java
+index 893a581..3642490 100644
+--- a/src/sample/p2p/src/main/java/owt/sample/p2p/MainActivity.java
++++ b/src/sample/p2p/src/main/java/owt/sample/p2p/MainActivity.java
+@@ -229,6 +229,10 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.Log
+         chatFragment.onMessage(peerId, message);
+     }
+ 
++    @Override
++    public void onDataReceived2(String peerId, String message) {
++    }
++
+     @Override
+     public void onConnectRequest(final String server, final String myId) {
+         executor.execute(() -> {
+diff --git a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+index df89e41..8d67062 100644
+--- a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
++++ b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+@@ -4,6 +4,7 @@
+  */
+ package owt.base;
+ 
++import static org.webrtc.DataChannel.State.OPEN;
+ import static owt.base.CheckCondition.DCHECK;
+ import static owt.base.CheckCondition.RCHECK;
+ import static owt.base.Const.LOG_TAG;
+@@ -60,10 +61,12 @@ public abstract class PeerConnectionChannel
+     protected PeerConnection.SignalingState signalingState;
+     protected PeerConnection.IceConnectionState iceConnectionState;
+     protected DataChannel localDataChannel;
++    protected DataChannel localDataChannel2;
+     protected List<VideoCodec> videoCodecs;
+     protected List<AudioCodec> audioCodecs;
+     protected Integer videoMaxBitrate = null, audioMaxBitrate = null;
+     protected ArrayList<String> queuedMessage;
++    protected ArrayList<String> queuedMessage2;
+     private MediaConstraints sdpConstraints;
+     private SessionDescription localSdp;
+     private boolean disposed = false;
+@@ -80,6 +83,7 @@ public abstract class PeerConnectionChannel
+         audioRtpSenders = new ConcurrentHashMap<>();
+         queuedRemoteCandidates = new LinkedList<>();
+         queuedMessage = new ArrayList<>();
++        queuedMessage2 = new ArrayList<>();
+         sdpConstraints = new MediaConstraints();
+         sdpConstraints.mandatory.add(
+                 new KeyValuePair("OfferToReceiveAudio", String.valueOf(receiveAudio)));
+@@ -230,16 +234,36 @@ public abstract class PeerConnectionChannel
+         });
+     }
+ 
+-    protected void createDataChannel() {
++    protected void createDataChannel(String label) {
+         DCHECK(pcExecutor);
+-        DCHECK(localDataChannel == null);
++        if (label.equals("message"))
++            DCHECK(localDataChannel == null);
++        if (label.equals("message2"))
++            DCHECK(localDataChannel2 == null);
+         pcExecutor.execute(() -> {
+             if (disposed()) {
+                 return;
+             }
+             DataChannel.Init init = new DataChannel.Init();
+-            localDataChannel = peerConnection.createDataChannel("message", init);
+-            localDataChannel.registerObserver(PeerConnectionChannel.this);
++
++            if (label.equals("message")) {
++                localDataChannel = peerConnection.createDataChannel("message", init);
++                localDataChannel.registerObserver(PeerConnectionChannel.this);
++            } else if (label.equals("message2")) {
++                localDataChannel2 = peerConnection.createDataChannel("message2", init);
++                localDataChannel2.registerObserver(mDataChannelObserver2);
++                if (localDataChannel2.state() == OPEN) {
++                    synchronized(queuedMessage2) {
++                        for (int i = 0; i < queuedMessage2.size(); i++) {
++                            ByteBuffer byteBuffer = ByteBuffer.wrap(
++                                    queuedMessage2.get(i).getBytes(Charset.forName("UTF-8")));
++                            DataChannel.Buffer buffer = new DataChannel.Buffer(byteBuffer, false);
++                            localDataChannel2.send(buffer);
++                        }
++                        queuedMessage2.clear();
++                    }
++                }
++            }
+         });
+     }
+ 
+@@ -496,8 +520,13 @@ public abstract class PeerConnectionChannel
+             return;
+         }
+         callbackExecutor.execute(() -> {
+-            localDataChannel = dataChannel;
+-            localDataChannel.registerObserver(PeerConnectionChannel.this);
++            if (dataChannel.label().equals("message")) {
++                localDataChannel = dataChannel;
++                localDataChannel.registerObserver(PeerConnectionChannel.this);
++            } else if (dataChannel.label().equals("message2")) {
++                localDataChannel2 = dataChannel;
++                localDataChannel2.registerObserver(PeerConnectionChannel.this);
++	    }
+         });
+     }
+ 
+@@ -519,7 +548,7 @@ public abstract class PeerConnectionChannel
+             return;
+         }
+         callbackExecutor.execute(() -> {
+-            if (localDataChannel.state() == DataChannel.State.OPEN) {
++            if (localDataChannel != null && localDataChannel.state() == DataChannel.State.OPEN) {
+                 for (int i = 0; i < queuedMessage.size(); i++) {
+                     ByteBuffer byteBuffer = ByteBuffer.wrap(
+                             queuedMessage.get(i).getBytes(Charset.forName("UTF-8")));
+@@ -528,6 +557,18 @@ public abstract class PeerConnectionChannel
+                 }
+                 queuedMessage.clear();
+             }
++
++            if (localDataChannel2 != null && localDataChannel2.state() == DataChannel.State.OPEN) {
++                synchronized(queuedMessage2) {
++                    for (int i = 0; i < queuedMessage2.size(); i++) {
++                        ByteBuffer byteBuffer = ByteBuffer.wrap(
++                                queuedMessage2.get(i).getBytes(Charset.forName("UTF-8")));
++                        DataChannel.Buffer buffer = new DataChannel.Buffer(byteBuffer, false);
++                        localDataChannel2.send(buffer);
++                    }
++                    queuedMessage2.clear();
++		}
++            }
+         });
+     }
+ 
+@@ -564,8 +605,34 @@ public abstract class PeerConnectionChannel
+ 
+         void onDataChannelMessage(String key, String message);
+ 
++        void onDataChannelMessage2(String key, String message);
++
+         void onRenegotiationRequest(String key);
+     }
+ 
++    DataChannelObserver2 mDataChannelObserver2 = new DataChannelObserver2();
++    class DataChannelObserver2 implements DataChannel.Observer {
++      @Override
++      public void onBufferedAmountChange(long previousAmount) {}
++
++      @Override
++      public void onStateChange() {
++          PeerConnectionChannel.this.onStateChange();
++      }
++
++      @Override
++      public void onMessage(final DataChannel.Buffer buffer) {
++        if (disposed) {
++            return;
++        }
++        callbackExecutor.execute(() -> {
++            ByteBuffer data = buffer.data;
++            final byte[] bytes = new byte[data.capacity()];
++            data.get(bytes);
++            String message = new String(bytes);
++            observer.onDataChannelMessage2(key, message);
++        });
++      }
++    }
+ }
+ ///@endcond
+diff --git a/src/sdk/conference/src/main/java/owt/conference/ConferenceClient.java b/src/sdk/conference/src/main/java/owt/conference/ConferenceClient.java
+index 44ff32d..669567e 100644
+--- a/src/sdk/conference/src/main/java/owt/conference/ConferenceClient.java
++++ b/src/sdk/conference/src/main/java/owt/conference/ConferenceClient.java
+@@ -910,6 +910,11 @@ public final class ConferenceClient implements SignalingChannel.SignalingChannel
+ 
+     }
+ 
++    @Override
++    public void onDataChannelMessage2(String key, String message) {
++
++    }
++
+     @Override
+     public void onRenegotiationRequest(String key) {
+ 
+diff --git a/src/sdk/p2p/src/main/java/owt/p2p/P2PClient.java b/src/sdk/p2p/src/main/java/owt/p2p/P2PClient.java
+index b2ab516..6883bcb 100644
+--- a/src/sdk/p2p/src/main/java/owt/p2p/P2PClient.java
++++ b/src/sdk/p2p/src/main/java/owt/p2p/P2PClient.java
+@@ -80,6 +80,14 @@ public final class P2PClient implements PeerConnectionChannel.PeerConnectionChan
+          * @param message message received.
+          */
+         void onDataReceived(String peerId, String message);
++
++	/**
++         * Called upon receiving a message.
++         *
++         * @param peerId id of the message sender.
++         * @param message message received.
++         */
++        void onDataReceived2(String peerId, String message);
+     }
+ 
+     private final P2PClientConfiguration configuration;
+@@ -98,6 +106,7 @@ public final class P2PClient implements PeerConnectionChannel.PeerConnectionChan
+     private ExecutorService signalingExecutor;
+     // key: stream id.
+     private final ConcurrentHashMap<String, JSONObject> streamInfos;
++    private final Object dataChannelLock = new Object();
+ 
+     /**
+      * Constructor for P2PClient.
+@@ -349,6 +358,39 @@ public final class P2PClient implements PeerConnectionChannel.PeerConnectionChan
+         pcChannel.sendData(message, callback);
+     }
+ 
++    /**
++     * Send a text message to a remote P2PClient by second data channel.
++     *
++     * @param peerId id of remote P2PClient.
++     * @param message message to be sent.
++     * @param callback ActionCallback.onSuccess will be invoked succeeds to send the message.
++     * Otherwise when fails to do so, ActionCallback.onFailure will be invoked with the
++     * corresponding OwtError.
++     */
++    public synchronized void send2(String peerId, String message, ActionCallback<Void> callback) {
++        if (!checkConnectionStatus(CONNECTED)) {
++            triggerCallback(callback, new OwtError(OwtP2PError.P2P_CLIENT_INVALID_STATE.value,
++                    "Wrong server connection status."));
++            return;
++        }
++        if (!checkPermission(peerId, callback)) {
++            return;
++        }
++        RCHECK(message);
++        if (message.length() > 0xFFFF) {
++            triggerCallback(callback,
++                    new OwtError(OwtP2PError.P2P_CLIENT_ILLEGAL_ARGUMENT.value,
++                            "Message too long."));
++            return;
++        }
++        if (!containsPCChannel(peerId)) {
++            sendStop(peerId);
++            sendUserInfo(peerId);
++        }
++        P2PPeerConnectionChannel pcChannel = getPeerConnection(peerId);
++        pcChannel.sendData2(message, callback);
++    }
++
+     private void permissionDenied(String peerId) {
+         synchronized (pcChannelsLock) {
+             if (pcChannels.containsKey(peerId)) {
+@@ -714,6 +756,29 @@ public final class P2PClient implements PeerConnectionChannel.PeerConnectionChan
+         }
+     }
+ 
++    @Override
++    public void onDataChannelMessage2(final String peerId, final String message) {
++        DCHECK(callbackExecutor);
++        DCHECK(pcChannels.containsKey(peerId));
++
++        try {
++            JSONObject msg = new JSONObject(message);
++            Long msgId = msg.getLong("id");
++            final String msgData = msg.getString("data");
++            callbackExecutor.execute(() -> {
++                for (P2PClientObserver observer : observers) {
++                    observer.onDataReceived2(peerId, msgData);
++                }
++            });
++
++            sendSignalingMessage(peerId, CHAT_DATA_ACK, msgId, null);
++        } catch (JSONException e) {
++            // TODO: Webrtc sometimes trigger this event with weird messages,
++            // need to investigate this issue. Temporarily comment out this DCHECK.
++            //DCHECK(e);
++        }
++    }
++
+     @Override
+     public void onRenegotiationRequest(String peerId) {
+     }
+diff --git a/src/sdk/p2p/src/main/java/owt/p2p/P2PPeerConnectionChannel.java b/src/sdk/p2p/src/main/java/owt/p2p/P2PPeerConnectionChannel.java
+index 7d1e3fd..517c41d 100644
+--- a/src/sdk/p2p/src/main/java/owt/p2p/P2PPeerConnectionChannel.java
++++ b/src/sdk/p2p/src/main/java/owt/p2p/P2PPeerConnectionChannel.java
+@@ -121,7 +121,7 @@ final class P2PPeerConnectionChannel extends PeerConnectionChannel {
+         everPublished = true;
+         // create the data channel here due to BUG1418.
+         if (localDataChannel == null) {
+-            createDataChannel();
++            createDataChannel("message");
+         }
+     }
+ 
+@@ -236,7 +236,10 @@ final class P2PPeerConnectionChannel extends PeerConnectionChannel {
+     }
+ 
+     void sendData(final String message, ActionCallback<Void> callback) {
+-        Long msgId = ++messageId;
++        Long msgId = 0l;
++        synchronized(messageId) {
++            msgId = ++messageId;
++        }
+         final JSONObject messageObj = new JSONObject();
+         try {
+             messageObj.put("id", msgId);
+@@ -251,7 +254,7 @@ final class P2PPeerConnectionChannel extends PeerConnectionChannel {
+         if (localDataChannel == null || localDataChannel.state() != OPEN) {
+             queuedMessage.add(messageObj.toString());
+             if (localDataChannel == null) {
+-                createDataChannel();
++                createDataChannel("message");
+             }
+             return;
+         }
+@@ -262,6 +265,36 @@ final class P2PPeerConnectionChannel extends PeerConnectionChannel {
+         localDataChannel.send(buffer);
+     }
+ 
++    void sendData2(final String message, ActionCallback<Void> callback) {
++        Long msgId = 0l;
++        synchronized(messageId) {
++            msgId = ++messageId;
++        }
++        final JSONObject messageObj = new JSONObject();
++        try {
++            messageObj.put("id", msgId);
++            messageObj.put("data", message);
++        } catch (JSONException e) {
++            DCHECK(e);
++        }
++        if (callback != null) {
++            sendMsgCallbacks.put(msgId, callback);
++        }
++
++        if (localDataChannel2 == null || localDataChannel2.state() != OPEN) {
++            queuedMessage2.add(messageObj.toString());
++            if (localDataChannel2 == null) {
++                createDataChannel("message2");
++            }
++            return;
++        }
++
++        ByteBuffer byteBuffer =
++                ByteBuffer.wrap(messageObj.toString().getBytes(Charset.forName("UTF-8")));
++        DataChannel.Buffer buffer = new DataChannel.Buffer(byteBuffer, false);
++        localDataChannel2.send(buffer);
++    }
++
+     //All PeerConnection.Observer publishCallbacks should be pooled onto callbackExecutor.
+     @Override
+     public void onSignalingChange(final PeerConnection.SignalingState signalingState) {
+-- 
+2.17.1
+

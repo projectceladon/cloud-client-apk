@@ -12,6 +12,7 @@ Download owt-client-native source code:
     $ git checkout -b v5.0-local v5.0
 3. $ rm -rf  dependencies/libwebrtc/*
 4. $ cp -r ../../owt-client-native/src/out/dist/release/* dependencies/libwebrtc/
+5. $ git am ../patches/0001-Enable-second-data-channel-for-owt-android-sdk.patch
 
 Compile:
 1. $ python tools/pack.py
