@@ -395,6 +395,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     }
 
                     if (event.equals("file")) {
+                        String msg_id = data.getString("id");
                         JSONObject parameters = data.getJSONObject("parameters");
                         String file_name = parameters.getString("file_name");
                         String indicator = parameters.getString("indicator");
@@ -456,6 +457,26 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         } else {
                             Log.e(TAG, "Cannot support indicator: " + indicator);
                         }
+
+                        Map<String, Object> mapKey = new HashMap<>();
+                        Map<String, Object> mapData = new HashMap<>();
+                        Map<String, Object> mapDataForFileBegin = new HashMap<>();
+                        mapKey.put("type", "control");
+                        mapKey.put("data", mapData);
+                        mapData.put("event", "file-block-recv-ack");
+                        mapData.put("id", msg_id);
+                        mapData.put("parameters", mapDataForFileBegin);
+                        mapDataForFileBegin.put("file_name", file_name);
+                        String jsonString = new JSONObject(mapKey).toString();
+                        P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void unused) {
+                            }
+
+                            @Override
+                            public void onFailure(OwtError owtError) {
+                            }
+                        });
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
