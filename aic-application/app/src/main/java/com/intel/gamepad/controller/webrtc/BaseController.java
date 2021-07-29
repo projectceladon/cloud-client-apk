@@ -1136,7 +1136,6 @@ public abstract class BaseController implements OnTouchListener {
                 }
 
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                //Log.d("test", "jsonString: " + jsonString);
                 P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                     @Override
                     public void onFailure(OwtError owtError) {
@@ -1173,7 +1172,6 @@ public abstract class BaseController implements OnTouchListener {
                     parameters.setData(data);
                 }
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                //Log.d("test", "jsonString: " + jsonString);
                 P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                     @Override
                     public void onFailure(OwtError owtError) {
@@ -1185,24 +1183,20 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public void sendFileNameToStreamer(String fileName) {
-        MotionEventBean meb = new MotionEventBean();
-        meb.setType("control");
-        meb.setData(new MotionEventBean.DataBean());
-        meb.getData().setEvent("file-request");
-        MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setFileName(fileName);
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
+        Map<String, Object> mapKey = new HashMap<>();
+        Map<String, Object> mapData = new HashMap<>();
+        Map<String, Object> mapDataForFileBegin = new HashMap<>();
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        mapData.put("event", "file-request");
+        mapData.put("parameters", mapDataForFileBegin);
+        mapDataForFileBegin.put("file_name", fileName);
+        String jsonString = new JSONObject(mapKey).toString();
+        P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
-        }
+        });
     }
 }
