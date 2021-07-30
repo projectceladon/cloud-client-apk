@@ -141,6 +141,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     DynamicReceiver dynamicReceiver;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
+    private String fileTransferPath = "/sdcard/";
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -420,7 +421,17 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                 requestFile = null;
                             }
 
-                            requestFile = new File("/sdcard/" + file_name);
+                            requestFile = new File(fileTransferPath + file_name);
+                            String newFileName = file_name;
+                            while(requestFile.exists()) {
+                                int pointIndex = newFileName.indexOf(".");
+                                if(pointIndex > 0) {
+                                    newFileName = newFileName.substring(0, pointIndex) + "1" + newFileName.substring(pointIndex);
+                                } else {
+                                    newFileName = newFileName + "1";
+                                }
+                                requestFile = new File(fileTransferPath + newFileName);
+                            }
                             try {
                                 fileOutputStream = new FileOutputStream(requestFile);
                             } catch (FileNotFoundException e) {
