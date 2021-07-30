@@ -213,6 +213,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
         disableLocation();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
+        if(dynamicReceiver != null) {
+            unregisterReceiver(dynamicReceiver);
+        }
     }
 
     private void initUIFeature() {
