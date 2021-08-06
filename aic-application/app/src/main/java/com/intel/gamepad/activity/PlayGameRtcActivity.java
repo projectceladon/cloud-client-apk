@@ -188,7 +188,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         filter.addAction("com.intel.gamepad.sendfiletoaic");
         filter.addAction("com.intel.gamepad.sendfiletoapp");
         dynamicReceiver = new DynamicReceiver();
-        registerReceiver(dynamicReceiver,filter);
+        registerReceiver(dynamicReceiver, filter);
     }
 
     @Override
@@ -214,7 +214,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         disableLocation();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
-        if(dynamicReceiver != null) {
+        if (dynamicReceiver != null) {
             unregisterReceiver(dynamicReceiver);
         }
     }
@@ -423,9 +423,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
                             requestFile = new File(fileTransferPath + file_name);
                             String newFileName = file_name;
-                            while(requestFile.exists()) {
+                            while (requestFile.exists()) {
                                 int pointIndex = newFileName.indexOf(".");
-                                if(pointIndex > 0) {
+                                if (pointIndex > 0) {
                                     newFileName = newFileName.substring(0, pointIndex) + "1" + newFileName.substring(pointIndex);
                                 } else {
                                     newFileName = newFileName + "1";
@@ -447,6 +447,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             }
 
                             fileOutputStream = null;
+                            Long finalFile_size = requestFile.length();
+                            runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "File: " + file_name + " Size: " + String.valueOf(finalFile_size) + " transfer finished", Toast.LENGTH_LONG).show());
                             requestFile = null;
                         } else if (indicator.equals("sending")) {
                             Long block_size = Long.valueOf(parameters.getString("block_size"));
@@ -1170,13 +1172,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
         }
     }
 
-    class DynamicReceiver extends BroadcastReceiver{
+    class DynamicReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             // TODO: This method is called when the BroadcastReceiver is receiving
             // an Intent broadcast.
             String action = intent.getAction();
-            if(action.equals("com.intel.gamepad.sendfiletoaic")) {
+            if (action.equals("com.intel.gamepad.sendfiletoaic")) {
                 String uri = intent.getStringExtra("uri");
                 Log.e("MyReceiver", "To aic uri = " + uri);
                 sendFiletoAIC(uri);
@@ -1188,11 +1190,19 @@ public class PlayGameRtcActivity extends AppCompatActivity
             //throw new UnsupportedOperationException("Not yet implemented");
         }
 
-        private void sendFiletoAIC(String uri){
+        private void sendFiletoAIC(String uri) {
+            File file = new File(uri);
+            if (!file.exists()) {
+                runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "There is no file: " + uri, Toast.LENGTH_LONG).show());
+                return;
+            }
+            Long file_length = file.length();
+            String file_name = file.getName();
+            runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "File: " + file.getName() + " Size: " + String.valueOf(file_length) + " start transfer", Toast.LENGTH_LONG).show());
             controller.sendFile(uri);
         }
 
-        private void sendFiletoApp(String uri){
+        private void sendFiletoApp(String uri) {
             controller.sendFileNameToStreamer(uri);
         }
     }
