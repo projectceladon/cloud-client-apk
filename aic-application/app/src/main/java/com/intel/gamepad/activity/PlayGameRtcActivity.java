@@ -139,6 +139,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private TextView tvMyStatus = null;
     private Boolean bFirstStart = true;
     DynamicReceiver dynamicReceiver;
+    IntentFilter filter;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
     private String fileTransferPath = "/sdcard/";
@@ -184,16 +185,16 @@ public class PlayGameRtcActivity extends AppCompatActivity
         checkMediaCodecSupportTypes();
         bFirstStart = true;
 
-        IntentFilter filter = new IntentFilter();
+        filter = new IntentFilter();
         filter.addAction("com.intel.gamepad.sendfiletoaic");
         filter.addAction("com.intel.gamepad.sendfiletoapp");
         dynamicReceiver = new DynamicReceiver();
-        registerReceiver(dynamicReceiver, filter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        registerReceiver(dynamicReceiver, filter);
         hideStatusBar();
         if (!bFirstStart) {
             onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
@@ -204,6 +205,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
     @Override
     protected void onPause() {
         super.onPause();
+        if (dynamicReceiver != null) {
+            unregisterReceiver(dynamicReceiver);
+        }
         P2PHelper.closeP2PClient();
         bFirstStart = false;
     }
@@ -214,9 +218,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         disableLocation();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
-        if (dynamicReceiver != null) {
-            unregisterReceiver(dynamicReceiver);
-        }
     }
 
     private void initUIFeature() {
