@@ -458,7 +458,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             }
 
                             String block = parameters.getString("block");
-                            byte[] buf = Base64.getDecoder().decode(block);
+                            byte[] buf;
+                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                                buf = android.util.Base64.decode(block, android.util.Base64.DEFAULT);
+                            } else {
+                                buf = Base64.getDecoder().decode(block);
+                            }
 
                             if (buf.length != block_size) {
                                 Log.e(TAG, "The real size is not same as size in message");
