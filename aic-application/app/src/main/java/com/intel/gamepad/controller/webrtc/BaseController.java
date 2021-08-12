@@ -4,6 +4,7 @@ package com.intel.gamepad.controller.webrtc;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Trace;
@@ -243,7 +244,12 @@ public abstract class BaseController implements OnTouchListener {
 
                         byte[] buf_copy = new byte[byteread];
                         System.arraycopy(buf, 0, buf_copy, 0, byteread);
-                        String block = Base64.getEncoder().encodeToString(buf_copy);
+                        String block;
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                            block = android.util.Base64.encodeToString(buf_copy, android.util.Base64.DEFAULT);
+                        } else {
+                            block = Base64.getEncoder().encodeToString(buf_copy);
+                        }
                         mapDataForFileContent.put("block", block);
                         jsonString = new JSONObject(mapKey).toString();
                         P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
