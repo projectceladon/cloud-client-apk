@@ -137,28 +137,6 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
-    public static byte[] ConvertIntToBytes(int n) {
-        byte[] arr = new byte[4];
-        arr[0] = (byte) (n & 0xff);
-        arr[1] = (byte) (n >> 8 & 0xff);
-        arr[2] = (byte) (n >> 16 & 0xff);
-        arr[3] = (byte) (n >> 24 & 0xff);
-        return arr;
-    }
-
-    public static byte[] ConvertLongToBytes(Long n) {
-        byte[] arr = new byte[8];
-        arr[0] = (byte) (n & 0xff);
-        arr[1] = (byte) (n >> 8 & 0xff);
-        arr[2] = (byte) (n >> 16 & 0xff);
-        arr[3] = (byte) (n >> 24 & 0xff);
-        arr[4] = (byte) (n >> 32 & 0xff);
-        arr[5] = (byte) (n >> 40 & 0xff);
-        arr[6] = (byte) (n >> 48 & 0xff);
-        arr[7] = (byte) (n >> 56 & 0xff);
-        return arr;
-    }
-
     private final Object sendFileLock = new Object();
     private boolean send_block_success_ = false;
     private boolean send_block_failed_ = false;
