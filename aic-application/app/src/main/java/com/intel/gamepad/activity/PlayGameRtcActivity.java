@@ -883,9 +883,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     private void sensorsInit() {
-        Map<String, String> mapSensor = new HashMap<String, String>();
-        mapSensor.put("sensor_ctrl", "check");
-        String jsonString = new Gson().toJson(mapSensor, mapSensor.getClass());
+        Map<String, Object> mapKey = new HashMap<>();
+        Map<String, Object> mapData = new HashMap<>();
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        mapData.put("event", "sensorcheck");
+        String jsonString = new JSONObject(mapKey).toString();
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
@@ -1034,42 +1037,49 @@ public class PlayGameRtcActivity extends AppCompatActivity
         if (event == null) {
             return;
         }
-        String data = "{\"sensor_info\":{\"count\":1,\"data\":[[" +
-                String.valueOf(event.sensor.getType()) + ",";
-        switch (event.sensor.getType()) {
+        Map<String, Object> mapKey = new HashMap<>();
+        Map<String, Object> mapData = new HashMap<>();
+        Map<String, Object> sensorInfo = new HashMap<>();
+        float[] data = new float[6];
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        mapData.put("event", "sensordata");
+        mapData.put("parameters", sensorInfo);
+        sensorInfo.put("type", event.sensor.getType());
+                switch(event.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
             case Sensor.TYPE_MAGNETIC_FIELD:
             case Sensor.TYPE_GYROSCOPE:
-                data += event.values[0] + "," +
-                        event.values[1] + "," + event.values[2];
+                data[0] = event.values[0];
+                data[1] = event.values[1];
+                data[2] = event.values[2];
                 break;
             case Sensor.TYPE_ACCELEROMETER_UNCALIBRATED:
             case Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED:
             case Sensor.TYPE_GYROSCOPE_UNCALIBRATED:
-                data += event.values[0] + "," + event.values[1] + "," +
-                        event.values[2] + "," + event.values[3] + "," +
-                        event.values[4] + "," + event.values[5];
+                data[0] = event.values[0];
+                data[1] = event.values[1];
+                data[2] = event.values[2];
+                data[3] = event.values[3];
+                data[4] = event.values[4];
+                data[5] = event.values[5];
                 break;
             case Sensor.TYPE_LIGHT:
             case Sensor.TYPE_PROXIMITY:
             case Sensor.TYPE_AMBIENT_TEMPERATURE:
-                data += event.values[0];
+                data[0] = event.values[0];
                 break;
             default:
-                data = "";
-
+                return;
         }
-
-        if (!data.isEmpty()) {
-            data += "]]}}";
-            String finalData = data;
-            P2PHelper.getClient().send(P2PHelper.peerId, data, new P2PHelper.FailureCallBack<Void>() {
-                @Override
-                public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + finalData);
-                }
-            });
-        }
+        sensorInfo.put("data", data);
+        String jsonString = new JSONObject(mapKey).toString();
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+            }
+        });
     }
 
     @Override
