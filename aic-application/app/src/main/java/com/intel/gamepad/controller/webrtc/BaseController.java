@@ -907,6 +907,31 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
+    public void sendAndroidEventAsString(String strCommand) {
+        Log.d("test", "strCommand: " + strCommand);
+        MotionEventBean meb = new MotionEventBean();
+        meb.setType("control");
+        meb.setData(new MotionEventBean.DataBean());
+        meb.getData().setEvent("touch");
+        MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
+        if (parametersBean != null) {
+            meb.getData().setParameters(parametersBean);
+            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+            if (parameters != null) {
+                parameters.setData(strCommand);
+                parameters.setTID(0);
+                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+                //LogEx.d(jsonString);
+                Log.d("test", "jsonString: " + jsonString);
+                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                    @Override
+                    public void onFailure(OwtError owtError) {
+                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    }
+                });
+            }
+        }
+    }
     /**
      * 发送安卓端的原始事件信息
      */
@@ -924,7 +949,6 @@ public abstract class BaseController implements OnTouchListener {
                 parameters.setTouchx(x);
                 parameters.setTouchy(y);
                 parameters.setFingerID(pointId);
-
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
                 //LogEx.d(jsonString);
                 if (action == MotionEvent.ACTION_UP) {

@@ -3,6 +3,7 @@ package com.intel.gamepad.controller.webrtc;
 
 import android.hardware.input.InputManager;
 import android.os.Handler;
+import android.os.Trace;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -48,6 +49,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     public static int[] deviceSlot = {invalidDeviceId, invalidDeviceId};
     private int nPointCount = 0;
     private int[] pointArray =  new int[10];
+    private int nCountInput;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -89,6 +91,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     @Override
     public boolean onTouch(View v, MotionEvent evt) {
         LogEx.i(">>>>" + v + " " + evt);
+        Log.d("test", "evt: " + evt);
         this.updateLastTouchEvent();
         int index;
         float x;
@@ -96,12 +99,20 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         int nRomoteX;
         int nRomoteY;
         int pointId;
+        int pressure;
         float width = 32767, height = 32767;
         int action = evt.getActionMasked();
         if(action == MotionEvent.ACTION_UP || action ==  MotionEvent.ACTION_CANCEL) {
-            for (int i = 0; i < nPointCount; i++) {
-                sendAndroidEvent(action, 0, 0, pointArray[i]);
+            if(action == MotionEvent.ACTION_UP) {
+                nCountInput++;
+                Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
+                Trace.endSection();
             }
+            String strCmd = "";
+            for (int i = 0; i < nPointCount; i++) {
+                strCmd = strCmd + "u " + pointArray[i] + "\n";
+            }
+            sendAndroidEventAsString(strCmd);
             return true;
         } else {
             nPointCount =  evt.getPointerCount();
@@ -115,14 +126,17 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         }
         if (action == MotionEvent.ACTION_MOVE) {
             int pointerCount = evt.getPointerCount();
+            String strCmd = "";
             for (int i = 0; i < pointerCount; i++) {
                 pointId = evt.getPointerId(i);
                 x = evt.getX(i);
                 y = evt.getY(i);
                 nRomoteX = Math.round((x * width) / v.getWidth());
                 nRomoteY = Math.round((y * height) / v.getHeight());
-                sendAndroidEvent(action, nRomoteX, nRomoteY, pointId);
+                //pressure = (int)evt.getPressure(pointId);
+                strCmd = strCmd + "m " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 0 + "\n";
             }
+            sendAndroidEventAsString(strCmd);
             return true;
         }
 
@@ -132,7 +146,16 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         y = evt.getY(index);
         nRomoteX = Math.round((x * width) / v.getWidth());
         nRomoteY = Math.round((y * height) / v.getHeight());
-        sendAndroidEvent(action, nRomoteX, nRomoteY, pointId);
+        //pressure = (int)evt.getPressure(pointId);
+        String strCmd;
+        if(action == MotionEvent.ACTION_POINTER_UP) {
+            Log.d("test", "ACTION_POINTER_UP: ");
+            strCmd = "u " + pointId + "\n";
+        } else {
+            strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 0 + "\n";
+        }
+
+        sendAndroidEventAsString(strCmd);
         return true;
     }
 
