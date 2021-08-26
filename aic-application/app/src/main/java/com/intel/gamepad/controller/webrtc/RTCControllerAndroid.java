@@ -148,7 +148,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         //pressure = (int)evt.getPressure(pointId);
         String strCmd;
         if(action == MotionEvent.ACTION_POINTER_UP) {
-            Log.d("test", "ACTION_POINTER_UP: ");
             strCmd = "u " + pointId + "\n";
         } else {
             strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";

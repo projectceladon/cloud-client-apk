@@ -908,7 +908,7 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public void sendAndroidEventAsString(String strCommand) {
-        Log.d("test", "strCommand: " + strCommand);
+        strCommand = strCommand + "c\n";
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
@@ -922,7 +922,6 @@ public abstract class BaseController implements OnTouchListener {
                 parameters.setTID(0);
                 String jsonString = new Gson().toJson(meb, MotionEventBean.class);
                 //LogEx.d(jsonString);
-                Log.d("test", "jsonString: " + jsonString);
                 P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                     @Override
                     public void onFailure(OwtError owtError) {
