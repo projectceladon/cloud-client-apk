@@ -133,8 +133,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 y = evt.getY(i);
                 nRomoteX = Math.round((x * width) / v.getWidth());
                 nRomoteY = Math.round((y * height) / v.getHeight());
-                //pressure = (int)evt.getPressure(pointId);
-                strCmd = strCmd + "m " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 0 + "\n";
+                strCmd = strCmd + "m " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
             }
             sendAndroidEventAsString(strCmd);
             return true;
@@ -152,7 +151,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             Log.d("test", "ACTION_POINTER_UP: ");
             strCmd = "u " + pointId + "\n";
         } else {
-            strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 0 + "\n";
+            strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
         }
 
         sendAndroidEventAsString(strCmd);
