@@ -44,6 +44,7 @@ public class P2PHelper {
     private P2PClientConfiguration p2pConfig;
     private P2PClient client;
     private EglBase rootEglBase;
+    private boolean inited = false;
 
     private static class Inner {
         private static P2PHelper inst = new P2PHelper();
@@ -54,22 +55,25 @@ public class P2PHelper {
     }
 
     private P2PHelper() {
-        initP2PClientConfig();
+        //initP2PClientConfig();
     }
 
     public static void init(AppCompatActivity activity, P2PClient.P2PClientObserver observer) {
+        getInst().initP2PClientConfig();
         getInst().initP2PClient(activity, observer);
     }
 
     private void initP2PClientConfig() {
-        rootEglBase = EglBase.create();
-        ContextInitialization.create()
-                .setApplicationContext(MyApp.context)
-                .setVideoHardwareAccelerationOptions(
-                        rootEglBase.getEglBaseContext(),
-                        rootEglBase.getEglBaseContext())
-                .initialize();
-
+        if(!inited) {
+            rootEglBase = EglBase.create();
+            ContextInitialization.create()
+                    .setApplicationContext(MyApp.context)
+                    .setVideoHardwareAccelerationOptions(
+                            rootEglBase.getEglBaseContext(),
+                            rootEglBase.getEglBaseContext())
+                    .initialize();
+            inited = true;
+        }
         VideoEncodingParameters h264 = new VideoEncodingParameters(H264);
 //        VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
         VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
