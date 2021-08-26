@@ -91,7 +91,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     @Override
     public boolean onTouch(View v, MotionEvent evt) {
         LogEx.i(">>>>" + v + " " + evt);
-        Log.d("test", "evt: " + evt);
         this.updateLastTouchEvent();
         int index;
         float x;
