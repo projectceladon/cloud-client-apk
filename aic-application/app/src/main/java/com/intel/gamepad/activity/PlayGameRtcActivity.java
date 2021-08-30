@@ -1091,7 +1091,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
-        meb.getData().setEvent("isGps");
+        meb.getData().setEvent("gps");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
@@ -1113,7 +1113,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
-        meb.getData().setEvent("isGamepad");
+        meb.getData().setEvent("joystick");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
@@ -1122,9 +1122,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 parameters.setgpID(joyId);
                 if (BaseController.EV_NON == type) {
                     if (enableJoy) {
-                        parameters.setData("gpEnable");
+                        parameters.setData("i\n");
                     } else {
-                        parameters.setData("gpDisable");
+                        parameters.setData("p\n");
                     }
                 } else {
                     String data = null;
