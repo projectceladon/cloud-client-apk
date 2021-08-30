@@ -88,7 +88,7 @@ public class MotionEventBean {
             private float touchx;
             private float touchy;
             private int keycode;
-            private int gpID;
+            private int jID;
             private int fingerId;
             private String data;
             private String file_name;
@@ -148,7 +148,7 @@ public class MotionEventBean {
             }
 
             public void setgpID(int jsID) {
-                this.gpID = jsID;
+                this.jID = jsID;
             }
 
             public  void setFileName(String fileName) {

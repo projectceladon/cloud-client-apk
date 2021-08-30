@@ -1117,7 +1117,7 @@ public abstract class BaseController implements OnTouchListener {
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
-        meb.getData().setEvent("isGamepad");
+        meb.getData().setEvent("joystick");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
@@ -1126,9 +1126,9 @@ public abstract class BaseController implements OnTouchListener {
                 parameters.setgpID(joyId);
                 if (EV_NON == type) {
                     if (enableJoy) {
-                        parameters.setData("gpEnable");
+                        parameters.setData("i\n");
                     } else {
-                        parameters.setData("gpDisable");
+                        parameters.setData("p\n");
                     }
                 } else {
                     String data = null;
@@ -1161,7 +1161,7 @@ public abstract class BaseController implements OnTouchListener {
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
-        meb.getData().setEvent("isGamepad");
+        meb.getData().setEvent("joystick");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
         if (parametersBean != null) {
             meb.getData().setParameters(parametersBean);
@@ -1170,9 +1170,9 @@ public abstract class BaseController implements OnTouchListener {
                 parameters.setgpID(joyId);
                 if (EV_NON == type) {
                     if (enableJoy) {
-                        parameters.setData("gpEnable");
+                        parameters.setData("i\n");
                     } else {
-                        parameters.setData("gpDisable");
+                        parameters.setData("p\n");
                     }
                 } else {
                     String data = "c\n";
