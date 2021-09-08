@@ -1,0 +1,216 @@
+From 65960e26bddacdb02b494c25a3e63a44581b655c Mon Sep 17 00:00:00 2001
+From: "Liu, Kai1" <kai1.liu@intel.com>
+Date: Wed, 8 Sep 2021 10:46:34 +0800
+Subject: [PATCH] Add
+ talk/owt/patches/0020-Add-atrace-points-for-camera-in-apk.patch
+
+Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
+---
+ scripts/prepare_dev.py                        |   3 +-
+ ...-Add-atrace-points-for-camera-in-apk.patch | 180 ++++++++++++++++++
+ 2 files changed, 182 insertions(+), 1 deletion(-)
+ create mode 100644 talk/owt/patches/0020-Add-atrace-points-for-camera-in-apk.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index b4450c2..54811cb 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -47,7 +47,8 @@ patchList = [
+     ('0016-Use-AToU-to-print-trace.patch', WEBRTC_PATH),
+     ('0017-Support-OMX.Intel.hw_ve.h264-for-android-app.patch', WEBRTC_PATH),
+     ('0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch', WEBRTC_PATH),
+-    ('0019-Support-h264-and-hevc-of-MTK-device-for-application.patch', WEBRTC_PATH)
++    ('0019-Support-h264-and-hevc-of-MTK-device-for-application.patch', WEBRTC_PATH),
++    ('0020-Add-atrace-points-for-camera-in-apk.patch', WEBRTC_PATH)
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0020-Add-atrace-points-for-camera-in-apk.patch b/talk/owt/patches/0020-Add-atrace-points-for-camera-in-apk.patch
+new file mode 100644
+index 0000000..f6a5ca4
+--- /dev/null
++++ b/talk/owt/patches/0020-Add-atrace-points-for-camera-in-apk.patch
+@@ -0,0 +1,180 @@
++From 51cda32090c0c7253cc212c60e6221a60cc1ffbf Mon Sep 17 00:00:00 2001
++From: "Liu, Kai1" <kai1.liu@intel.com>
++Date: Tue, 7 Sep 2021 20:34:22 +0800
++Subject: [PATCH] Add atrace points for camera in apk
++
++Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
++---
++ .../src/java/org/webrtc/Camera1Session.java   | 86 +++++++++++++++++++
++ .../java/org/webrtc/HardwareVideoEncoder.java |  9 ++
++ 2 files changed, 95 insertions(+)
++
++diff --git a/sdk/android/src/java/org/webrtc/Camera1Session.java b/sdk/android/src/java/org/webrtc/Camera1Session.java
++index 2d821c2ff0..39af59adb0 100644
++--- a/sdk/android/src/java/org/webrtc/Camera1Session.java
+++++ b/sdk/android/src/java/org/webrtc/Camera1Session.java
++@@ -13,6 +13,7 @@ package org.webrtc;
++ import android.content.Context;
++ import android.os.Handler;
++ import android.os.SystemClock;
+++import android.os.Trace;
++ import java.io.IOException;
++ import java.nio.ByteBuffer;
++ import java.util.List;
++@@ -47,6 +48,13 @@ class Camera1Session implements CameraSession {
++ 
++   private SessionState state;
++   private boolean firstFrameReported;
+++  private byte[] red_frame;
+++  private byte[] green_frame;
+++  private byte[] blue_frame;
+++  private byte[] purple_frame;
+++  private byte[] cyan_frame;
+++  private int frameCount = 0;
+++  private int nCountInput = 0;
++ 
++   // TODO(titovartem) make correct fix during webrtc:9175
++   @SuppressWarnings("ByteBufferBackingArray")
++@@ -160,6 +168,19 @@ class Camera1Session implements CameraSession {
++       long constructionTimeNs) {
++     Logging.d(TAG, "Create new camera1 session on camera " + cameraId);
++ 
+++    int frameSize = captureFormat.width * captureFormat.height * 3 / 2;
+++    red_frame    = new byte[frameSize];
+++    green_frame  = new byte[frameSize];
+++    blue_frame   = new byte[frameSize];
+++    purple_frame = new byte[frameSize];
+++    cyan_frame   = new byte[frameSize];
+++
+++    initNV21Frame(red_frame,    captureFormat.width, captureFormat.height,  82,  90, 240);
+++    initNV21Frame(green_frame,  captureFormat.width, captureFormat.height, 144,  54,  34);
+++    initNV21Frame(blue_frame,   captureFormat.width, captureFormat.height,  41, 240, 110);
+++    initNV21Frame(purple_frame, captureFormat.width, captureFormat.height, 107, 202, 222);
+++    initNV21Frame(cyan_frame,   captureFormat.width, captureFormat.height, 169, 166,  16);
+++
++     this.cameraThreadHandler = new Handler();
++     this.events = events;
++     this.captureToTexture = captureToTexture;
++@@ -176,6 +197,29 @@ class Camera1Session implements CameraSession {
++     startCapturing();
++   }
++ 
+++  private void initNV21Frame(byte[] data, int width, int height, int y, int u, int v) {
+++      int frameSize = width * height * 3 / 2;
+++      if (data.length != frameSize)
+++          return;
+++
+++      if (y < 0 || y > 255 || u < 0 || u > 255 || v < 0 || v > 255)
+++          return;
+++
+++      for (int h = 0; h < height; h++) {
+++          for (int w = 0; w < width; w++) {
+++              data[h * width + w] = (byte)(y & 0xFF);
+++          }
+++      }
+++
+++      int y_size = width * height;
+++      for (int h = 0; h < height / 2; h++) {
+++          for (int w = 0; w < width; w += 2) {
+++              data[y_size + h * width + w] = (byte)(v & 0xFF);
+++              data[y_size + h * width + w + 1] = (byte)(u & 0xFF);
+++          }
+++      }
+++  }
+++
++   @Override
++   public void stop() {
++     Logging.d(TAG, "Stop camera1 session on camera " + cameraId);
++@@ -299,6 +343,48 @@ class Camera1Session implements CameraSession {
++           firstFrameReported = true;
++         }
++ 
+++        frameCount++;
+++        if (frameCount <= 60) {
+++          System.arraycopy(red_frame, 0, data, 0, red_frame.length);
+++          if (frameCount == 1) {
+++            nCountInput++;
+++            Trace.beginSection("atou C6 ID: " + nCountInput + " size: " + data.length + " red");
+++            Trace.endSection();
+++          }
+++        } else if (frameCount <= 120) {
+++          System.arraycopy(green_frame, 0, data, 0, green_frame.length);
+++          if (frameCount == 61) {
+++            nCountInput++;
+++            Trace.beginSection("atou C6 ID: " + nCountInput + " size: " + data.length + " green");
+++            Trace.endSection();
+++          }
+++        } else if (frameCount <= 180) {
+++          System.arraycopy(blue_frame, 0, data, 0, blue_frame.length);
+++          if (frameCount == 121) {
+++            nCountInput++;
+++            Trace.beginSection("atou C6 ID: " + nCountInput + " size: " + data.length + " blue");
+++            Trace.endSection();
+++          }
+++        } else if (frameCount <= 240) {
+++          System.arraycopy(purple_frame, 0, data, 0, purple_frame.length);
+++          if (frameCount == 181) {
+++            nCountInput++;
+++            Trace.beginSection("atou C6 ID: " + nCountInput + " size: " + data.length + " purple");
+++            Trace.endSection();
+++          }
+++        } else if (frameCount <= 300) {
+++          System.arraycopy(cyan_frame, 0, data, 0, cyan_frame.length);
+++          if (frameCount == 241) {
+++            nCountInput++;
+++            Trace.beginSection("atou C6 ID: " + nCountInput + " size: " + data.length + " cyan");
+++            Trace.endSection();
+++          }
+++
+++          if (frameCount == 300) {
+++            frameCount = 0;
+++          }
+++        }
+++
++         VideoFrame.Buffer frameBuffer = new NV21Buffer(
++             data, captureFormat.width, captureFormat.height, () -> cameraThreadHandler.post(() -> {
++               if (state == SessionState.RUNNING) {
++diff --git a/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java b/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java
++index beeb5513d0..a39f8eea18 100644
++--- a/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java
+++++ b/sdk/android/src/java/org/webrtc/HardwareVideoEncoder.java
++@@ -16,6 +16,7 @@ import android.media.MediaCodecInfo;
++ import android.media.MediaFormat;
++ import android.opengl.GLES20;
++ import android.os.Bundle;
+++import android.os.Trace;
++ import android.support.annotation.Nullable;
++ import android.view.Surface;
++ import java.io.IOException;
++@@ -53,6 +54,7 @@ class HardwareVideoEncoder implements VideoEncoder {
++ 
++   private static final int MEDIA_CODEC_RELEASE_TIMEOUT_MS = 5000;
++   private static final int DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US = 100000;
+++  private static final int FRAME_SIZE_THRESHOLD_FOR_ATRACE = 500;
++ 
++   /**
++    * Keeps track of the number of output buffers that have been passed down the pipeline and not yet
++@@ -163,6 +165,7 @@ class HardwareVideoEncoder implements VideoEncoder {
++   // Any exception thrown during shutdown.  The output thread releases the MediaCodec and uses this
++   // value to send exceptions thrown during release back to the encoder thread.
++   @Nullable private volatile Exception shutdownException;
+++  private int nCountInput = 0;
++ 
++   /**
++    * Creates a new HardwareVideoEncoder with the given codecName, codecType, colorFormat, key frame
++@@ -577,6 +580,12 @@ class HardwareVideoEncoder implements VideoEncoder {
++           frameBuffer = codecOutputBuffer.slice();
++         }
++ 
+++        if (frameBuffer.capacity() > FRAME_SIZE_THRESHOLD_FOR_ATRACE) {
+++          nCountInput++;
+++          Trace.beginSection("atou C7 ID: " + nCountInput + " size: " + frameBuffer.capacity() + " key: " + isKeyFrame);
+++          Trace.endSection();
+++        }
+++
++         final EncodedImage.FrameType frameType = isKeyFrame
++             ? EncodedImage.FrameType.VideoFrameKey
++             : EncodedImage.FrameType.VideoFrameDelta;
++-- 
++2.17.1
++
+-- 
+2.17.1
+
