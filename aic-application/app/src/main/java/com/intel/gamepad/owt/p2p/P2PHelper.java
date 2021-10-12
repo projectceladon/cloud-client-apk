@@ -112,9 +112,9 @@ public class P2PHelper {
         iceServers.add(iceServer);
         PeerConnection.RTCConfiguration rtcConf = new PeerConnection.RTCConfiguration(iceServers);
         p2pConfig = P2PClientConfiguration.builder()
-                .addVideoParameters(vp9)
+                // .addVideoParameters(vp9)
                 .addVideoParameters(h264)
-                .addVideoParameters(vp8)
+                // .addVideoParameters(vp8)
                 .addVideoParameters(h265)
                 .addAudioParameters(opus)
                 .setRTCConfiguration(rtcConf)
