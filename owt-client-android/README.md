@@ -6,10 +6,10 @@ Preconditions:
 2. If local.properties file with the following line doesn't exist in project root directory,  please create local.properties file and add a line
     >`sdk.dir=/your/android/sdk/location
 
-Download owt-client-native source code:
+Download owt-client-android source code:
 1. $ cd owt-client-android/src/
 2. Checkout v5.0:
-    $ git checkout -b v5.0-local v5.0
+    $ git checkout v5.0
 3. $ rm -rf  dependencies/libwebrtc/*
 4. $ cp -r ../../owt-client-native/src/out/dist/release/* dependencies/libwebrtc/
 5. $ git am ../patches/0001-Enable-second-data-channel-for-owt-android-sdk.patch
@@ -22,6 +22,6 @@ Compile:
 5. $ mv ../../aic-application/app/libs/x64 ../../aic-application/app/libs/x86_64
 
 Upload patches:
-1. cd owt-client-native/src && git reset --hard e508a131d24c3f89d7863116cac217cd29aded92
+1. cd owt-client-native/src && git reset --hard v5.0 && git clean -f -x -d
 2. Don't upload patch to owt-client-native/src.
 3. Put your patches to aic_application/owt-client-android/patches

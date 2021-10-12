@@ -16,7 +16,7 @@ Preconditions:
 Download owt-client-native source code:
 1. $ cd owt-client-native/src
 2. Checkout v5.0:
-    $ git checkout -b v5.0-local v5.0
+    $ git checkout v5.0
 3. Fetch dependency projects: $ gclient sync
 4. Apply patch one by one:
     $ git am -3 ../patches/0001-Add-talk-owt-patches-0015-Adopt-SingletonSurfaceView.patch
@@ -31,6 +31,6 @@ Compile:
 2. $ ./scripts/build_android.py
 
 Upload patches:
-1. cd owt-client-native/src && git reset --hard 56f83d98fc861c564fca0f81ae09bc6e1fa139bd
+1. cd owt-client-native/src && git reset --hard v5.0 && git clean -f -x -d
 2. Don't upload patch to owt-client-native/src.
 3. Put your patches to aic_application/owt-client-native/patches
