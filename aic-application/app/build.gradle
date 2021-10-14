@@ -71,7 +71,7 @@ dependencies {
     implementation(name: 'owt_base', ext: 'aar')
     implementation(name: 'owt_p2p', ext: 'aar')
     implementation(name: 'owt_conference', ext: 'aar')
-    implementation project(':mycommonlibrary')
+    implementation project(':commonlibrary')
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     testImplementation 'junit:junit:4.12'

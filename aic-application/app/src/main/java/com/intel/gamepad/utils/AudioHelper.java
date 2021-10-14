@@ -2,9 +2,11 @@ package com.intel.gamepad.utils;
 
 import android.content.Context;
 import android.media.AudioManager;
-import android.os.Build;
 
 public class AudioHelper {
+    private static AudioHelper INSTANCE;
+    private AudioManager audioManager;
+
     private AudioHelper(Context context) {
         initAudioManager(context);
     }
@@ -15,21 +17,13 @@ public class AudioHelper {
         return INSTANCE;
     }
 
-    private static AudioHelper INSTANCE;
-    private Context context;
-    private AudioManager audioManager;
-
     /**
      * 初始化音频管理器
      */
     private void initAudioManager(Context context) {
-        this.context = context.getApplicationContext();
-        audioManager = (AudioManager) this.context.getSystemService(Context.AUDIO_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-        } else {
-            audioManager.setMode(AudioManager.MODE_IN_CALL);
-        }
+        Context context1 = context.getApplicationContext();
+        audioManager = (AudioManager) context1.getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
         audioManager.setSpeakerphoneOn(true);//默认为扬声器播放
     }
 
@@ -116,7 +110,7 @@ public class AudioHelper {
      * @param volume     音频大小
      */
     public void setVolume(int streamType, int volume) {
-        volume = (volume > getMaxVolume(streamType)) ? getMaxVolume(streamType) : volume;
+        volume = Math.min(volume, getMaxVolume(streamType));
         audioManager.setStreamVolume(streamType,
                 volume,
                 AudioManager.FLAG_PLAY_SOUND | AudioManager.FLAG_SHOW_UI);

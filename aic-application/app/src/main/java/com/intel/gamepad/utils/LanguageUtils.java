@@ -35,11 +35,7 @@ public class LanguageUtils {
     public static boolean updateLocale(Context context, Locale locale) {
         if (needUpdateLocale(context, locale)) {
             Configuration configuration = context.getResources().getConfiguration();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                configuration.setLocale(locale);
-            } else {
-                configuration.locale = locale;
-            }
+            configuration.setLocale(locale);
             DisplayMetrics displayMetrics = context.getResources().getDisplayMetrics();
             context.getResources().updateConfiguration(configuration, displayMetrics);
             setLocale(locale);

@@ -9,15 +9,6 @@ import static owt.p2p.OwtP2PError.P2P_CONN_SERVER_UNKNOWN;
 
 import android.util.Log;
 
-import com.mycommonlibrary.utils.LogEx;
-
-import okhttp3.OkHttpClient;
-import owt.base.ActionCallback;
-import owt.base.Const;
-import owt.base.OwtError;
-import owt.p2p.OwtP2PError;
-import owt.p2p.SignalingChannelInterface;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -28,16 +19,14 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
@@ -45,30 +34,50 @@ import io.socket.client.Ack;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter.Listener;
+import okhttp3.OkHttpClient;
+import owt.base.ActionCallback;
+import owt.base.OwtError;
+import owt.p2p.OwtP2PError;
+import owt.p2p.SignalingChannelInterface;
 
 /**
  * Socket.IO implementation of P2P signaling channel.
  */
 public class SocketSignalingChannel implements SignalingChannelInterface {
     private static final String TAG = "OWT-SocketClient";
-    private final String CLIENT_CHAT_TYPE = "owt-message";
-    private final String SERVER_AUTHENTICATED = "server-authenticated";
-    private final String FORCE_DISCONNECT = "server-disconnect";
-    private final String CLIENT_TYPE = "&clientType=";
-    private final String CLIENT_TYPE_VALUE = "Android";
-    private final String CLIENT_VERSION = "&clientVersion=";
-    private final String CLIENT_VERSION_VALUE = "4.2";//Const.CLIENT_VERSION;
-
-    private final int MAX_RECONNECT_ATTEMPTS = 5;
-    private int reconnectAttempts = 0;
-    private Socket socketIOClient;
-    private List<SignalingChannelObserver> signalingChannelObservers;
-    private ActionCallback<String> connectCallback;
     static SSLContext sslContext;
     static HostnameVerifier hostnameVerifier;
-
+    private final String CLIENT_CHAT_TYPE = "owt-message";
+    private final int MAX_RECONNECT_ATTEMPTS = 5;
+    private int reconnectAttempts = 0;
+    private final Listener onReconnectingCallback = args -> reconnectAttempts++;
+    private Socket socketIOClient;
+    private List<SignalingChannelObserver> signalingChannelObservers;
+    private final Listener onDisconnectCallback = args -> {
+        for (SignalingChannelObserver observer : signalingChannelObservers) {
+            observer.onServerDisconnected();
+        }
+    };
+    private final Listener onForceDisconnectCallback = args -> {
+        if (socketIOClient != null) {
+            socketIOClient.on(Socket.EVENT_DISCONNECT, onDisconnectCallback);
+            socketIOClient.io().reconnection(false);
+        }
+    };
+    private final Listener onMessageCallback = args -> {
+        JSONObject argumentJsonObject = (JSONObject) args[0];
+        for (SignalingChannelObserver observer : signalingChannelObservers) {
+            try {
+                observer.onMessage(argumentJsonObject.getString("from"),
+                        argumentJsonObject.getString("data"));
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+    };
+    private ActionCallback<String> connectCallback;
     // Socket.IO events.
-    private Listener onConnectErrorCallback = args -> {
+    private final Listener onConnectErrorCallback = args -> {
         if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
             if (connectCallback != null) {
                 connectCallback.onFailure(
@@ -82,8 +91,7 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
             reconnectAttempts = 0;
         }
     };
-
-    private Listener onErrorCallback = args -> {
+    private final Listener onErrorCallback = args -> {
         if (connectCallback != null) {
             Pattern pattern = Pattern.compile("[0-9]*");
             if (pattern.matcher(args[0].toString()).matches()) {
@@ -95,41 +103,11 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
             }
         }
     };
-
-    private Listener onReconnectingCallback = args -> {
-        reconnectAttempts++;
-    };
-
-    private Listener onDisconnectCallback = args -> {
-        for (SignalingChannelObserver observer : signalingChannelObservers) {
-            observer.onServerDisconnected();
-        }
-    };
-
     // P2P server events.
-    private Listener onServerAuthenticatedCallback = args -> {
+    private final Listener onServerAuthenticatedCallback = args -> {
         if (connectCallback != null) {
             connectCallback.onSuccess(args[0].toString());
             connectCallback = null;
-        }
-    };
-
-    private Listener onForceDisconnectCallback = args -> {
-        if (socketIOClient != null) {
-            socketIOClient.on(Socket.EVENT_DISCONNECT, onDisconnectCallback);
-            socketIOClient.io().reconnection(false);
-        }
-    };
-
-    private Listener onMessageCallback = args -> {
-        JSONObject argumentJsonObject = (JSONObject) args[0];
-        for (SignalingChannelObserver observer : signalingChannelObservers) {
-            try {
-                observer.onMessage(argumentJsonObject.getString("from"),
-                        argumentJsonObject.getString("data"));
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
         }
     };
 
@@ -157,6 +135,11 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
             loginObject = new JSONObject(userInfo);
             token = URLEncoder.encode(loginObject.getString("token"), "UTF-8");
             url = loginObject.getString("host");
+            String CLIENT_TYPE_VALUE = "Android";
+            String CLIENT_VERSION = "&clientVersion=";
+            //Const.CLIENT_VERSION;
+            String CLIENT_VERSION_VALUE = "4.2";
+            String CLIENT_TYPE = "&clientType=";
             url += "?token=" + token + CLIENT_TYPE + CLIENT_TYPE_VALUE + CLIENT_VERSION
                     + CLIENT_VERSION_VALUE;
             if (!isValid(url)) {
@@ -175,12 +158,7 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
                     socketIOClient.disconnect();
                 }
                 OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-                hostnameVerifier = new HostnameVerifier() {
-                    @Override
-                    public boolean verify(String hostname, SSLSession session) {
-                        return true;
-                    }
-                };
+                hostnameVerifier = (hostname, session) -> true;
 
                 TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
                     @Override
@@ -218,6 +196,8 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
             }
             socketIOClient = IO.socket(url, opt);
 
+            String FORCE_DISCONNECT = "server-disconnect";
+            String SERVER_AUTHENTICATED = "server-authenticated";
             socketIOClient.on(Socket.EVENT_CONNECT_ERROR, onConnectErrorCallback)
                     .on(Socket.EVENT_ERROR, onErrorCallback)
                     .on(Socket.EVENT_RECONNECTING, onReconnectingCallback)
@@ -226,15 +206,7 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
                     .on(FORCE_DISCONNECT, onForceDisconnectCallback);
 
             socketIOClient.connect();
-        } catch (JSONException e) {
-            if (callback != null) {
-                callback.onFailure(new OwtError(P2P_CLIENT_ILLEGAL_ARGUMENT.value, e.getMessage()));
-            }
-        } catch (URISyntaxException e) {
-            if (callback != null) {
-                callback.onFailure(new OwtError(P2P_CLIENT_ILLEGAL_ARGUMENT.value, e.getMessage()));
-            }
-        } catch (UnsupportedEncodingException e) {
+        } catch (JSONException | URISyntaxException | UnsupportedEncodingException e) {
             if (callback != null) {
                 callback.onFailure(new OwtError(P2P_CLIENT_ILLEGAL_ARGUMENT.value, e.getMessage()));
             }

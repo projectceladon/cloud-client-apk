@@ -3,39 +3,22 @@ package com.intel.gamepad.activity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
 import com.intel.gamepad.R;
 import com.intel.gamepad.bean.GameListBean;
-import com.intel.gamepad.controller.webrtc.RTCControllerACT;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
-import com.intel.gamepad.controller.webrtc.RTCControllerFPS;
-import com.intel.gamepad.controller.webrtc.RTCControllerMouse;
-import com.intel.gamepad.controller.webrtc.RTCControllerRAC;
-import com.intel.gamepad.controller.webrtc.RTCControllerXBox;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.IPUtils;
-import com.mycommonlibrary.utils.StatusBarUtil;
-import com.mycommonlibrary.view.loadingDialog.LoadingDialog;
+import com.commonlibrary.utils.StatusBarUtil;
+import com.commonlibrary.view.loadingDialog.LoadingDialog;
 
-import org.jetbrains.annotations.NotNull;
-
-import kotlin.coroutines.CoroutineContext;
-import kotlinx.coroutines.CoroutineScope;
-
-public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
-    private boolean useWebRTC = true;
+public class GameDetailActivity extends BaseActvitiy {
+    private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
     private CheckBox chkAndroid;
-    private EditText etServerIP;
-    private EditText etCoturnIP;
-    private EditText etPeerID;
-    private EditText etClientID;
-    private static final String PARAM_BEAN = "param_bean";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,10 +28,10 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
         initView();
         loadData();
         chkAndroid.setChecked(true);
-        etServerIP = findViewById(R.id.etServerIP);
-        etCoturnIP = findViewById(R.id.etCoturnIP);
-        etPeerID = findViewById(R.id.etPeerID);
-        etClientID = findViewById(R.id.etClientID);
+        EditText etServerIP = findViewById(R.id.etServerIP);
+        EditText etCoturnIP = findViewById(R.id.etCoturnIP);
+        EditText etPeerID = findViewById(R.id.etPeerID);
+        EditText etClientID = findViewById(R.id.etClientID);
 
         etServerIP.setText(IPUtils.loadIP());
         P2PHelper.serverIP = IPUtils.loadIP();
@@ -153,56 +136,22 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
         initBackButton(R.id.ibtnBack);
         chkAndroid = findViewById(R.id.chkAndroid);
         MaterialButton btnPlay = findViewById(R.id.btnPlay);
-        btnPlay.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                requestStartGame(false);
-            }
-        });
+        btnPlay.setOnClickListener(v -> requestStartGame());
         btnPlay.requestFocus();
     }
 
-    private void requestStartGame(Boolean isCreateRoom) {
+    private void requestStartGame() {
         LoadingDialog dlg = (LoadingDialog) LoadingDialog.show(this);
-        if (isCreateRoom) {
-            Toast.makeText(this, "room is not supported", Toast.LENGTH_LONG);
-        } else {
-            gotoGamePlay();
-            dlg.dismiss();
-        }
+        gotoGamePlay();
+        dlg.dismiss();
     }
 
     private void gotoGamePlay() {
         if (bean != null) {
-            if (useWebRTC) {
-                bean.setAddurl("fps");
-                if (chkAndroid.isChecked()) {
-                    bean.setAddurl("android");
-                }
-                String ctrlName;
-                switch (bean.getAddurl()) {
-                    case "fps":
-                        ctrlName = RTCControllerFPS.NAME;
-                        break;
-                    case "rts":
-                        ctrlName = RTCControllerMouse.NAME;
-                        break;
-                    case "rac":
-                        ctrlName = RTCControllerRAC.NAME;
-                        break;
-                    case "act":
-                        ctrlName = RTCControllerACT.NAME;
-                        break;
-                    case "android":
-                        ctrlName = RTCControllerAndroid.NAME;
-                        break;
-                    default:
-                        ctrlName = RTCControllerXBox.NAME;
-                }
-                PlayGameRtcActivity.actionStart(this, ctrlName, bean.getIid(), bean.getConf());
-            } else {
-                //PlayGameRtcActivity.actionStart(this, bean.getIid(), bean.getIp(), bean.getPort());
+            if (chkAndroid.isChecked()) {
+                bean.setAddurl("android");
             }
+            PlayGameRtcActivity.actionStart(this, RTCControllerAndroid.NAME, bean.getIid(), bean.getConf());
         }
     }
 
@@ -213,11 +162,5 @@ public class GameDetailActivity extends BaseActvitiy implements CoroutineScope {
             bean.setIid(1);
             bean.setConf("rts");
         }
-    }
-
-    @NotNull
-    @Override
-    public CoroutineContext getCoroutineContext() {
-        return null;
     }
 }

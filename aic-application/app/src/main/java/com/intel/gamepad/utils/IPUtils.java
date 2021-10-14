@@ -1,7 +1,7 @@
 package com.intel.gamepad.utils;
 
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
-import com.mycommonlibrary.utils.LogEx;
+import com.commonlibrary.utils.LogEx;
 
 public class IPUtils {
     public static final String DEFAULT_IP = "http://10.239.93.183:30000/";

@@ -3,8 +3,6 @@ package com.intel.gamepad.owt.p2p;
 import static owt.base.MediaCodecs.AudioCodec.OPUS;
 import static owt.base.MediaCodecs.VideoCodec.H264;
 import static owt.base.MediaCodecs.VideoCodec.H265;
-import static owt.base.MediaCodecs.VideoCodec.VP8;
-import static owt.base.MediaCodecs.VideoCodec.VP9;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Lifecycle;
@@ -67,11 +65,10 @@ public class P2PHelper {
     }
 
     public static void updateP2PServerIP() {
-        Pattern pIp = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)\\:(\\d+)");
+        Pattern pIp = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+):(\\d+)");
         Matcher mIp = pIp.matcher(serverIP);
         if (mIp.find()) {
             strIP = mIp.group(1);
-            String strEP = mIp.group(2);
             stunAddr = "stun:" + strIP + ":3478";
             turnAddrTCP = "turn:" + strIP + ":3478?transport=tcp";
             turnAddrUDP = "turn:" + strIP + ":3478?transport=udp";
@@ -98,12 +95,12 @@ public class P2PHelper {
         }
         VideoEncodingParameters h264 = new VideoEncodingParameters(H264);
         VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
-        VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
-        VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);
+        // VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
+        // VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);
         AudioCodecParameters opusCodec = new AudioCodecParameters(OPUS);
         AudioEncodingParameters opus = new AudioEncodingParameters(opusCodec);
         updateP2PCoturnIP();
-        List<PeerConnection.IceServer> iceServers = new ArrayList();
+        List<PeerConnection.IceServer> iceServers = new ArrayList<>();
         List<String> urls = new ArrayList<>();
         urls.add(stunAddr);
         urls.add(turnAddrTCP);
@@ -112,9 +109,9 @@ public class P2PHelper {
         iceServers.add(iceServer);
         PeerConnection.RTCConfiguration rtcConf = new PeerConnection.RTCConfiguration(iceServers);
         p2pConfig = P2PClientConfiguration.builder()
+                // .addVideoParameters(vp8)
                 // .addVideoParameters(vp9)
                 .addVideoParameters(h264)
-                // .addVideoParameters(vp8)
                 .addVideoParameters(h265)
                 .addAudioParameters(opus)
                 .setRTCConfiguration(rtcConf)

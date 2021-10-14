@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <com.mycommonlibrary.view.StatusBarHeightView
+    <com.commonlibrary.view.StatusBarHeightView
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 

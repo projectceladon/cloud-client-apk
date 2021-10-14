@@ -26,7 +26,7 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
         <!--状态栏占位-->
-        <com.mycommonlibrary.view.StatusBarHeightView
+        <com.commonlibrary.view.StatusBarHeightView
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
         <!--标题栏点位-->

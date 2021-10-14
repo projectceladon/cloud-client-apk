@@ -8,19 +8,11 @@ import java.util.List;
 public class ActivityManager {
     private static final List<Activity> ACTIVITY_LIST = new ArrayList<>();
 
-    private static class Holder {
-        private static ActivityManager inst = new ActivityManager();
-    }
-
     private ActivityManager() {
     }
 
     public static ActivityManager getInstance() {
         return Holder.inst;
-    }
-
-    private List<Activity> getList() {
-        return ACTIVITY_LIST;
     }
 
     public static void add(Activity activity) {
@@ -42,5 +34,13 @@ public class ActivityManager {
             act.finish();
         }
         list.clear();
+    }
+
+    private List<Activity> getList() {
+        return ACTIVITY_LIST;
+    }
+
+    private static class Holder {
+        private static final ActivityManager inst = new ActivityManager();
     }
 }

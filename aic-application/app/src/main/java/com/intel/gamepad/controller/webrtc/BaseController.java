@@ -1,4 +1,3 @@
-
 package com.intel.gamepad.controller.webrtc;
 
 import android.content.Context;
@@ -9,14 +8,12 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Trace;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.intel.gamepad.R;
@@ -27,42 +24,22 @@ import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.TimeDelayUtils;
-import com.mycommonlibrary.utils.LogEx;
+import com.commonlibrary.utils.LogEx;
 
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.ref.WeakReference;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-import java.nio.charset.Charset;
 
-import owt.base.OwtError;
 import owt.base.ActionCallback;
+import owt.base.OwtError;
 
 public abstract class BaseController implements OnTouchListener {
-    //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
-    private Context context;
-    private int viewWidth = 0;
-    private int viewHeight = 0;
-    protected int marginWidth;
-    protected int marginHeight;
-    private ViewGroup layoutCtrlBox;
-    private ImageView cursor = null;
-    protected boolean showMouse = false;
-    protected int mouseX;
-    protected int mouseY;
-    protected DeviceSwitchListtener devSwitch;
-    protected WeakReference<Handler> refHandler;
-    public static long lastTouchMillis = 0L;
-    private int lastPartition;
-    private int nCountInput;
-
     public final static int EV_NON = 0x00;
     public final static int EV_KEY = 0x01;
     public final static int EV_ABS = 0x03;
@@ -90,6 +67,25 @@ public abstract class BaseController implements OnTouchListener {
     public static final int JOY_KEY_CODE_MAP_R_TWO = 313;
     public static final int JOY_KEY_CODE_MAP_SELECT = 314;
     public static final int JOY_KEY_CODE_MAP_START = 315;
+    public static long lastTouchMillis = 0L;
+    //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
+    private final Context context;
+    private final ViewGroup layoutCtrlBox;
+    private final Object sendFileLock = new Object();
+    protected int marginWidth;
+    protected int marginHeight;
+    protected boolean showMouse = false;
+    protected int mouseX;
+    protected int mouseY;
+    protected DeviceSwitchListtener devSwitch;
+    protected WeakReference<Handler> refHandler;
+    private int viewWidth = 0;
+    private int viewHeight = 0;
+    private ImageView cursor = null;
+    private int lastPartition;
+    private int nCountInput;
+    private boolean send_block_success_ = false;
+    private boolean send_block_failed_ = false;
 
     public BaseController(PlayGameRtcActivity act) {
         this.context = act.getApplicationContext();
@@ -110,6 +106,10 @@ public abstract class BaseController implements OnTouchListener {
     public BaseController(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         this(act, handler);
         this.devSwitch = devSwitch;
+    }
+
+    public static float filterMinValue(float value) {
+        return (value > 0.1 || value < -0.1) ? value : 0.0f;
     }
 
     protected abstract String getName();
@@ -137,177 +137,162 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
-    private final Object sendFileLock = new Object();
-    private boolean send_block_success_ = false;
-    private boolean send_block_failed_ = false;
-
     public void sendFile(String fileName) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
+        new Thread(() -> {
+            send_block_success_ = false;
+            send_block_failed_ = false;
 
-                send_block_success_ = false;
-                send_block_failed_ = false;
+            File file = new File(fileName);
+            if (!file.exists()) {
+                LogEx.d("There is no file");
+                return;
+            }
+            //send header
+            Long file_length = file.length();
 
-                File file = new File(fileName);
-                if (!file.exists()) {
-                    LogEx.d("There is no file");
+            Map<String, Object> mapKey = new HashMap<>();
+            Map<String, Object> mapData = new HashMap<>();
+            Map<String, Object> mapDataForFileBegin = new HashMap<>();
+            mapKey.put("type", "control");
+            mapKey.put("data", mapData);
+            mapData.put("event", "file");
+            mapData.put("parameters", mapDataForFileBegin);
+            mapDataForFileBegin.put("file_name", file.getName());
+            mapDataForFileBegin.put("file_size", String.valueOf(file_length));
+            mapDataForFileBegin.put("indicator", "begin");
+            String jsonString = new JSONObject(mapKey).toString();
+            P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    Log.e("BaseController", "Send begin success");
+                    synchronized (sendFileLock) {
+                        send_block_success_ = true;
+                        sendFileLock.notify();
+                    }
+                }
+
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                    synchronized (sendFileLock) {
+                        send_block_failed_ = true;
+                        sendFileLock.notify();
+                    }
+                }
+            });
+
+            synchronized (sendFileLock) {
+                while (!send_block_failed_ && !send_block_success_) {
+                    try {
+                        sendFileLock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                if (send_block_failed_) {
+                    Log.e("BaseController", "Send begin failed, return directly");
                     return;
                 }
-                //send header
-                Long file_length = file.length();
-                String file_name = file.getName();
+            }
 
-                Map<String, Object> mapKey = new HashMap<>();
-                Map<String, Object> mapData = new HashMap<>();
-                Map<String, Object> mapDataForFileBegin = new HashMap<>();
-                mapKey.put("type", "control");
-                mapKey.put("data", mapData);
-                mapData.put("event", "file");
-                mapData.put("parameters", mapDataForFileBegin);
-                mapDataForFileBegin.put("file_name", file.getName());
-                mapDataForFileBegin.put("file_size", String.valueOf(file_length));
-                mapDataForFileBegin.put("indicator", "begin");
-                String jsonString = new JSONObject(mapKey).toString();
-                P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Log.e("BaseController", "Send begin success");
-                        synchronized (sendFileLock) {
-                            send_block_success_ = true;
-                            sendFileLock.notify();
+            int size = 32 * 1024;
+            byte[] buf = new byte[size];
+            try {
+                FileInputStream in = new FileInputStream(file);
+                int byteread;
+                while ((byteread = in.read(buf)) != -1) {
+
+                    send_block_success_ = false;
+
+                    Log.e("BaseController", "read = " + byteread);
+                    Map<String, Object> mapDataForFileContent = new HashMap<>();
+                    mapData.put("parameters", mapDataForFileContent);
+                    mapDataForFileContent.put("file_name", file.getName());
+                    mapDataForFileContent.put("block_size", String.valueOf(byteread));
+                    mapDataForFileContent.put("indicator", "sending");
+
+                    byte[] buf_copy = new byte[byteread];
+                    System.arraycopy(buf, 0, buf_copy, 0, byteread);
+                    String block;
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                        block = android.util.Base64.encodeToString(buf_copy, android.util.Base64.DEFAULT);
+                    } else {
+                        block = Base64.getEncoder().encodeToString(buf_copy);
+                    }
+                    mapDataForFileContent.put("block", block);
+                    jsonString = new JSONObject(mapKey).toString();
+                    P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                        @Override
+                        public void onSuccess(Void unused) {
+                            Log.e("BaseController", "Send one of block success");
+                            synchronized (sendFileLock) {
+                                send_block_success_ = true;
+                                sendFileLock.notify();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(OwtError owtError) {
+                            LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                            synchronized (sendFileLock) {
+                                send_block_failed_ = true;
+                                sendFileLock.notify();
+                            }
+                        }
+                    });
+
+                    synchronized (sendFileLock) {
+                        while (!send_block_failed_ && !send_block_success_) {
+                            try {
+                                sendFileLock.wait();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        if (send_block_failed_) {
+                            Log.e("BaseController", "Send block failed, return directly");
+                            return;
                         }
                     }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
-                        synchronized (sendFileLock) {
-                            send_block_failed_ = true;
-                            sendFileLock.notify();
-                        }
-                    }
-                });
-
-                synchronized (sendFileLock) {
-                    while (!send_block_failed_ && !send_block_success_) {
-                        try {
-                            sendFileLock.wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    if (send_block_failed_) {
-                        Log.e("BaseController", "Send begin failed, return directly");
-                        return;
+            send_block_success_ = false;
+            Map<String, Object> mapDataForFileEnd = new HashMap<>();
+            mapData.put("parameters", mapDataForFileEnd);
+            mapDataForFileEnd.put("file_name", file.getName());
+            mapDataForFileEnd.put("indicator", "end");
+            jsonString = new JSONObject(mapKey).toString();
+            P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    Log.e("BaseController", "Send end success");
+                    synchronized (sendFileLock) {
+                        send_block_success_ = true;
+                        sendFileLock.notify();
                     }
                 }
 
-                int size = 32 * 1024;
-                byte[] buf = new byte[size];
-                try {
-                    FileInputStream in = new FileInputStream(file);
-                    int byteread = 0;
-                    while ((byteread = in.read(buf)) != -1) {
-
-                        send_block_success_ = false;
-
-                        Log.e("BaseController", "read = " + byteread);
-                        Map<String, Object> mapDataForFileContent = new HashMap<>();
-                        mapData.put("parameters", mapDataForFileContent);
-                        mapDataForFileContent.put("file_name", file.getName());
-                        mapDataForFileContent.put("block_size", String.valueOf(byteread));
-                        mapDataForFileContent.put("indicator", "sending");
-
-                        byte[] buf_copy = new byte[byteread];
-                        System.arraycopy(buf, 0, buf_copy, 0, byteread);
-                        String block;
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                            block = android.util.Base64.encodeToString(buf_copy, android.util.Base64.DEFAULT);
-                        } else {
-                            block = Base64.getEncoder().encodeToString(buf_copy);
-                        }
-                        mapDataForFileContent.put("block", block);
-                        jsonString = new JSONObject(mapKey).toString();
-                        P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
-                            @Override
-                            public void onSuccess(Void unused) {
-                                Log.e("BaseController", "Send one of block success");
-                                synchronized (sendFileLock) {
-                                    send_block_success_ = true;
-                                    sendFileLock.notify();
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(OwtError owtError) {
-                                LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
-                                synchronized (sendFileLock) {
-                                    send_block_failed_ = true;
-                                    sendFileLock.notify();
-                                }
-                            }
-                        });
-
-                        synchronized (sendFileLock) {
-                            while (!send_block_failed_ && !send_block_success_) {
-                                try {
-                                    sendFileLock.wait();
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-
-                            if (send_block_failed_) {
-                                Log.e("BaseController", "Send block failed, return directly");
-                                return;
-                            }
-                        }
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                    synchronized (sendFileLock) {
+                        send_block_failed_ = true;
+                        sendFileLock.notify();
                     }
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
                 }
+            });
 
-                send_block_success_ = false;
-                Map<String, Object> mapDataForFileEnd = new HashMap<>();
-                mapData.put("parameters", mapDataForFileEnd);
-                mapDataForFileEnd.put("file_name", file.getName());
-                mapDataForFileEnd.put("indicator", "end");
-                jsonString = new JSONObject(mapKey).toString();
-                P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
-                    @Override
-                    public void onSuccess(Void unused) {
-                        Log.e("BaseController", "Send end success");
-                        synchronized (sendFileLock) {
-                            send_block_success_ = true;
-                            sendFileLock.notify();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
-                        synchronized (sendFileLock) {
-                            send_block_failed_ = true;
-                            sendFileLock.notify();
-                        }
-                    }
-                });
-
-                synchronized (sendFileLock) {
-                    while (!send_block_failed_ && !send_block_success_) {
-                        try {
-                            sendFileLock.wait();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    if (send_block_failed_) {
-                        return;
+            synchronized (sendFileLock) {
+                while (!send_block_failed_ && !send_block_success_) {
+                    try {
+                        sendFileLock.wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -881,7 +866,6 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
-
     public void sendMouseMotionF(float x, float y, float movementX, float movementY) {
         x = (x < marginWidth) ? 0f : (x - marginWidth);
         y = y + marginHeight;
@@ -914,23 +898,22 @@ public abstract class BaseController implements OnTouchListener {
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("touch");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setData(strCommand);
-                parameters.setTID(0);
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                //LogEx.d(jsonString);
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
-            }
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setData(strCommand);
+            parameters.settID(0);
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            //LogEx.d(jsonString);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
         }
     }
+
     /**
      * 发送安卓端的原始事件信息
      */
@@ -940,28 +923,26 @@ public abstract class BaseController implements OnTouchListener {
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("android");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setAction(action);
-                parameters.setTouchx(x);
-                parameters.setTouchy(y);
-                parameters.setFingerID(pointId);
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                //LogEx.d(jsonString);
-                if (action == MotionEvent.ACTION_UP) {
-                    nCountInput++;
-                    Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
-                    Trace.endSection();
-                }
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setAction(action);
+            parameters.setTouchx(x);
+            parameters.setTouchy(y);
+            parameters.setFingerId(pointId);
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            //LogEx.d(jsonString);
+            if (action == MotionEvent.ACTION_UP) {
+                nCountInput++;
+                Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
+                Trace.endSection();
             }
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
         }
     }
 
@@ -971,22 +952,20 @@ public abstract class BaseController implements OnTouchListener {
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("android");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setAction(action);
-                parameters.setKeycode(keyCode);
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setAction(action);
+            parameters.setKeycode(keyCode);
 
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                LogEx.d(jsonString);
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
-            }
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            LogEx.d(jsonString);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
         }
     }
 
@@ -1109,83 +1088,75 @@ public abstract class BaseController implements OnTouchListener {
             refHandler.get().sendEmptyMessage(AppConst.MSG_UPDATE_CONTROLLER);
     }
 
-    public static float filterMinValue(float value) {
-        return (value > 0.1 || value < -0.1) ? value : 0.0f;
-    }
-
     public void sendJoyStickEvent(int type, int keyCode, int keyValue, Boolean enableJoy, int joyId) {
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("joystick");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setgpID(joyId);
-                if (EV_NON == type) {
-                    if (enableJoy) {
-                        parameters.setData("i\n");
-                    } else {
-                        parameters.setData("p\n");
-                    }
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setjID(joyId);
+            if (EV_NON == type) {
+                if (enableJoy) {
+                    parameters.setData("i\n");
                 } else {
-                    String data = null;
-                    if (EV_ABS == type) {
-                        data = "a " + keyCode + " " + keyValue + "\n";
-                    } else if (EV_KEY == type) {
-                        data = "k " + keyCode + " " + keyValue + "\n";
-                    }
-                    if (data != null) {
-                        parameters.setData(data);
-                    }
+                    parameters.setData("p\n");
                 }
-
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
-
-                if (EV_NON != type) {
-                    sendJoyStickEventCommit(EV_COMMIT, 0, 0, true, joyId);
+            } else {
+                String data = null;
+                if (EV_ABS == type) {
+                    data = "a " + keyCode + " " + keyValue + "\n";
+                } else if (EV_KEY == type) {
+                    data = "k " + keyCode + " " + keyValue + "\n";
                 }
+                if (data != null) {
+                    parameters.setData(data);
+                }
+            }
+
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
+
+            if (EV_NON != type) {
+                sendJoyStickEventCommit(EV_COMMIT, true, joyId);
             }
         }
     }
 
-    public void sendJoyStickEventCommit(int type, int keyCode, int keyValue, Boolean enableJoy, int joyId) {
+    public void sendJoyStickEventCommit(int type, Boolean enableJoy, int joyId) {
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("joystick");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setgpID(joyId);
-                if (EV_NON == type) {
-                    if (enableJoy) {
-                        parameters.setData("i\n");
-                    } else {
-                        parameters.setData("p\n");
-                    }
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setjID(joyId);
+            if (EV_NON == type) {
+                if (enableJoy) {
+                    parameters.setData("i\n");
                 } else {
-                    String data = "c\n";
-                    parameters.setData(data);
+                    parameters.setData("p\n");
                 }
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
+            } else {
+                String data = "c\n";
+                parameters.setData(data);
             }
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
         }
     }
 

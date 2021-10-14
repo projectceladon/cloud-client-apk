@@ -2,14 +2,9 @@ package com.intel.gamepad.app;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
-import android.util.Printer;
 
 import androidx.annotation.NonNull;
 
-import com.intel.gamepad.BuildConfig;
 import com.intel.gamepad.utils.LanguageUtils;
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 import com.jeremyliao.liveeventbus.LiveEventBus;
@@ -19,8 +14,7 @@ import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.cookie.store.SPCookieStore;
 import com.lzy.okgo.interceptor.HttpLoggingInterceptor;
-import com.mycommonlibrary.application.UtilsApplication;
-import com.mycommonlibrary.utils.LogEx;
+import com.commonlibrary.application.UtilsApplication;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;

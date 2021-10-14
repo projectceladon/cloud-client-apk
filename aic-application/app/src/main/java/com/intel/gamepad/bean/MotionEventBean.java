@@ -92,7 +92,7 @@ public class MotionEventBean {
             private int fingerId;
             private String data;
             private String file_name;
-            private int  tID = 0;
+            private int tID = 0;
 
             public static ParametersBean objectFromData(String str) {
 
@@ -131,10 +131,6 @@ public class MotionEventBean {
                 this.touchy = touchy;
             }
 
-            public void setFingerID(int fID) {
-                this.fingerId = fID;
-            }
-
             public int getKeycode() {
                 return keycode;
             }
@@ -143,23 +139,43 @@ public class MotionEventBean {
                 this.keycode = keycode;
             }
 
-            public int getgpID() {
-                return keycode;
+            public int getjID() {
+                return jID;
             }
 
-            public void setgpID(int jsID) {
-                this.jID = jsID;
+            public void setjID(int jID) {
+                this.jID = jID;
             }
 
-            public  void setFileName(String fileName) {
-                this.file_name = fileName;
+            public int getFingerId() {
+                return fingerId;
+            }
+
+            public void setFingerId(int fingerId) {
+                this.fingerId = fingerId;
+            }
+
+            public String getData() {
+                return data;
             }
 
             public void setData(String msg) {
                 this.data = msg;
             }
 
-            public void setTID(int tID) {
+            public String getFile_name() {
+                return file_name;
+            }
+
+            public void setFile_name(String file_name) {
+                this.file_name = file_name;
+            }
+
+            public int gettID() {
+                return tID;
+            }
+
+            public void settID(int tID) {
                 this.tID = tID;
             }
         }

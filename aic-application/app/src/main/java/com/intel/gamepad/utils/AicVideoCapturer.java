@@ -1,17 +1,17 @@
 package com.intel.gamepad.utils;
 
-import com.mycommonlibrary.utils.LogEx;
+import com.commonlibrary.utils.LogEx;
 
 import org.webrtc.Camera1Capturer;
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.CameraEnumerator;
 
-import owt.base.Stream;
-import owt.base.VideoCapturer;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
+import owt.base.Stream;
+import owt.base.VideoCapturer;
 
 public final class AicVideoCapturer extends Camera1Capturer implements VideoCapturer {
     private int width, height, fps;
@@ -22,8 +22,8 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
 
     public static AicVideoCapturer create(int width, int height) {
         String deviceName = getDeviceName(true);
-        AicVideoCapturer capturer = null;
-        String cameraLatencyDebugEnabled = null;
+        AicVideoCapturer capturer;
+        String cameraLatencyDebugEnabled;
         BufferedReader input = null;
         try {
             Process p = Runtime.getRuntime().exec("getprop camera.latency.debug");
@@ -54,6 +54,20 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
         return capturer;
     }
 
+    private static String getDeviceName(boolean captureToTexture) {
+        CameraEnumerator enumerator = new Camera1Enumerator(captureToTexture);
+
+        String deviceName = null;
+        for (String device : enumerator.getDeviceNames()) {
+            if (enumerator.isFrontFacing(device)) {
+                deviceName = device;
+                break;
+            }
+        }
+
+        return deviceName == null ? enumerator.getDeviceNames()[0] : deviceName;
+    }
+
     @Override
     public int getWidth() {
         return width;
@@ -80,19 +94,5 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
 
     public void dispose() {
         super.dispose();
-    }
-
-    private static String getDeviceName(boolean captureToTexture) {
-        CameraEnumerator enumerator = new Camera1Enumerator(captureToTexture);
-
-        String deviceName = null;
-        for (String device : enumerator.getDeviceNames()) {
-            if (enumerator.isFrontFacing(device)) {
-                deviceName = device;
-                break;
-            }
-        }
-
-        return deviceName == null ? enumerator.getDeviceNames()[0] : deviceName;
     }
 }

@@ -23,6 +23,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.DisplayMetrics;
@@ -36,11 +37,6 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.jetbrains.annotations.NotNull;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.webrtc.SingletonSurfaceView;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -48,25 +44,25 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
 
+import com.commonlibrary.utils.DensityUtils;
+import com.commonlibrary.utils.LogEx;
+import com.commonlibrary.utils.StatusBarUtil;
 import com.google.gson.Gson;
 import com.intel.gamepad.R;
 import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.controller.webrtc.BaseController;
-import com.intel.gamepad.controller.webrtc.RTCControllerACT;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
-import com.intel.gamepad.controller.webrtc.RTCControllerFPS;
-import com.intel.gamepad.controller.webrtc.RTCControllerMouse;
-import com.intel.gamepad.controller.webrtc.RTCControllerRAC;
-import com.intel.gamepad.controller.webrtc.RTCControllerXBox;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.AicVideoCapturer;
 import com.intel.gamepad.utils.AudioHelper;
 import com.intel.gamepad.utils.LocationUtils;
-import com.mycommonlibrary.utils.DensityUtils;
-import com.mycommonlibrary.utils.LogEx;
-import com.mycommonlibrary.utils.StatusBarUtil;
+
+import org.jetbrains.annotations.NotNull;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.webrtc.SingletonSurfaceView;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -78,7 +74,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 
 import owt.base.ActionCallback;
 import owt.base.LocalStream;
@@ -94,55 +89,38 @@ public class PlayGameRtcActivity extends AppCompatActivity
         DeviceSwitchListtener,
         SensorEventListener {
     private final String TAG = "PlayGameRtcActivity";
-    private final String RESULT_MSG = "resultMsg";
-    private final int SERVER_SCREEN_WIDTH = 1920;
-    private final int SERVER_SCREEN_HEIGHT = 1080;
-    private String peerId = "";
-    private boolean inCalling = false;
-    private RemoteStream remoteStream = null;
+    private final boolean isFirst = false;
+    private final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+    private final long TIME_INTERVAL_TO_GET_LOCATION = 1000;
+    private final long TIME_INTERVAL_BETWEEN_NETWORK_GPS = TIME_INTERVAL_TO_GET_LOCATION * 10;
+    private final String fileTransferPath = Environment.getExternalStorageDirectory().getPath();
+    DynamicReceiver dynamicReceiver;
+    IntentFilter filter;
     private LocalStream localAudioStream = null;
     private LocalStream localVideoStream = null;
     private Publication audioPublication = null;
     private Publication videoPublication = null;
     private AicVideoCapturer videoCapturer = null;
-    private boolean remoteStreamEnded = false;
     private BaseController controller = null;
     private int viewWidth = DensityUtils.getmScreenWidth();
     private int viewHeight = DensityUtils.getmScreenHeight();
     private int screenWidth = viewWidth;
     private int screenHeight = viewHeight;
-    private int paddingSize = 0;
     private Handler handler = null;
-    private float firstTimestamp = 0L;
-    private boolean isFirst = false;
-    private InputManager mIm;
-    private boolean isGPSEnabled = false;
-    private boolean isNetworkEnabled = false;
     private boolean requesPermissionFromServer = false;
     private int satelliteCountCurrent = 0;
     private LocationListener mLocationListenerNetwork = null;
     private LocationListener mLocationListenerGPS = null;
     private GnssStatus.Callback mStatusCallback = null;
-    private OnNmeaMessageListener mOnNmeaMessageListener = null;
-    private final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
     private long lastNetworkLocationTime = 0;
     private long lastGpsLocationTime = 0;
-    private final long TIME_INTERVAL_TO_GET_LOCATION = 1000;
-    private final long TIME_INTERVAL_BETWEEN_NETWORK_GPS = TIME_INTERVAL_TO_GET_LOCATION * 10;
-    private final String TYPE_MEDIA_HEVC = "hevc";
-    private final String TYPE_MEDIA_ENCODER = "encoder";
-    private final String TYPE_MEDIA_DECODER = "decoder";
-    private final String TYPE_MEDIA_H264 = "h264";
     private SensorManager mSensorManager = null;
     private SurfaceView fullRenderer = null;
     private CheckBox chkStatusTitle = null;
     private TextView tvMyStatus = null;
     private Boolean bFirstStart = true;
-    DynamicReceiver dynamicReceiver;
-    IntentFilter filter;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
-    private String fileTransferPath = "/sdcard/";
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -157,7 +135,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         initUIFeature();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_game_rtc);
-        fullRenderer = (SurfaceView) findViewById(R.id.fullRenderer);
+        fullRenderer = findViewById(R.id.fullRenderer);
         initAudioManager();
         initP2PClient();
         DisplayMetrics outMetrics = new DisplayMetrics();
@@ -166,19 +144,16 @@ public class PlayGameRtcActivity extends AppCompatActivity
         screenHeight = outMetrics.heightPixels;
         controller = selectGamePad();
         onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
-        tvMyStatus = (TextView) findViewById(R.id.tvMyStatus);
-        chkStatusTitle = (CheckBox) findViewById(R.id.chkStatusTitle);
-        chkStatusTitle.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (chkStatusTitle.isChecked()) {
-                    tvMyStatus.setVisibility(View.VISIBLE);
-                } else {
-                    tvMyStatus.setVisibility(View.GONE);
-                }
+        tvMyStatus = findViewById(R.id.tvMyStatus);
+        chkStatusTitle = findViewById(R.id.chkStatusTitle);
+        chkStatusTitle.setOnClickListener(v -> {
+            if (chkStatusTitle.isChecked()) {
+                tvMyStatus.setVisibility(View.VISIBLE);
+            } else {
+                tvMyStatus.setVisibility(View.GONE);
             }
         });
-        mIm = (InputManager) getSystemService(Context.INPUT_SERVICE);
+        InputManager mIm = (InputManager) getSystemService(Context.INPUT_SERVICE);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mIm.registerInputDeviceListener(this, null);
         checkPermissions();
@@ -231,16 +206,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private void hideStatusBar() {
         this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
-            View v = this.getWindow().getDecorView();
-            v.setSystemUiVisibility(View.GONE);
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            View v = this.getWindow().getDecorView();
-            v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-        }
+        View v = this.getWindow().getDecorView();
+        v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
     }
 
     private void initAudioManager() {
@@ -264,11 +234,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 runOnUiThread(() -> {
                     if (!isFirst) fitScreenSize();
                 });
-                PlayGameRtcActivity.this.remoteStream = remoteStream;
                 remoteStream.addObserver(new owt.base.RemoteStream.StreamObserver() {
                     @Override
                     public void onEnded() {
-                        remoteStreamEnded = true;
                     }
 
                     @Override
@@ -283,25 +251,22 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 if (s1.startsWith("{")) {
                     try {
                         JSONObject jsonObject = new JSONObject(s1);
-                        if (!jsonObject.isNull("type")) {
-                            String type = jsonObject.getString("type");
-                        }
+                        jsonObject.isNull("type");
                         if (!jsonObject.isNull("key")) {
                             String key = jsonObject.getString("key");
-                            if (key.equals("gps-start")) {
-                                runOnUiThread(() -> {
-                                    getPositionNetwork();
-                                    getPositionGPS();
-                                });
-                            } else if (key.equals("gps-stop")) {
-                                runOnUiThread(() -> {
-                                    disableLocation();
-                                });
-                            } else if (key.equals("start-audio")) {
-                                LogEx.d("Received start-audio");
-                                Thread thread = new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
+                            switch (key) {
+                                case "gps-start":
+                                    runOnUiThread(() -> {
+                                        getPositionNetwork();
+                                        getPositionGPS();
+                                    });
+                                    break;
+                                case "gps-stop":
+                                    runOnUiThread(() -> disableLocation());
+                                    break;
+                                case "start-audio": {
+                                    LogEx.d("Received start-audio");
+                                    Thread thread = new Thread(() -> {
                                         LogEx.d("publishing localAudioStream");
                                         audioPublication = null;
                                         localAudioStream =
@@ -313,12 +278,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                             public void onSuccess(Publication publication) {
                                                 audioPublication = publication;
                                                 LogEx.d("onSuccess localAudioStream published!!");
-                                                audioPublication.addObserver(new Publication.PublicationObserver() {
-                                                    @Override
-                                                    public void onEnded() {
-                                                        LogEx.e("audioPublication onEnded ");
-                                                    }
-                                                });
+                                                audioPublication.addObserver(() -> LogEx.e("audioPublication onEnded "));
                                             }
 
                                             @Override
@@ -326,52 +286,54 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                                 LogEx.e("onFailure: " + owtError.errorMessage);
                                             }
                                         });
+                                    });
+                                    thread.start();
+                                    break;
+                                }
+                                case "stop-audio":
+                                    LogEx.d("Received stop-audio");
+                                    LogEx.d("stopping localAudioStream");
+                                    if (localAudioStream != null) {
+                                        localAudioStream.disableAudio();
                                     }
-                                });
-                                thread.start();
-                            } else if (key.equals("stop-audio")) {
-                                LogEx.d("Received stop-audio");
-                                LogEx.d("stopping localAudioStream");
-                                if (localAudioStream != null) {
-                                    localAudioStream.disableAudio();
-                                }
-                                if (audioPublication != null) {
-                                    audioPublication.stop();
-                                }
+                                    if (audioPublication != null) {
+                                        audioPublication.stop();
+                                    }
 
-                            } else if (key.equals("start-camera-preview")) {
-                                LogEx.d("Received start-camera-preview");
-                                Thread thread = new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        publishLocalVideo();
+                                    break;
+                                case "start-camera-preview": {
+                                    LogEx.d("Received start-camera-preview");
+                                    Thread thread = new Thread(() -> publishLocalVideo());
+                                    thread.start();
+                                    break;
+                                }
+                                case "stop-camera-preview":
+                                    LogEx.d("Received stop-camera-preview");
+                                    LogEx.d("stopping localVideoStream");
+                                    if (localVideoStream != null) {
+                                        localVideoStream.disableVideo();
                                     }
-                                });
-                                thread.start();
-                            } else if (key.equals("stop-camera-preview")) {
-                                LogEx.d("Received stop-camera-preview");
-                                LogEx.d("stopping localVideoStream");
-                                if (localVideoStream != null) {
-                                    localVideoStream.disableVideo();
-                                }
-                                if (videoPublication != null) {
-                                    videoPublication.stop();
-                                }
-                                if (videoCapturer != null) {
-                                    videoCapturer.stopCapture();
-                                }
-                            } else if (key.equals("sensor-start")) {
-                                LogEx.d("Received sensor start");
-                                if (!jsonObject.isNull("sType")) {
-                                    int type = jsonObject.getInt("sType");
-                                    registerSensorEvents(type);
-                                }
-                            } else if (key.equals("sensor-stop")) {
-                                LogEx.d("Received sensor stop");
-                                if (!jsonObject.isNull("sType")) {
-                                    int type = jsonObject.getInt("sType");
-                                    deRegisterSensorEvents(type);
-                                }
+                                    if (videoPublication != null) {
+                                        videoPublication.stop();
+                                    }
+                                    if (videoCapturer != null) {
+                                        videoCapturer.stopCapture();
+                                    }
+                                    break;
+                                case "sensor-start":
+                                    LogEx.d("Received sensor start");
+                                    if (!jsonObject.isNull("sType")) {
+                                        int type = jsonObject.getInt("sType");
+                                        registerSensorEvents(type);
+                                    }
+                                    break;
+                                case "sensor-stop":
+                                    LogEx.d("Received sensor stop");
+                                    if (!jsonObject.isNull("sType")) {
+                                        int type = jsonObject.getInt("sType");
+                                        deRegisterSensorEvents(type);
+                                    }
+                                    break;
                             }
                         }
                     } catch (JSONException e) {
@@ -404,13 +366,43 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         JSONObject parameters = data.getJSONObject("parameters");
                         String file_name = parameters.getString("file_name");
                         String indicator = parameters.getString("indicator");
-                        if (indicator.equals("begin")) {
-                            Long file_size = Long.valueOf(parameters.getString("file_size"));
-                            if (file_size <= 0) {
-                                return;
-                            }
+                        switch (indicator) {
+                            case "begin":
+                                long file_size = Long.parseLong(parameters.getString("file_size"));
+                                if (file_size <= 0) {
+                                    return;
+                                }
 
-                            if (requestFile != null) {
+                                if (requestFile != null) {
+                                    try {
+                                        if (fileOutputStream != null) {
+                                            fileOutputStream.close();
+                                        }
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    fileOutputStream = null;
+                                    requestFile = null;
+                                }
+
+                                requestFile = new File(fileTransferPath + "/" + file_name);
+                                StringBuilder newFileName = new StringBuilder(file_name);
+                                while (requestFile.exists()) {
+                                    int pointIndex = newFileName.indexOf(".");
+                                    if (pointIndex > 0) {
+                                        newFileName = new StringBuilder(newFileName.substring(0, pointIndex) + "1" + newFileName.substring(pointIndex));
+                                    } else {
+                                        newFileName.append("1");
+                                    }
+                                    requestFile = new File(fileTransferPath + "/" + newFileName);
+                                }
+                                try {
+                                    fileOutputStream = new FileOutputStream(requestFile);
+                                } catch (FileNotFoundException e) {
+                                    e.printStackTrace();
+                                }
+                                break;
+                            case "end":
                                 try {
                                     if (fileOutputStream != null) {
                                         fileOutputStream.close();
@@ -418,66 +410,41 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                 } catch (IOException e) {
                                     e.printStackTrace();
                                 }
+
                                 fileOutputStream = null;
+                                long finalFile_size = requestFile.length();
+                                runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "File: " + file_name + " Size: " + finalFile_size + " transfer finished", Toast.LENGTH_LONG).show());
                                 requestFile = null;
-                            }
+                                break;
+                            case "sending":
+                                long block_size = Long.parseLong(parameters.getString("block_size"));
+                                if (block_size <= 0) {
+                                    return;
+                                }
 
-                            requestFile = new File(fileTransferPath + file_name);
-                            String newFileName = file_name;
-                            while (requestFile.exists()) {
-                                int pointIndex = newFileName.indexOf(".");
-                                if (pointIndex > 0) {
-                                    newFileName = newFileName.substring(0, pointIndex) + "1" + newFileName.substring(pointIndex);
+                                String block = parameters.getString("block");
+                                byte[] buf;
+                                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                                    buf = android.util.Base64.decode(block, android.util.Base64.DEFAULT);
                                 } else {
-                                    newFileName = newFileName + "1";
+                                    buf = Base64.getDecoder().decode(block);
                                 }
-                                requestFile = new File(fileTransferPath + newFileName);
-                            }
-                            try {
-                                fileOutputStream = new FileOutputStream(requestFile);
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                        } else if (indicator.equals("end")) {
-                            try {
-                                if (fileOutputStream != null) {
-                                    fileOutputStream.close();
+
+                                if (buf.length != block_size) {
+                                    Log.e(TAG, "The real size is not same as size in message");
                                 }
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
 
-                            fileOutputStream = null;
-                            Long finalFile_size = requestFile.length();
-                            runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "File: " + file_name + " Size: " + String.valueOf(finalFile_size) + " transfer finished", Toast.LENGTH_LONG).show());
-                            requestFile = null;
-                        } else if (indicator.equals("sending")) {
-                            Long block_size = Long.valueOf(parameters.getString("block_size"));
-                            if (block_size <= 0) {
-                                return;
-                            }
-
-                            String block = parameters.getString("block");
-                            byte[] buf;
-                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                                buf = android.util.Base64.decode(block, android.util.Base64.DEFAULT);
-                            } else {
-                                buf = Base64.getDecoder().decode(block);
-                            }
-
-                            if (buf.length != block_size) {
-                                Log.e(TAG, "The real size is not same as size in message");
-                            }
-
-                            try {
-                                if (fileOutputStream != null) {
-                                    fileOutputStream.write(buf);
+                                try {
+                                    if (fileOutputStream != null) {
+                                        fileOutputStream.write(buf);
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
                                 }
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        } else {
-                            Log.e(TAG, "Cannot support indicator: " + indicator);
+                                break;
+                            default:
+                                Log.e(TAG, "Cannot support indicator: " + indicator);
+                                break;
                         }
 
                         Map<String, Object> mapKey = new HashMap<>();
@@ -510,8 +477,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private void getPositionNetwork() {
         LocationManager mLocationManagerNetwork = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        isNetworkEnabled =
-                mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        boolean isNetworkEnabled = mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
         if (isNetworkEnabled) {
             if (mLocationListenerNetwork == null) {
                 mLocationListenerNetwork = new LocationListener() {
@@ -546,7 +512,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 } else {
                     isNetworkEnabled =
                             mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                    if (mLocationManagerNetwork != null && isNetworkEnabled) {
+                    if (isNetworkEnabled) {
                         mLocationManagerNetwork.requestLocationUpdates(
                                 LocationManager.NETWORK_PROVIDER,
                                 TIME_INTERVAL_TO_GET_LOCATION,
@@ -561,7 +527,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private void getPositionGPS() {
         LocationManager mLocationManagerGPS = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-        isGPSEnabled = mLocationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        boolean isGPSEnabled = mLocationManagerGPS.isProviderEnabled(LocationManager.GPS_PROVIDER);
         if (isGPSEnabled) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 mStatusCallback = new GnssStatus.Callback() {
@@ -583,7 +549,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     }
                 };
             }
-            mOnNmeaMessageListener = (message, timestamp) -> {
+            OnNmeaMessageListener mOnNmeaMessageListener = (message, timestamp) -> {
                 if (satelliteCountCurrent > 0
                         && message != null
                         && !message.contains("GPGGA,,,,,,")
@@ -665,12 +631,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     public void onSuccess(Publication publication) {
                         videoPublication = publication;
                         LogEx.d("onSuccess localVideoStream published!!");
-                        videoPublication.addObserver(new Publication.PublicationObserver() {
-                            @Override
-                            public void onEnded() {
-                                LogEx.e("videoPublication onEnded ");
-                            }
-                        });
+                        videoPublication.addObserver(() -> LogEx.e("videoPublication onEnded "));
                     }
 
                     @Override
@@ -682,12 +643,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private LocalStream createLocalStream(AicVideoCapturer capturer) {
         LocalStream localCameraStream = new LocalStream(capturer, null);
-        if (localCameraStream != null) {
-            LogEx.d(
-                    "localVideoStream id: " + localCameraStream.id() +
-                            " hasVideo: " + localCameraStream.hasVideo()
-            );
-        }
+        LogEx.d("localVideoStream id: " + localCameraStream.id() + " hasVideo: " + localCameraStream.hasVideo());
         return localCameraStream;
     }
 
@@ -707,37 +663,25 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private void fitScreenSize() {
         viewWidth = fullRenderer.getWidth();
         viewHeight = fullRenderer.getHeight();
-        int paddingWidth = 0;
-        if (viewWidth > SERVER_SCREEN_WIDTH) {
-            paddingWidth = viewWidth - (SERVER_SCREEN_WIDTH * viewHeight / SERVER_SCREEN_HEIGHT);
-        } else {
-            paddingWidth = 0;
-        }
-        int paddingHeight = 0;
-        if (viewHeight > SERVER_SCREEN_HEIGHT) {
-            paddingHeight = viewHeight - SERVER_SCREEN_HEIGHT;
-        } else {
-            paddingHeight = 0;
-        }
         sendSizeChange();
         controller.setViewDimenson(viewWidth, viewHeight, 0, 0);
     }
 
     private void sendSizeChange() {
-        Map<String, Integer> mapScreenSize = new HashMap<String, Integer>();
+        Map<String, Integer> mapScreenSize = new HashMap<>();
         mapScreenSize.put("width", screenWidth);
         mapScreenSize.put("height", screenHeight);
-        Map<String, Integer> mapRenderSize = new HashMap<String, Integer>();
+        Map<String, Integer> mapRenderSize = new HashMap<>();
         mapRenderSize.put("width", viewWidth);
         mapRenderSize.put("height", viewHeight);
-        Map<String, Object> mapParams = new HashMap<String, Object>();
+        Map<String, Object> mapParams = new HashMap<>();
         mapParams.put("rendererSize", mapRenderSize);
         mapParams.put("screenSize", mapScreenSize);
         mapParams.put("mode", "stretch");
-        Map<String, Object> mapData = new HashMap<String, Object>();
+        Map<String, Object> mapData = new HashMap<>();
         mapData.put("event", "sizechange");
         mapData.put("parameters", mapParams);
-        Map<String, Object> mapKey = new HashMap<String, Object>();
+        Map<String, Object> mapKey = new HashMap<>();
         mapKey.put("type", "control");
         mapKey.put("data", mapData);
         JSONObject json = new JSONObject(mapKey);
@@ -753,35 +697,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private Handler getHandler() {
         if (handler == null) handler = new GameHandler(this);
         return handler;
-    }
-
-    public class GameHandler extends Handler {
-        private final WeakReference<PlayGameRtcActivity> activity;
-
-        public GameHandler(PlayGameRtcActivity act) {
-            activity = new WeakReference<>(act);
-        }
-
-        @Override
-        public void handleMessage(@NonNull @NotNull Message msg) {
-            super.handleMessage(msg);
-            PlayGameRtcActivity actPlay = activity.get();
-            switch (msg.what) {
-                case AppConst.MSG_QUIT:
-                    LogEx.i("Exit Result" + msg.arg1);
-                    Intent intent = actPlay.getIntent();
-                    intent.putExtra(RESULT_MSG, msg.arg1);
-                    actPlay.setResult(Activity.RESULT_OK, intent);
-                    actPlay.finish();
-                    break;
-                case AppConst.MSG_SHOW_CONTROLLER:
-                    actPlay.showOrHideController();
-                    break;
-                case AppConst.MSG_UPDATE_CONTROLLER:
-                    actPlay.updateControllerStatus();
-                    break;
-            }
-        }
     }
 
     private void showOrHideController() {
@@ -803,26 +718,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     private BaseController selectGamePad() {
-        String controller = Objects.requireNonNull(getIntent().getStringExtra("controller")).toUpperCase();
-        switch (controller) {
-            case RTCControllerXBox.NAME:
-                return new RTCControllerXBox(this, getHandler(), this);
-            case RTCControllerFPS.NAME:
-                return new RTCControllerFPS(this, getHandler(), this);
-            case RTCControllerRAC.NAME:
-                return new RTCControllerRAC(this, getHandler(), this);
-            case RTCControllerACT.NAME:
-                return new RTCControllerACT(this, getHandler(), this);
-            case RTCControllerMouse.NAME:
-                return new RTCControllerMouse(this, getHandler(), this);
-            default:
-                return new RTCControllerAndroid(this, getHandler(), this);
-        }
+        return new RTCControllerAndroid(this, getHandler(), this);
     }
 
     private void onConnectRequest(String server, String peerId, String myId) {
         LogEx.e("onConnectRequest called");
-        Map<String, String> mapKey = new HashMap<String, String>();
+        Map<String, String> mapKey = new HashMap<>();
         mapKey.put("host", server);
         mapKey.put("token", myId);
         String jsonLogin = new Gson().toJson(mapKey, mapKey.getClass());
@@ -833,15 +734,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
             client.connect(jsonLogin, new ActionCallback<String>() {
                 @Override
                 public void onSuccess(String s) {
-                    runOnUiThread(() -> {
-                        onCallRequest(P2PHelper.peerId);
-                    });
+                    runOnUiThread(() -> onCallRequest(P2PHelper.peerId));
                 }
 
                 @Override
                 public void onFailure(OwtError owtError) {
                     runOnUiThread(() -> {
-                        Toast.makeText(PlayGameRtcActivity.this, R.string.connect_failed + owtError.errorMessage, Toast.LENGTH_LONG);
+                        Toast.makeText(PlayGameRtcActivity.this, R.string.connect_failed + owtError.errorMessage, Toast.LENGTH_LONG).show();
                         finish();
                     });
                 }
@@ -850,8 +749,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     private void onCallRequest(String peerId) {
-        Boolean inCalling = true;
-        this.peerId = peerId;
         LogEx.e("onCallRequest called");
         P2PClient client = P2PHelper.getClient();
         if (client != null) {
@@ -863,14 +760,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     sendSizeChange();
                     initJoyStickDevices();
                     sensorsInit();
-                    runOnUiThread(() -> {
-                        getLifecycle().addObserver(new LifecycleObserver() {
-                            @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-                            public void onDestroy() {
-                                LogEx.e(" webrtc onDestroy called");
-                            }
-                        });
-                    });
+                    runOnUiThread(() -> getLifecycle().addObserver(new LifecycleObserver() {
+                        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+                        public void onDestroy() {
+                            LogEx.e(" webrtc onDestroy called");
+                        }
+                    }));
                 }
 
                 @Override
@@ -905,9 +800,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 Manifest.permission.CAMERA,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
         };
-        ArrayList<String> permissionsToAskFor = new ArrayList<String>();
-        for (int i = 0; i < permissions.length; i++) {
-            String permission = permissions[i];
+        ArrayList<String> permissionsToAskFor = new ArrayList<>();
+        for (String permission : permissions) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ActivityCompat.checkSelfPermission(
                         this,
@@ -931,28 +825,26 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             "as App already has all the required permissions"
             );
         }
-
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-        if (grantResults.length <= 0) {
-            // If user interaction was interrupted, the permission request is cancelled and you
-            // receive empty arrays.
-        } else {
+
+        // grantResults.length <= 0. If user interaction was interrupted, the permission request is cancelled and you receive empty arrays.
+        if (grantResults.length > 0) {
             for (int i = 0; i < permissions.length; i++) {
                 if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
                     if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                         if (ActivityCompat.checkSelfPermission(this, permissions[i]) == PackageManager.PERMISSION_GRANTED) {
-                            Toast.makeText(this, "The " + permissions[i] + "has been granted", Toast.LENGTH_LONG);
+                            Toast.makeText(this, "The " + permissions[i] + "has been granted", Toast.LENGTH_LONG).show();
                             if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) && requesPermissionFromServer) {
                                 getPositionNetwork();
                                 getPositionGPS();
                                 requesPermissionFromServer = false;
                             }
                         } else {
-                            Toast.makeText(this, "The " + permissions[i] + " has been denied", Toast.LENGTH_LONG);
+                            Toast.makeText(this, "The " + permissions[i] + " has been denied", Toast.LENGTH_LONG).show();
                             if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION))
                                 requesPermissionFromServer = false;
                         }
@@ -965,8 +857,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private void initJoyStickDevices() {
         final int[] devices = InputDevice.getDeviceIds();
-        for (int i = 0; i < devices.length; i++) {
-            int deviceId = devices[i];
+        for (int deviceId : devices) {
             InputDevice device = InputDevice.getDevice(deviceId);
             if (device != null) {
                 if ((device.getSources() & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
@@ -1046,7 +937,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mapData.put("event", "sensordata");
         mapData.put("parameters", sensorInfo);
         sensorInfo.put("type", event.sensor.getType());
-                switch(event.sensor.getType()) {
+        switch (event.sensor.getType()) {
             case Sensor.TYPE_ACCELEROMETER:
             case Sensor.TYPE_MAGNETIC_FIELD:
             case Sensor.TYPE_GYROSCOPE:
@@ -1093,19 +984,17 @@ public class PlayGameRtcActivity extends AppCompatActivity
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("gps");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setData(strNMEA);
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
-            }
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setData(strNMEA);
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
         }
     }
 
@@ -1115,57 +1004,59 @@ public class PlayGameRtcActivity extends AppCompatActivity
         meb.setData(new MotionEventBean.DataBean());
         meb.getData().setEvent("joystick");
         MotionEventBean.DataBean.ParametersBean parametersBean = new MotionEventBean.DataBean.ParametersBean();
-        if (parametersBean != null) {
-            meb.getData().setParameters(parametersBean);
-            MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
-            if (parameters != null) {
-                parameters.setgpID(joyId);
-                if (BaseController.EV_NON == type) {
-                    if (enableJoy) {
-                        parameters.setData("i\n");
-                    } else {
-                        parameters.setData("p\n");
-                    }
+        meb.getData().setParameters(parametersBean);
+        MotionEventBean.DataBean.ParametersBean parameters = meb.getData().getParameters();
+        if (parameters != null) {
+            parameters.setjID(joyId);
+            if (BaseController.EV_NON == type) {
+                if (enableJoy) {
+                    parameters.setData("i\n");
                 } else {
-                    String data = null;
-                    if (BaseController.EV_ABS == type) {
-                        data = "a " + keyCode + " " + keyValue + "\n";
-                    } else if (BaseController.EV_KEY == type) {
-                        data = "k " + keyCode + " " + keyValue + "\n";
-                    }
-                    if (data != null) {
-                        parameters.setData(data);
-                    }
+                    parameters.setData("p\n");
                 }
-
-                String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-                P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                    }
-                });
+            } else {
+                String data = null;
+                if (BaseController.EV_ABS == type) {
+                    data = "a " + keyCode + " " + keyValue + "\n";
+                } else if (BaseController.EV_KEY == type) {
+                    data = "k " + keyCode + " " + keyValue + "\n";
+                }
+                if (data != null) {
+                    parameters.setData(data);
+                }
             }
+
+            String jsonString = new Gson().toJson(meb, MotionEventBean.class);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                }
+            });
         }
     }
 
     private void checkMediaCodecSupportTypes() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             MediaCodecList mediaCodecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
-            Boolean bHEVCEncoder = false;
-            Boolean bHEVCDecoder = false;
-            Boolean bH264Encoder = false;
-            Boolean bH264Decoder = false;
+            boolean bHEVCEncoder = false;
+            boolean bHEVCDecoder = false;
+            boolean bH264Encoder = false;
+            boolean bH264Decoder = false;
             for (MediaCodecInfo mediaCodecInfo : mediaCodecList.getCodecInfos()) {
                 String mediaCodecName = mediaCodecInfo.getName().toLowerCase(Locale.ROOT);
+                String TYPE_MEDIA_HEVC = "hevc";
+                String TYPE_MEDIA_ENCODER = "encoder";
                 if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
                         && mediaCodecName.contains(TYPE_MEDIA_ENCODER)) {
                     bHEVCEncoder = true;
                 }
+                String TYPE_MEDIA_DECODER = "decoder";
                 if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
                         && mediaCodecName.contains(TYPE_MEDIA_DECODER)) {
                     bHEVCDecoder = true;
                 }
+                String TYPE_MEDIA_H264 = "h264";
                 if (mediaCodecName.contains(TYPE_MEDIA_H264)
                         && mediaCodecName.contains(TYPE_MEDIA_ENCODER)) {
                     bH264Encoder = true;
@@ -1188,6 +1079,36 @@ public class PlayGameRtcActivity extends AppCompatActivity
         }
     }
 
+    public static class GameHandler extends Handler {
+        private final WeakReference<PlayGameRtcActivity> activity;
+
+        public GameHandler(PlayGameRtcActivity act) {
+            activity = new WeakReference<>(act);
+        }
+
+        @Override
+        public void handleMessage(@NonNull @NotNull Message msg) {
+            super.handleMessage(msg);
+            PlayGameRtcActivity actPlay = activity.get();
+            String RESULT_MSG = "resultMsg";
+            switch (msg.what) {
+                case AppConst.MSG_QUIT:
+                    LogEx.i("Exit Result" + msg.arg1);
+                    Intent intent = actPlay.getIntent();
+                    intent.putExtra(RESULT_MSG, msg.arg1);
+                    actPlay.setResult(Activity.RESULT_OK, intent);
+                    actPlay.finish();
+                    break;
+                case AppConst.MSG_SHOW_CONTROLLER:
+                    actPlay.showOrHideController();
+                    break;
+                case AppConst.MSG_UPDATE_CONTROLLER:
+                    actPlay.updateControllerStatus();
+                    break;
+            }
+        }
+    }
+
     class DynamicReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -1203,7 +1124,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 Log.e("MyReceiver", "To app uri = " + uri);
                 sendFiletoApp(uri);
             }
-            //throw new UnsupportedOperationException("Not yet implemented");
         }
 
         private void sendFiletoAIC(String uri) {
@@ -1212,9 +1132,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "There is no file: " + uri, Toast.LENGTH_LONG).show());
                 return;
             }
-            Long file_length = file.length();
-            String file_name = file.getName();
-            runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "File: " + file.getName() + " Size: " + String.valueOf(file_length) + " start transfer", Toast.LENGTH_LONG).show());
+            long file_length = file.length();
+            runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "File: " + file.getName() + " Size: " + file_length + " start transfer", Toast.LENGTH_LONG).show());
             controller.sendFile(uri);
         }
 
@@ -1222,5 +1141,4 @@ public class PlayGameRtcActivity extends AppCompatActivity
             controller.sendFileNameToStreamer(uri);
         }
     }
-
 }

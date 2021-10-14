@@ -1,7 +1,6 @@
 
 package com.intel.gamepad.controller.webrtc;
 
-import android.hardware.input.InputManager;
 import android.os.Handler;
 import android.os.Trace;
 import android.util.Log;
@@ -11,28 +10,11 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.CompoundButton;
-import android.widget.ImageButton;
-import android.widget.RadioButton;
 
-import com.google.gson.Gson;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
-import com.intel.gamepad.app.KeyConst;
-import com.intel.gamepad.app.MouseConst;
-import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
-import com.intel.gamepad.controller.impl.MouseMotionEventListener;
-import com.intel.gamepad.controller.impl.PartitionEventListener;
-import com.intel.gamepad.controller.view.Pad;
-import com.intel.gamepad.controller.view.PadMouse;
-import com.intel.gamepad.owt.p2p.P2PHelper;
-import com.intel.gamepad.utils.TimeDelayUtils;
-import com.jeremy.fastsharedpreferences.FastSharedPreferences;
-import com.mycommonlibrary.utils.LogEx;
-import com.mycommonlibrary.utils.ToastUtils;
-import owt.base.OwtError;
+import com.commonlibrary.utils.LogEx;
 
 /**
  * Android触屏专用
@@ -42,13 +24,12 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     public static final String DESC = "Android Touch Screen ";
     public static final String TAG = "RTCCTLAndroid";
     private ViewGroup vgRoot;
-    private View viewTouch = null;
     public static final int invalidDeviceId = -100;
     public static final int deviceSlotIndexZero = 0;
     public static final int deviceSlotIndexOne = 1;
     public static int[] deviceSlot = {invalidDeviceId, invalidDeviceId};
     private int nPointCount = 0;
-    private int[] pointArray =  new int[10];
+    private final int[] pointArray =  new int[10];
     private int nCountInput;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
@@ -77,7 +58,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         initSwitchDPadButton(vgRoot.findViewById(R.id.ibtnShowDPad));
 
         // 这个控件用于接收物理手柄的事件
-        viewTouch = vgRoot.findViewById(R.id.viewMouse);
+        View viewTouch = vgRoot.findViewById(R.id.viewMouse);
         viewTouch.requestFocus();
         viewTouch.setFocusable(true);
         viewTouch.setOnGenericMotionListener(this);
@@ -98,7 +79,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         int nRomoteX;
         int nRomoteY;
         int pointId;
-        int pressure;
         float width = 32767, height = 32767;
         int action = evt.getActionMasked();
         if(action == MotionEvent.ACTION_UP || action ==  MotionEvent.ACTION_CANCEL) {
@@ -107,11 +87,11 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
                 Trace.endSection();
             }
-            String strCmd = "";
+            StringBuilder strCmd = new StringBuilder();
             for (int i = 0; i < nPointCount; i++) {
-                strCmd = strCmd + "u " + pointArray[i] + "\n";
+                strCmd.append("u ").append(pointArray[i]).append("\n");
             }
-            sendAndroidEventAsString(strCmd);
+            sendAndroidEventAsString(strCmd.toString());
             return true;
         } else {
             nPointCount =  evt.getPointerCount();
@@ -125,16 +105,16 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         }
         if (action == MotionEvent.ACTION_MOVE) {
             int pointerCount = evt.getPointerCount();
-            String strCmd = "";
+            StringBuilder strCmd = new StringBuilder();
             for (int i = 0; i < pointerCount; i++) {
                 pointId = evt.getPointerId(i);
                 x = evt.getX(i);
                 y = evt.getY(i);
                 nRomoteX = Math.round((x * width) / v.getWidth());
                 nRomoteY = Math.round((y * height) / v.getHeight());
-                strCmd = strCmd + "m " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
+                strCmd.append("m ").append(pointId).append(" ").append(nRomoteX).append(" ").append(nRomoteY).append(" ").append(255).append("\n");
             }
-            sendAndroidEventAsString(strCmd);
+            sendAndroidEventAsString(strCmd.toString());
             return true;
         }
 
@@ -156,13 +136,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         return true;
     }
 
-    private float leftAxisX = 0f;
-    private float leftAsixY = 0f;
     private float rightAxisX = 0f;
     private float rightAxisY = 0f;
-    private float axisHatX = 0f;
-    private float axisHatY = 0f;
-    private int speed = 0;
 
     /**
      * 当右摇杆移动时持续发送消息。由于右摇杆被拉着不放时只会发送一次事件，所以这里需要用一个线程循环处理。
@@ -211,12 +186,12 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 int nRomoteY = Math.round((y * height) / v.getHeight());
                 sendAndroidEvent(event.getAction(), nRomoteX, nRomoteY, i);
             }
-            leftAxisX = event.getAxisValue(MotionEvent.AXIS_X);
-            leftAsixY = event.getAxisValue(MotionEvent.AXIS_Y);
+            float leftAxisX = event.getAxisValue(MotionEvent.AXIS_X);
+            float leftAsixY = event.getAxisValue(MotionEvent.AXIS_Y);
             rightAxisX = event.getAxisValue(MotionEvent.AXIS_Z);
             rightAxisY = event.getAxisValue(MotionEvent.AXIS_RZ);
-            axisHatX = event.getAxisValue(MotionEvent.AXIS_HAT_X);
-            axisHatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y);
+            float axisHatX = event.getAxisValue(MotionEvent.AXIS_HAT_X);
+            float axisHatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y);
 
             leftAxisX = BaseController.filterMinValue(leftAxisX);
             leftAsixY = BaseController.filterMinValue(leftAsixY);
@@ -240,7 +215,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 || ((eventSource & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
             int keyMapCode = -1;
             int actionDown = JOY_KEY_CODE_MAP_DPAD_UP;
-            Boolean bDpad = false;
+            boolean bDpad = false;
             switch (keyCode) {
                 case KeyEvent.KEYCODE_DPAD_LEFT:
                     keyMapCode = JOY_KEY_CODE_MAP_DPAD_EAST_WEST;
@@ -303,15 +278,14 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 } else {
                     sendJoyStickEvent(RTCControllerAndroid.EV_KEY, keyMapCode, 1, true, indexSlot);
                 }
-                return true;
             } else {
                 if (bDpad) {
                     sendJoyStickEvent(RTCControllerAndroid.EV_ABS, keyMapCode, JOY_KEY_CODE_MAP_DPAD_UP, true, indexSlot);
                 } else {
                     sendJoyStickEvent(RTCControllerAndroid.EV_KEY, keyMapCode, 0, true, indexSlot);
                 }
-                return true;
             }
+            return true;
         } else {
             sendAndroidEvent(event.getAction(), event.getKeyCode());
             LogEx.i(keyCode + " " + event + " " + event.getDevice().getId());

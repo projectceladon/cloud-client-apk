@@ -5,10 +5,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Debug;
 import android.os.LocaleList;
-import android.util.Log;
-import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.RequiresApi;
@@ -18,8 +15,7 @@ import androidx.core.content.ContextCompat;
 import com.intel.gamepad.R;
 import com.intel.gamepad.utils.ActivityManager;
 import com.intel.gamepad.utils.LanguageUtils;
-import com.mycommonlibrary.utils.LogEx;
-import com.mycommonlibrary.utils.StatusBarUtil;
+import com.commonlibrary.utils.StatusBarUtil;
 
 import java.util.Locale;
 
@@ -74,11 +70,6 @@ public class BaseActvitiy extends AppCompatActivity {
 
     protected void initBackButton(int resId) {
         if (findViewById(resId) == null) return;
-        findViewById(resId).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ActivityManager.finishAll();
-            }
-        });
+        findViewById(resId).setOnClickListener(v -> ActivityManager.finishAll());
     }
 }

@@ -1,0 +1,27 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.commonlibrary">
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <application android:allowBackup="false">
+        <activity
+            android:name="com.commonlibrary.activity.CameraGalleyActivity"
+            android:theme="@style/CameraGalleryTheme"> <!-- 此界面设为背景透明 -->
+        </activity>
+        <activity
+            android:name="com.commonlibrary.activity.calendar.CalendarActivity"
+            android:label="选择日期">
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>

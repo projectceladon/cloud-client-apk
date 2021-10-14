@@ -11,6 +11,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameListBean implements Parcelable {
+    public static final Creator<GameListBean> CREATOR = new Creator<GameListBean>() {
+        @Override
+        public GameListBean createFromParcel(Parcel source) {
+            return new GameListBean(source);
+        }
+
+        @Override
+        public GameListBean[] newArray(int size) {
+            return new GameListBean[size];
+        }
+    };
     private int iid;
     private String imageUrl;
     private String title;
@@ -22,20 +33,20 @@ public class GameListBean implements Parcelable {
     private String intro;
     private String addurl;
 
-    @Override
-    public String toString() {
-        return "GameListBean{" +
-                "iid=" + iid +
-                ", imageUrl='" + imageUrl + '\'' +
-                ", title='" + title + '\'' +
-                ", ip='" + ip + '\'' +
-                ", prot=" + prot +
-                ", port=" + port +
-                ", type='" + type + '\'' +
-                ", conf='" + conf + '\'' +
-                ", intro='" + intro + '\'' +
-                ", addurl='" + addurl + '\'' +
-                '}';
+    public GameListBean() {
+    }
+
+    protected GameListBean(Parcel in) {
+        this.iid = in.readInt();
+        this.imageUrl = in.readString();
+        this.title = in.readString();
+        this.ip = in.readString();
+        this.prot = in.readInt();
+        this.port = in.readInt();
+        this.type = in.readString();
+        this.conf = in.readString();
+        this.intro = in.readString();
+        this.addurl = in.readString();
     }
 
     public static GameListBean objectFromData(String str) {
@@ -57,6 +68,22 @@ public class GameListBean implements Parcelable {
         }.getType();
 
         return new Gson().toJson(list, listType);
+    }
+
+    @Override
+    public String toString() {
+        return "GameListBean{" +
+                "iid=" + iid +
+                ", imageUrl='" + imageUrl + '\'' +
+                ", title='" + title + '\'' +
+                ", ip='" + ip + '\'' +
+                ", prot=" + prot +
+                ", port=" + port +
+                ", type='" + type + '\'' +
+                ", conf='" + conf + '\'' +
+                ", intro='" + intro + '\'' +
+                ", addurl='" + addurl + '\'' +
+                '}';
     }
 
     public String getAddurl() {
@@ -139,9 +166,6 @@ public class GameListBean implements Parcelable {
         this.title = title;
     }
 
-    public GameListBean() {
-    }
-
     @Override
     public int describeContents() {
         return 0;
@@ -160,29 +184,4 @@ public class GameListBean implements Parcelable {
         dest.writeString(this.intro);
         dest.writeString(this.addurl);
     }
-
-    protected GameListBean(Parcel in) {
-        this.iid = in.readInt();
-        this.imageUrl = in.readString();
-        this.title = in.readString();
-        this.ip = in.readString();
-        this.prot = in.readInt();
-        this.port = in.readInt();
-        this.type = in.readString();
-        this.conf = in.readString();
-        this.intro = in.readString();
-        this.addurl = in.readString();
-    }
-
-    public static final Creator<GameListBean> CREATOR = new Creator<GameListBean>() {
-        @Override
-        public GameListBean createFromParcel(Parcel source) {
-            return new GameListBean(source);
-        }
-
-        @Override
-        public GameListBean[] newArray(int size) {
-            return new GameListBean[size];
-        }
-    };
 }
