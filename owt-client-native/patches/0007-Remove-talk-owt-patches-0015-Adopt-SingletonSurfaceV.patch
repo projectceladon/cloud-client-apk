@@ -1,0 +1,392 @@
+From 3b39e64b1c8c765082392e4c4d181079e4e3446c Mon Sep 17 00:00:00 2001
+From: "Deng, Bing" <bing.deng@intel.com>
+Date: Wed, 20 Oct 2021 15:09:47 +0800
+Subject: [PATCH] Remove
+ talk/owt/patches/0015-Adopt-SingletonSurfaceView.patch.
+
+Signed-off-by: Deng, Bing <bing.deng@intel.com>
+---
+ scripts/prepare_dev.py                        |   1 -
+ .../0015-Adopt-SingletonSurfaceView.patch     | 358 ------------------
+ 2 files changed, 359 deletions(-)
+ delete mode 100644 talk/owt/patches/0015-Adopt-SingletonSurfaceView.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index 54811cb..757d006 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -43,7 +43,6 @@ patchList = [
+     ('0011-libjpeg_turbo-fix-for-CVE-2018-20330-and-19664.patch', LIBJPEG_TURBO_PATH),
+     ('0013-Remove-unused-gni-for-av1-build.patch', THIRD_PARTY_PATH),
+     ('0014-Fix-missing-ffmpeg-configure-item-for-msvc-build.patch', FFMPEG_PATH),
+-    ('0015-Adopt-SingletonSurfaceView.patch', WEBRTC_PATH),
+     ('0016-Use-AToU-to-print-trace.patch', WEBRTC_PATH),
+     ('0017-Support-OMX.Intel.hw_ve.h264-for-android-app.patch', WEBRTC_PATH),
+     ('0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch', WEBRTC_PATH),
+diff --git a/talk/owt/patches/0015-Adopt-SingletonSurfaceView.patch b/talk/owt/patches/0015-Adopt-SingletonSurfaceView.patch
+deleted file mode 100644
+index e4a84d4..0000000
+--- a/talk/owt/patches/0015-Adopt-SingletonSurfaceView.patch
++++ /dev/null
+@@ -1,358 +0,0 @@
+-From 20d734047ab1c8978967821da0d6bb6d83659cae Mon Sep 17 00:00:00 2001
+-From: "Deng, Bing" <bing.deng@intel.com>
+-Date: Mon, 22 Mar 2021 14:25:42 +0800
+-Subject: [PATCH] Adopt SingletonSurfaceView.
+-
+-Signed-off-by: Deng, Bing <bing.deng@intel.com>
+----
+- media/base/media_config.h                     |  4 +-
+- modules/video_coding/timing.cc                |  6 +-
+- sdk/android/BUILD.gn                          |  4 ++
+- sdk/android/api/org/webrtc/MySurfaceView.java | 26 +++++++++
+- .../api/org/webrtc/SingletonSurfaceView.java  | 32 ++++++++++
+- .../java/org/webrtc/AndroidVideoDecoder.java  | 58 +++++++++++++++----
+- .../java/org/webrtc/MediaCodecWrapper.java    |  3 +
+- .../webrtc/MediaCodecWrapperFactoryImpl.java  |  5 ++
+- sdk/android/src/jni/video_decoder_wrapper.cc  |  2 +
+- 9 files changed, 125 insertions(+), 15 deletions(-)
+- create mode 100644 sdk/android/api/org/webrtc/MySurfaceView.java
+- create mode 100644 sdk/android/api/org/webrtc/SingletonSurfaceView.java
+-
+-diff --git a/media/base/media_config.h b/media/base/media_config.h
+-index be314a8aa3..2c17ca92b0 100644
+---- a/media/base/media_config.h
+-+++ b/media/base/media_config.h
+-@@ -42,7 +42,7 @@ struct MediaConfig {
+-     // Note that even if this flag is set to false, dropping of frames can
+-     // still happen pre-decode, e.g., dropping of higher temporal layers.
+-     // This flag comes from the PeerConnection RtcConfiguration.
+--    bool enable_prerenderer_smoothing = true;
+-+    bool enable_prerenderer_smoothing = false;
+- 
+-     // Enables periodic bandwidth probing in application-limited region.
+-     bool periodic_alr_bandwidth_probing = false;
+-@@ -55,7 +55,7 @@ struct MediaConfig {
+-     bool experiment_cpu_load_estimator = false;
+- 
+-     // Time interval between RTCP report for video
+--    int rtcp_report_interval_ms = 1000;
+-+    int rtcp_report_interval_ms = 100;
+-   } video;
+- 
+-   // Audio-specific config.
+-diff --git a/modules/video_coding/timing.cc b/modules/video_coding/timing.cc
+-index c62c848c09..14637bc26b 100644
+---- a/modules/video_coding/timing.cc
+-+++ b/modules/video_coding/timing.cc
+-@@ -172,11 +172,14 @@ void VCMTiming::IncomingTimestamp(uint32_t time_stamp, int64_t now_ms) {
+- int64_t VCMTiming::RenderTimeMs(uint32_t frame_timestamp,
+-                                 int64_t now_ms) const {
+-   rtc::CritScope cs(&crit_sect_);
+--  return RenderTimeMsInternal(frame_timestamp, now_ms);
+-+  // return RenderTimeMsInternal(frame_timestamp, now_ms);
+-+  return 0;
+- }
+- 
+- int64_t VCMTiming::RenderTimeMsInternal(uint32_t frame_timestamp,
+-                                         int64_t now_ms) const {
+-+  return 0;
+-+#if 0
+-   if (min_playout_delay_ms_ == 0 && max_playout_delay_ms_ == 0) {
+-     // Render as soon as possible.
+-     return 0;
+-@@ -192,6 +195,7 @@ int64_t VCMTiming::RenderTimeMsInternal(uint32_t frame_timestamp,
+-   int actual_delay = std::max(current_delay_ms_, min_playout_delay_ms_);
+-   actual_delay = std::min(actual_delay, max_playout_delay_ms_);
+-   return estimated_complete_time_ms + actual_delay;
+-+#endif
+- }
+- 
+- int VCMTiming::RequiredDecodeTimeMs() const {
+-diff --git a/sdk/android/BUILD.gn b/sdk/android/BUILD.gn
+-index 2ef60d350a..2f4454b1d2 100644
+---- a/sdk/android/BUILD.gn
+-+++ b/sdk/android/BUILD.gn
+-@@ -202,6 +202,7 @@ if (is_android) {
+-       "api/org/webrtc/VideoEncoderFactory.java",
+-       "api/org/webrtc/VideoFrame.java",
+-       "api/org/webrtc/VideoSink.java",
+-+      "api/org/webrtc/SingletonSurfaceView.java",
+-     ]
+- 
+-     deps = [
+-@@ -303,6 +304,8 @@ if (is_android) {
+-       "api/org/webrtc/VideoProcessor.java",
+-       "api/org/webrtc/VideoSource.java",
+-       "api/org/webrtc/VideoTrack.java",
+-+      "api/org/webrtc/MySurfaceView.java",
+-+      "api/org/webrtc/SingletonSurfaceView.java",
+-       "src/java/org/webrtc/NativeAndroidVideoTrackSource.java",
+-       "src/java/org/webrtc/NativeCapturerObserver.java",
+-       "src/java/org/webrtc/NativeLibrary.java",
+-@@ -466,6 +469,7 @@ if (is_android) {
+-     sources = [
+-       "api/org/webrtc/SurfaceEglRenderer.java",
+-       "api/org/webrtc/SurfaceViewRenderer.java",
+-+      "api/org/webrtc/SingletonSurfaceView.java",
+-     ]
+- 
+-     deps = [
+-diff --git a/sdk/android/api/org/webrtc/MySurfaceView.java b/sdk/android/api/org/webrtc/MySurfaceView.java
+-new file mode 100644
+-index 0000000000..622b107019
+---- /dev/null
+-+++ b/sdk/android/api/org/webrtc/MySurfaceView.java
+-@@ -0,0 +1,26 @@
+-+package org.webrtc; 
+-+
+-+import android.content.Context;
+-+import android.view.SurfaceHolder;
+-+import android.view.SurfaceView;
+-+
+-+public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback{
+-+    public MySurfaceView(Context context) {
+-+        super(context);
+-+    }
+-+
+-+    @Override
+-+    public void surfaceCreated(SurfaceHolder surfaceHolder) {
+-+
+-+    }
+-+
+-+    @Override
+-+    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
+-+
+-+    }
+-+
+-+    @Override
+-+    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
+-+
+-+    }
+-+}
+-diff --git a/sdk/android/api/org/webrtc/SingletonSurfaceView.java b/sdk/android/api/org/webrtc/SingletonSurfaceView.java
+-new file mode 100644
+-index 0000000000..cc098f6c42
+---- /dev/null
+-+++ b/sdk/android/api/org/webrtc/SingletonSurfaceView.java
+-@@ -0,0 +1,32 @@
+-+package org.webrtc;
+-+
+-+import android.view.SurfaceView;
+-+
+-+public  class SingletonSurfaceView {
+-+    private volatile static SingletonSurfaceView instance = null;
+-+    public  SurfaceView  surfaceView = null;
+-+    private SingletonSurfaceView(){
+-+
+-+    }
+-+
+-+
+-+    public static SingletonSurfaceView getInstance(){
+-+      if (instance == null){
+-+          synchronized(SingletonSurfaceView.class){
+-+            if(instance == null){
+-+                instance = new SingletonSurfaceView();
+-+            }
+-+
+-+          }
+-+      }
+-+      return instance;
+-+    }
+-+
+-+    public void setSurfaceView(SurfaceView surfaceView){
+-+        this.surfaceView = surfaceView;
+-+    }
+-+
+-+    public SurfaceView getSurfaceView(){
+-+        return  this.surfaceView;
+-+    }
+-+}
+-diff --git a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+-index b797e2521e..f4ed1ca16f 100644
+---- a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+-+++ b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+-@@ -10,19 +10,25 @@
+- 
+- package org.webrtc;
+- 
+-+import android.media.Image;
+- import android.media.MediaCodec;
+- import android.media.MediaCodecInfo.CodecCapabilities;
+- import android.media.MediaFormat;
+- import android.os.SystemClock;
+- import android.support.annotation.Nullable;
+- import android.view.Surface;
+-+import android.view.SurfaceView;
+- import java.io.IOException;
+- import java.nio.ByteBuffer;
+- import java.util.concurrent.BlockingDeque;
+- import java.util.concurrent.LinkedBlockingDeque;
+- import java.util.concurrent.TimeUnit;
+- import org.webrtc.ThreadUtils.ThreadChecker;
+--
+-+import java.io.FileWriter;
+-+import java.io.IOException;
+-+import java.io.PrintWriter;
+-+import org.webrtc.SingletonSurfaceView;
+-+import org.webrtc.VideoFrame.TextureBuffer;
+- /**
+-  * Android hardware video decoder.
+-  */
+-@@ -30,6 +36,8 @@ import org.webrtc.ThreadUtils.ThreadChecker;
+- // Cannot support API 16 without using deprecated methods.
+- // TODO(sakal): Rename to MediaCodecVideoDecoder once the deprecated implementation is removed.
+- class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+-+
+-+  private PrintWriter printWriter = null;
+-   private static final String TAG = "AndroidVideoDecoder";
+- 
+-   // TODO(magjed): Use MediaFormat.KEY_* constants when part of the public API.
+-@@ -151,8 +159,11 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+-     this.callback = callback;
+-     if (sharedContext != null) {
+-       surfaceTextureHelper = createSurfaceTextureHelper();
+--      surface = new Surface(surfaceTextureHelper.getSurfaceTexture());
+--      surfaceTextureHelper.startListening(this);
+-+      //surface = new Surface(surfaceTextureHelper.getSurfaceTexture());
+-+      //surfaceTextureHelper.startListening(this);
+-+      SingletonSurfaceView ssv = SingletonSurfaceView.getInstance();
+-+      SurfaceView surfaceView = ssv.getSurfaceView();
+-+      surface = surfaceView.getHolder().getSurface();
+-     }
+-     return initDecodeInternal(settings.width, settings.height);
+-   }
+-@@ -313,11 +324,11 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+-     Logging.d(TAG, "release");
+-     VideoCodecStatus status = releaseInternal();
+-     if (surface != null) {
+--      releaseSurface();
+--      surface = null;
+--      surfaceTextureHelper.stopListening();
+--      surfaceTextureHelper.dispose();
+--      surfaceTextureHelper = null;
+-+      //releaseSurface();
+-+      //surface = null;
+-+      //surfaceTextureHelper.stopListening();
+-+      //surfaceTextureHelper.dispose();
+-+      //surfaceTextureHelper = null;
+-     }
+-     synchronized (renderedTextureMetadataLock) {
+-       renderedTextureMetadata = null;
+-@@ -423,10 +434,10 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+-     // Load dimensions from shared memory under the dimension lock.
+-     final int width;
+-     final int height;
+--    synchronized (dimensionLock) {
+-+    //synchronized (dimensionLock) {
+-       width = this.width;
+-       height = this.height;
+--    }
+-+    //}
+- 
+-     synchronized (renderedTextureMetadataLock) {
+-       if (renderedTextureMetadata != null) {
+-@@ -438,6 +449,29 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+-       renderedTextureMetadata = new DecodedTextureMetadata(info.presentationTimeUs, decodeTimeMs);
+-       codec.releaseOutputBuffer(index, /* render= */ true);
+-     }
+-+
+-+    final VideoFrame newFrame;
+-+    final long timestampNs;
+-+    synchronized (renderedTextureMetadataLock) {
+-+      if (renderedTextureMetadata == null) {
+-+        throw new IllegalStateException(
+-+            "Rendered texture metadata was null in onTextureFrameAvailable.");
+-+      }
+-+      timestampNs = renderedTextureMetadata.presentationTimestampUs * 1000;
+-+      //decodeTimeMs = renderedTextureMetadata.decodeTimeMs;
+-+      renderedTextureMetadata = null;
+-+    }
+-+    // Change timestamp of frame.
+-+    final VideoFrame.Buffer buffer =
+-+         new TextureBufferImpl(640, 480, TextureBuffer.Type.OES, 1, null, null, null,
+-+	      new Runnable() {
+-+		public void run() {}
+-+	      });
+-+    final VideoFrame frameWithModifiedTimeStamp =
+-+        new VideoFrame(buffer, 0, timestampNs);
+-+    callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null );
+-+    frameWithModifiedTimeStamp.release();
+-+
+-   }
+- 
+-   @Override
+-@@ -467,12 +501,12 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
+-     int height;
+-     int stride;
+-     int sliceHeight;
+--    synchronized (dimensionLock) {
+-+    //synchronized (dimensionLock) {
+-       width = this.width;
+-       height = this.height;
+-       stride = this.stride;
+-       sliceHeight = this.sliceHeight;
+--    }
+-+    //}
+- 
+-     // Output must be at least width * height bytes for Y channel, plus (width / 2) * (height / 2)
+-     // bytes for each of the U and V channels.
+-diff --git a/sdk/android/src/java/org/webrtc/MediaCodecWrapper.java b/sdk/android/src/java/org/webrtc/MediaCodecWrapper.java
+-index bb67d1f4b9..0d20cc973d 100644
+---- a/sdk/android/src/java/org/webrtc/MediaCodecWrapper.java
+-+++ b/sdk/android/src/java/org/webrtc/MediaCodecWrapper.java
+-@@ -10,6 +10,7 @@
+- 
+- package org.webrtc;
+- 
+-+import android.media.Image;
+- import android.media.MediaCodec;
+- import android.media.MediaCrypto;
+- import android.media.MediaFormat;
+-@@ -39,6 +40,8 @@ interface MediaCodecWrapper {
+- 
+-   int dequeueOutputBuffer(MediaCodec.BufferInfo info, long timeoutUs);
+- 
+-+  Image getOutputImage(int index);
+-+
+-   void releaseOutputBuffer(int index, boolean render);
+- 
+-   MediaFormat getOutputFormat();
+-diff --git a/sdk/android/src/java/org/webrtc/MediaCodecWrapperFactoryImpl.java b/sdk/android/src/java/org/webrtc/MediaCodecWrapperFactoryImpl.java
+-index 544d6ebe4f..e075351ec6 100644
+---- a/sdk/android/src/java/org/webrtc/MediaCodecWrapperFactoryImpl.java
+-+++ b/sdk/android/src/java/org/webrtc/MediaCodecWrapperFactoryImpl.java
+-@@ -12,6 +12,7 @@ package org.webrtc;
+- 
+- import android.annotation.TargetApi;
+- import android.media.MediaCodec;
+-+import android.media.Image;
+- import android.media.MediaCodec.BufferInfo;
+- import android.media.MediaCrypto;
+- import android.media.MediaFormat;
+-@@ -73,6 +74,10 @@ class MediaCodecWrapperFactoryImpl implements MediaCodecWrapperFactory {
+-       return mediaCodec.dequeueOutputBuffer(info, timeoutUs);
+-     }
+- 
+-+    @Override
+-+    public Image getOutputImage(int index) {
+-+        return mediaCodec.getOutputImage(index);
+-+    }
+-     @Override
+-     public void releaseOutputBuffer(int index, boolean render) {
+-       mediaCodec.releaseOutputBuffer(index, render);
+-diff --git a/sdk/android/src/jni/video_decoder_wrapper.cc b/sdk/android/src/jni/video_decoder_wrapper.cc
+-index 54c6e1574c..8193624b77 100644
+---- a/sdk/android/src/jni/video_decoder_wrapper.cc
+-+++ b/sdk/android/src/jni/video_decoder_wrapper.cc
+-@@ -101,6 +101,8 @@ int32_t VideoDecoderWrapper::Decode(
+-   input_image.capture_time_ms_ =
+-       input_image.Timestamp() / kNumRtpTicksPerMillisec;
+- 
+-+  input_image.capture_time_ms_ = render_time_ms;  // / kNumRtpTicksPerMillisec;
+-+
+-   FrameExtraInfo frame_extra_info;
+-   frame_extra_info.timestamp_ns =
+-       input_image.capture_time_ms_ * rtc::kNumNanosecsPerMillisec;
+--- 
+-2.25.1
+-
+-- 
+2.25.1
+

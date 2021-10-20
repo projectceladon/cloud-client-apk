@@ -24,6 +24,8 @@ Download owt-client-native source code:
     $ git am -3 ../patches/0003-Add-talk-owt-patches-0017-Support-OMX.Intel.hw_ve.h2.patch
     $ git am -3 ../patches/0004-Add-talk-owt-patches-0018-Support-OMX.Intel.hw_ve.h2.patch
     $ git am -3 ../patches/0005-Add-talk-owt-patches-0019-Support-h264-and-hevc-of-M.patch
+    $ git am -3 ../patches/0006-Add-talk-owt-patches-0020-Add-atrace-points-for-came.patch
+    $ git am -3 ../patches/0007-Remove-talk-owt-patches-0015-Adopt-SingletonSurfaceV.patch
 5. Patch the third_party project: $ gclient sync
 
 Compile:
