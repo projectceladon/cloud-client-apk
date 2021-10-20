@@ -29,7 +29,6 @@ import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.InputDevice;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -62,7 +61,8 @@ import com.intel.gamepad.utils.LocationUtils;
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.SingletonSurfaceView;
+import org.webrtc.RendererCommon;
+import org.webrtc.SurfaceViewRenderer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -74,6 +74,8 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import owt.base.ActionCallback;
 import owt.base.LocalStream;
@@ -94,8 +96,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private final long TIME_INTERVAL_TO_GET_LOCATION = 1000;
     private final long TIME_INTERVAL_BETWEEN_NETWORK_GPS = TIME_INTERVAL_TO_GET_LOCATION * 10;
     private final String fileTransferPath = Environment.getExternalStorageDirectory().getPath();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final boolean remoteStreamEnded = false;
     DynamicReceiver dynamicReceiver;
     IntentFilter filter;
+    private RemoteStream remoteStream = null;
     private LocalStream localAudioStream = null;
     private LocalStream localVideoStream = null;
     private Publication audioPublication = null;
@@ -115,10 +120,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private long lastNetworkLocationTime = 0;
     private long lastGpsLocationTime = 0;
     private SensorManager mSensorManager = null;
-    private SurfaceView fullRenderer = null;
+    private SurfaceViewRenderer fullRenderer = null;
     private CheckBox chkStatusTitle = null;
     private TextView tvMyStatus = null;
-    private Boolean bFirstStart = true;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
 
@@ -136,6 +140,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_game_rtc);
         fullRenderer = findViewById(R.id.fullRenderer);
+        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), null);
+        fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+        fullRenderer.setEnableHardwareScaler(true);
+        fullRenderer.setZOrderMediaOverlay(true);
+        executor.execute(() -> {
+            if (remoteStream != null && !remoteStreamEnded) {
+                remoteStream.attach(fullRenderer);
+            }
+        });
         initAudioManager();
         initP2PClient();
         DisplayMetrics outMetrics = new DisplayMetrics();
@@ -158,7 +171,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mIm.registerInputDeviceListener(this, null);
         checkPermissions();
         checkMediaCodecSupportTypes();
-        bFirstStart = true;
 
         filter = new IntentFilter();
         filter.addAction("com.intel.gamepad.sendfiletoaic");
@@ -171,8 +183,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
         super.onResume();
         registerReceiver(dynamicReceiver, filter);
         hideStatusBar();
-        if (!bFirstStart) {
-            onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
+        if (remoteStream != null) {
+            remoteStream.attach(fullRenderer);
         }
         LogEx.e("RTC Activity onResume called");
     }
@@ -183,8 +195,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
         if (dynamicReceiver != null) {
             unregisterReceiver(dynamicReceiver);
         }
-        P2PHelper.closeP2PClient();
-        bFirstStart = false;
+        if (remoteStream != null) {
+            remoteStream.detach(fullRenderer);
+        }
     }
 
     @Override
@@ -234,6 +247,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 runOnUiThread(() -> {
                     if (!isFirst) fitScreenSize();
                 });
+                PlayGameRtcActivity.this.remoteStream = remoteStream;
                 remoteStream.addObserver(new owt.base.RemoteStream.StreamObserver() {
                     @Override
                     public void onEnded() {
@@ -242,6 +256,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     @Override
                     public void onUpdated() {
                         LogEx.e(" remoteStream updated");
+                    }
+                });
+                executor.execute(() -> {
+                    if (fullRenderer != null) {
+                        remoteStream.attach(fullRenderer);
                     }
                 });
             }
@@ -472,7 +491,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
             }
         });
-        initFullRender();
     }
 
     private void getPositionNetwork() {
@@ -652,7 +670,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mSensorManager.registerListener(this,
                 mSensorManager.getDefaultSensor(sensorType),
                 SensorManager.SENSOR_DELAY_NORMAL);
-
     }
 
     private void deRegisterSensorEvents(int sensorType) {
@@ -713,10 +730,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         }
     }
 
-    private void initFullRender() {
-        SingletonSurfaceView.getInstance().setSurfaceView(fullRenderer);
-    }
-
     private BaseController selectGamePad() {
         return new RTCControllerAndroid(this, getHandler(), this);
     }
@@ -774,7 +787,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
             });
         }
-
     }
 
     private void sensorsInit() {
@@ -820,17 +832,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     REQUEST_PERMISSIONS_REQUEST_CODE
             );
         } else {
-            LogEx.d(
-                    "No need to request permissions to user, " +
-                            "as App already has all the required permissions"
-            );
+            LogEx.d("No need to request permissions to user, as App already has all the required permissions");
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
-
         // grantResults.length <= 0. If user interaction was interrupted, the permission request is cancelled and you receive empty arrays.
         if (grantResults.length > 0) {
             for (int i = 0; i < permissions.length; i++) {

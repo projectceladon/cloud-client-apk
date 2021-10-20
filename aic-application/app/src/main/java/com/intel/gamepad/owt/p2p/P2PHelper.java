@@ -43,7 +43,7 @@ public class P2PHelper {
     private boolean inited = false;
 
     private P2PHelper() {
-        //initP2PClientConfig();
+        initP2PClientConfig();
     }
 
     public static P2PHelper getInst() {
