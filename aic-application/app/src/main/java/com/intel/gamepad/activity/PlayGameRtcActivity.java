@@ -32,8 +32,6 @@ import android.view.InputDevice;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.CheckBox;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -121,8 +119,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private long lastGpsLocationTime = 0;
     private SensorManager mSensorManager = null;
     private SurfaceViewRenderer fullRenderer = null;
-    private CheckBox chkStatusTitle = null;
-    private TextView tvMyStatus = null;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
 
@@ -157,15 +153,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         screenHeight = outMetrics.heightPixels;
         controller = selectGamePad();
         onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
-        tvMyStatus = findViewById(R.id.tvMyStatus);
-        chkStatusTitle = findViewById(R.id.chkStatusTitle);
-        chkStatusTitle.setOnClickListener(v -> {
-            if (chkStatusTitle.isChecked()) {
-                tvMyStatus.setVisibility(View.VISIBLE);
-            } else {
-                tvMyStatus.setVisibility(View.GONE);
-            }
-        });
         InputManager mIm = (InputManager) getSystemService(Context.INPUT_SERVICE);
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mIm.registerInputDeviceListener(this, null);
