@@ -572,6 +572,14 @@ public class PlayGameRtcActivity extends AppCompatActivity
             };
             mLocationListenerGPS = new LocationListener() {
                 public void onLocationChanged(Location location) {
+                    lastNetworkLocationTime = System.currentTimeMillis();
+                    if (lastNetworkLocationTime - lastGpsLocationTime > TIME_INTERVAL_BETWEEN_NETWORK_GPS) {
+                        String strNMEA = LocationUtils.buildComposedNmeaMessage(
+                                location.getLatitude(),
+                                location.getLongitude()
+                        );
+                        sendGPSData(strNMEA);
+                    }
                 }
 
                 public void onStatusChanged(String provider, int status, Bundle extras) {
