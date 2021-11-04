@@ -204,13 +204,21 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     private void hideStatusBar() {
-        this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
+        Window window = this.getWindow();
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        View v = this.getWindow().getDecorView();
+        WindowManager.LayoutParams lp = window.getAttributes();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+        window.setAttributes(lp);
+        View v = window.getDecorView();
         v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+
     }
 
     private void initAudioManager() {
