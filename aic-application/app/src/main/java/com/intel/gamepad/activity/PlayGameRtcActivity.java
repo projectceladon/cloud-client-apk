@@ -246,6 +246,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 remoteStream.addObserver(new owt.base.RemoteStream.StreamObserver() {
                     @Override
                     public void onEnded() {
+                        LogEx.e(" remoteStream onEnded(). Try to reconnect...");
+                        runOnUiThread(() -> {
+                            initP2PClient();
+                            onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
+                        });
                     }
 
                     @Override
