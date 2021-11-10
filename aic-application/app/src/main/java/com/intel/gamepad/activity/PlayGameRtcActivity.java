@@ -229,8 +229,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
         P2PHelper.init(this, new P2PClient.P2PClientObserver() {
             @Override
             public void onServerDisconnected() {
-                LogEx.e("服务连接断开");
+                LogEx.e("Server disconnected");
                 if (!isNetworkAvailable()) {
+                    LogEx.e("Network is unavailable. Quit.");
                     Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT)
                             .sendToTarget();
                 }
@@ -761,8 +762,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 @Override
                 public void onFailure(OwtError owtError) {
                     runOnUiThread(() -> {
+                        LogEx.e(R.string.connect_failed + owtError.errorMessage);
                         Toast.makeText(PlayGameRtcActivity.this, R.string.connect_failed + owtError.errorMessage, Toast.LENGTH_LONG).show();
-                        finish();
                     });
                 }
             });
