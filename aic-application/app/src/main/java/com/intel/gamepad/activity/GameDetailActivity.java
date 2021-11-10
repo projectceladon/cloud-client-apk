@@ -6,14 +6,15 @@ import android.text.TextWatcher;
 import android.widget.CheckBox;
 import android.widget.EditText;
 
+import com.commonlibrary.utils.StatusBarUtil;
+import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
 import com.intel.gamepad.R;
 import com.intel.gamepad.bean.GameListBean;
+import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.IPUtils;
-import com.commonlibrary.utils.StatusBarUtil;
-import com.commonlibrary.view.loadingDialog.LoadingDialog;
 
 public class GameDetailActivity extends BaseActvitiy {
     private static final String PARAM_BEAN = "param_bean";
@@ -136,7 +137,10 @@ public class GameDetailActivity extends BaseActvitiy {
         initBackButton(R.id.ibtnBack);
         chkAndroid = findViewById(R.id.chkAndroid);
         MaterialButton btnPlay = findViewById(R.id.btnPlay);
-        btnPlay.setOnClickListener(v -> requestStartGame());
+        btnPlay.setOnClickListener(v -> {
+            BaseController.manuallyPressBackButton.set(false);
+            requestStartGame();
+        });
         btnPlay.requestFocus();
     }
 

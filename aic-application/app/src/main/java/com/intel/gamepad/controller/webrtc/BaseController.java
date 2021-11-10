@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import com.commonlibrary.utils.LogEx;
 import com.google.gson.Gson;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
@@ -24,7 +25,6 @@ import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.TimeDelayUtils;
-import com.commonlibrary.utils.LogEx;
 
 import org.json.JSONObject;
 
@@ -35,6 +35,7 @@ import java.lang.ref.WeakReference;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import owt.base.ActionCallback;
 import owt.base.OwtError;
@@ -68,6 +69,7 @@ public abstract class BaseController implements OnTouchListener {
     public static final int JOY_KEY_CODE_MAP_SELECT = 314;
     public static final int JOY_KEY_CODE_MAP_START = 315;
     public static long lastTouchMillis = 0L;
+    public static AtomicBoolean manuallyPressBackButton = new AtomicBoolean(false);
     //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
     private final Context context;
     private final ViewGroup layoutCtrlBox;
@@ -123,6 +125,7 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     protected void onBackPress() {
+        BaseController.manuallyPressBackButton.set(true);
         Message.obtain(refHandler.get(), AppConst.MSG_QUIT, AppConst.EXIT_NORMAL).sendToTarget();
     }
 
@@ -132,8 +135,8 @@ public abstract class BaseController implements OnTouchListener {
     protected void initBackButton(View btnBack) {
         if (btnBack == null) return;
         btnBack.setOnClickListener(view -> {
-            P2PHelper.closeP2PClient();
             onBackPress();
+            P2PHelper.closeP2PClient();
         });
     }
 

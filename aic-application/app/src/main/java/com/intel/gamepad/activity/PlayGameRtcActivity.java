@@ -249,11 +249,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 remoteStream.addObserver(new owt.base.RemoteStream.StreamObserver() {
                     @Override
                     public void onEnded() {
-                        LogEx.e(" remoteStream onEnded(). Try to reconnect...");
-                        runOnUiThread(() -> {
-                            initP2PClient();
-                            onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
-                        });
+                        if (BaseController.manuallyPressBackButton.get()) {
+                            LogEx.i(" remoteStream onEnded(). Manually press back button. Do not reconnect.");
+                        } else {
+                            LogEx.i(" remoteStream onEnded(). Try to reconnect...");
+                            runOnUiThread(() -> {
+                                initP2PClient();
+                                onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
+                            });
+                        }
                     }
 
                     @Override
@@ -1125,8 +1129,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     actPlay.updateControllerStatus();
                     break;
                 case AppConst.MSG_NO_STREAM_ADDED:
-                    LogEx.i(" Stream is not added. Sent Start again.");
-                    Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
+                    if (BaseController.manuallyPressBackButton.get()) {
+                        LogEx.i(" Stream is not added. Manually press back button. Do not sent 'Start' again.");
+                    } else {
+                        LogEx.i(" Stream is not added. Sent 'Start' again.");
+                        Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
+                    }
                     break;
             }
         }
