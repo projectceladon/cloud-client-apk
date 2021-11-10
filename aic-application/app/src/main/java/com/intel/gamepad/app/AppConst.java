@@ -6,6 +6,7 @@ public class AppConst {
     public static final int MSG_SHOW_CONTROLLER = 2;
     public static final int MSG_UPDATE_CONTROLLER = 3;
     public static final int MSG_NO_STREAM_ADDED = 4;
+    public static final int MSG_UNRECOVERABLE = 5;
     public static final int EXIT_NORMAL = 0;
     public static final int EXIT_DISCONNECT = -1;
 }

@@ -236,6 +236,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT)
                             .sendToTarget();
                 }
+                getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
             }
 
             @Override
@@ -252,6 +253,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         if (BaseController.manuallyPressBackButton.get()) {
                             LogEx.i(" remoteStream onEnded(). Manually press back button. Do not reconnect.");
                         } else {
+                            getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
                             LogEx.i(" remoteStream onEnded(). Try to reconnect...");
                             runOnUiThread(() -> {
                                 initP2PClient();
@@ -770,6 +772,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     runOnUiThread(() -> {
                         LogEx.e(R.string.connect_failed + owtError.errorMessage);
                         Toast.makeText(PlayGameRtcActivity.this, R.string.connect_failed + owtError.errorMessage, Toast.LENGTH_LONG).show();
+                        getHandler().removeMessages(AppConst.MSG_UNRECOVERABLE);
                     });
                 }
             });
@@ -798,6 +801,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
                 @Override
                 public void onFailure(OwtError owtError) {
+                    getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
                     LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
                 }
             });
@@ -1134,6 +1138,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     } else {
                         LogEx.i(" Stream is not added. Sent 'Start' again.");
                         Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
+                        this.sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
+                    }
+                    break;
+                case AppConst.MSG_UNRECOVERABLE:
+                    if (BaseController.manuallyPressBackButton.get()) {
+                        LogEx.i(" Get MSG_RECOVERABLE message. Manually press back button. Do not popup.");
+                    } else {
+                        LogEx.i(" Get MSG_RECOVERABLE message.");
+                        Toast.makeText(actPlay, "Get MSG_RECOVERABLE message.", Toast.LENGTH_LONG).show();
                     }
                     break;
             }
