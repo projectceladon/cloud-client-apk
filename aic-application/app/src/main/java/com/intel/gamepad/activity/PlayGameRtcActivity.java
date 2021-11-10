@@ -17,8 +17,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.OnNmeaMessageListener;
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
@@ -70,7 +68,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -157,7 +154,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mIm.registerInputDeviceListener(this, null);
         checkPermissions();
-        checkMediaCodecSupportTypes();
 
         filter = new IntentFilter();
         filter.addAction("com.intel.gamepad.sendfiletoaic");
@@ -1060,49 +1056,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
-        }
-    }
-
-    private void checkMediaCodecSupportTypes() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            MediaCodecList mediaCodecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
-            boolean bHEVCEncoder = false;
-            boolean bHEVCDecoder = false;
-            boolean bH264Encoder = false;
-            boolean bH264Decoder = false;
-            for (MediaCodecInfo mediaCodecInfo : mediaCodecList.getCodecInfos()) {
-                String mediaCodecName = mediaCodecInfo.getName().toLowerCase(Locale.ROOT);
-                String TYPE_MEDIA_HEVC = "hevc";
-                String TYPE_MEDIA_ENCODER = "encoder";
-                if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
-                        && mediaCodecName.contains(TYPE_MEDIA_ENCODER)) {
-                    bHEVCEncoder = true;
-                }
-                String TYPE_MEDIA_DECODER = "decoder";
-                if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
-                        && mediaCodecName.contains(TYPE_MEDIA_DECODER)) {
-                    bHEVCDecoder = true;
-                }
-                String TYPE_MEDIA_H264 = "h264";
-                if (mediaCodecName.contains(TYPE_MEDIA_H264)
-                        && mediaCodecName.contains(TYPE_MEDIA_ENCODER)) {
-                    bH264Encoder = true;
-                }
-                if (mediaCodecName.contains(TYPE_MEDIA_H264)
-                        && mediaCodecName.contains(TYPE_MEDIA_DECODER)) {
-                    bH264Decoder = true;
-                }
-            }
-
-            if (!(bHEVCEncoder && bHEVCDecoder)) {
-                Toast.makeText(this, R.string.no_hevc,
-                        Toast.LENGTH_LONG).show();
-            }
-
-            if (!(bH264Encoder && bH264Decoder)) {
-                Toast.makeText(this, R.string.no_h264,
-                        Toast.LENGTH_LONG).show();
-            }
         }
     }
 
