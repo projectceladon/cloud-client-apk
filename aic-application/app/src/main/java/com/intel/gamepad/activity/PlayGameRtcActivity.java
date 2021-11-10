@@ -226,6 +226,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     private void initP2PClient() {
+        getHandler().sendEmptyMessageDelayed(AppConst.MSG_NO_STREAM_ADDED, 1000 * 10);
         P2PHelper.init(this, new P2PClient.P2PClientObserver() {
             @Override
             public void onServerDisconnected() {
@@ -240,6 +241,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
             @Override
             public void onStreamAdded(RemoteStream remoteStream) {
                 LogEx.e("onStreamAdded called");
+                getHandler().removeMessages(AppConst.MSG_NO_STREAM_ADDED);
                 runOnUiThread(() -> {
                     if (!isFirst) fitScreenSize();
                 });
@@ -1121,6 +1123,10 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     break;
                 case AppConst.MSG_UPDATE_CONTROLLER:
                     actPlay.updateControllerStatus();
+                    break;
+                case AppConst.MSG_NO_STREAM_ADDED:
+                    LogEx.i(" Stream is not added. Sent Start again.");
+                    Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
                     break;
             }
         }
