@@ -16,7 +16,8 @@
         <org.webrtc.SurfaceViewRenderer
             android:id="@+id/fullRenderer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:filterTouchesWhenObscured="true" />
 
     </LinearLayout>
 

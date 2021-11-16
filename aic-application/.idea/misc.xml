@@ -9,6 +9,7 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="../../../layout/custom_preview.xml" value="0.17552083333333332" />
+        <entry key="app/src/main/res/layout/activity_game_detail.xml" value="0.24048913043478262" />
         <entry key="app/src/main/res/layout/activity_play_game_rtc.xml" value="0.17864583333333334" />
         <entry key="app/src/main/res/layout/game_pad_android.xml" value="0.14739583333333334" />
         <entry key="app/src/main/res/layout/game_pad_keyboard.xml" value="0.17864583333333334" />
