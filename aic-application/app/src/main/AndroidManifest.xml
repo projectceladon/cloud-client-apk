@@ -32,7 +32,8 @@
         tools:targetApi="m">
         <activity
             android:name=".activity.PlayGameRtcActivity"
-            android:screenOrientation="landscape" />
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:screenOrientation="fullSensor" />
         <activity
             android:name=".activity.GameDetailActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
