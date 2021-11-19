@@ -346,15 +346,16 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     break;
                                 case "sensor-start":
                                     LogEx.d("Received sensor start");
-                                    if (!jsonObject.isNull("sType")) {
-                                        int type = jsonObject.getInt("sType");
-                                        registerSensorEvents(type);
+                                    if (!jsonObject.isNull("type")) {
+                                        int type = jsonObject.getInt("type");
+                                        int samplingPeriod_ms = jsonObject.getInt("samplingPeriod_ms");
+                                        registerSensorEvents(type, samplingPeriod_ms);
                                     }
                                     break;
                                 case "sensor-stop":
                                     LogEx.d("Received sensor stop");
-                                    if (!jsonObject.isNull("sType")) {
-                                        int type = jsonObject.getInt("sType");
+                                    if (!jsonObject.isNull("type")) {
+                                        int type = jsonObject.getInt("type");
                                         deRegisterSensorEvents(type);
                                     }
                                     break;
@@ -678,11 +679,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
         return localCameraStream;
     }
 
-    private void registerSensorEvents(int sensorType) {
-        Log.d(TAG, "Register sensor events for sensor type: " + sensorType);
+    private void registerSensorEvents(int sensorType, int samplingPeriod_ms) {
+        if (samplingPeriod_ms <= 20)
+            samplingPeriod_ms = 20;
         mSensorManager.registerListener(this,
                 mSensorManager.getDefaultSensor(sensorType),
-                SensorManager.SENSOR_DELAY_NORMAL);
+                samplingPeriod_ms);
     }
 
     private void deRegisterSensorEvents(int sensorType) {
