@@ -7,6 +7,13 @@
     android:background="@android:color/black"
     tools:context=".activity.PlayGameRtcActivity">
 
+    <ProgressBar
+        android:id="@+id/loading"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center"
+        style="@style/Animation.Design.BottomSheetDialog"/>
+
     <LinearLayout
         android:id="@+id/layoutRenderBox"
         android:layout_width="match_parent"
@@ -17,7 +24,8 @@
             android:id="@+id/fullRenderer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:filterTouchesWhenObscured="true" />
+            android:filterTouchesWhenObscured="true"
+            android:visibility="invisible"/>
 
     </LinearLayout>
 
