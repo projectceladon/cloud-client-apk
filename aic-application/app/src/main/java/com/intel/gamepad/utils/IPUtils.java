@@ -1,7 +1,12 @@
 package com.intel.gamepad.utils;
 
-import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 import com.commonlibrary.utils.LogEx;
+import com.jeremy.fastsharedpreferences.FastSharedPreferences;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class IPUtils {
     public static final String DEFAULT_IP = "http://10.239.93.183:30000/";
@@ -48,4 +53,17 @@ public class IPUtils {
         LogEx.i(token);
         return token;
     }
+
+    public static List<String> getIp(String str) {
+        List<String> ipInfo = new ArrayList();
+        Pattern p = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)\\:(\\d+)");
+        Matcher m = p.matcher(str);
+        while (m.find()) {
+            ipInfo.add(m.group(1));
+            ipInfo.add(m.group(2));
+        }
+        return ipInfo;
+    }
+
+
 }
