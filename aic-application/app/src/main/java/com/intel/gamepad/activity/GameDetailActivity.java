@@ -16,6 +16,8 @@ import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.IPUtils;
 
+import java.util.List;
+
 public class GameDetailActivity extends BaseActvitiy {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
@@ -47,6 +49,13 @@ public class GameDetailActivity extends BaseActvitiy {
                 if (s != null) {
                     IPUtils.saveip(s.toString());
                     P2PHelper.serverIP = IPUtils.loadIP();
+                    if (s.toString().startsWith("http") && s.toString().contains(":")) {
+                        List<String> ipInfo = IPUtils.getIp(s.toString());
+                        if (ipInfo.size() > 0) {
+                            etCoturnIP.setText(ipInfo.get(0));
+                        }
+                    }
+
                 }
             }
 
@@ -122,6 +131,7 @@ public class GameDetailActivity extends BaseActvitiy {
             }
         });
     }
+
 
     @Override
     protected void onStart() {
