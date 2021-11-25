@@ -1,13 +1,19 @@
-From 13043f8b3a0de3eb454891905a66607e90f16ee3 Mon Sep 17 00:00:00 2001
+From 78d643c4c0a93ab995f9a73a66fbc0c308cc851c Mon Sep 17 00:00:00 2001
 From: "Deng, Bing" <bing.deng@intel.com>
 Date: Tue, 16 Nov 2021 16:24:51 +0800
-Subject: [PATCH] Add talk/owt/patches/0021-Fix-display-is-incomplete.patch
+Subject: [PATCH] Add and update
+ talk/owt/patches/0021-Fix-display-is-incomplete.patch
 
 Signed-off-by: Deng, Bing <bing.deng@intel.com>
+
+fix Abnormal display after Start Aic on client apk
+jira:ACP-1917
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
 ---
  scripts/prepare_dev.py                        |  3 +-
- .../0021-Fix-display-is-incomplete.patch      | 42 +++++++++++++++++++
- 2 files changed, 44 insertions(+), 1 deletion(-)
+ .../0021-Fix-display-is-incomplete.patch      | 66 +++++++++++++++++++
+ 2 files changed, 68 insertions(+), 1 deletion(-)
  create mode 100644 talk/owt/patches/0021-Fix-display-is-incomplete.patch
 
 diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
@@ -26,25 +32,29 @@ index 757d006..b8a0fc4 100644
  def _patch(ignoreFailures=False):
 diff --git a/talk/owt/patches/0021-Fix-display-is-incomplete.patch b/talk/owt/patches/0021-Fix-display-is-incomplete.patch
 new file mode 100644
-index 0000000..68865be
+index 0000000..84640ba
 --- /dev/null
 +++ b/talk/owt/patches/0021-Fix-display-is-incomplete.patch
-@@ -0,0 +1,42 @@
-+From 78896725c1191c79302da2470203a73faa6c3d64 Mon Sep 17 00:00:00 2001
+@@ -0,0 +1,66 @@
++From 44235f6a4ec19a0ad3a3c5649168b33e709d7638 Mon Sep 17 00:00:00 2001
 +From: "Deng, Bing" <bing.deng@intel.com>
 +Date: Tue, 16 Nov 2021 15:57:19 +0800
 +Subject: [PATCH] Fix display is incomplete.
 +
-+if frameAspectRatio is different with layoutAspectRatio,
++1. if frameAspectRatio is different with layoutAspectRatio,
 +adopt frameAspectRatio.
++2. Fix Abnormal display after Start Aic on client apk.
++
++Tracks-On: ACP-1817
 +
 +Signed-off-by: Deng, Bing <bing.deng@intel.com>
++Signed-off-by: shipeigx <peigangx.shi@intel.com>
 +---
-+ .../api/org/webrtc/SurfaceViewRenderer.java       | 15 ++++++++++++++-
-+ 1 file changed, 14 insertions(+), 1 deletion(-)
++ .../api/org/webrtc/SurfaceViewRenderer.java   | 21 +++++++++++++++----
++ 1 file changed, 17 insertions(+), 4 deletions(-)
 +
 +diff --git a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
-+index f62d27432d..cfb2ef7ee8 100644
++index f62d27432d..2b02b9e04a 100644
 +--- a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
 ++++ b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
 +@@ -198,7 +198,20 @@ public class SurfaceViewRenderer extends SurfaceView
@@ -67,6 +77,26 @@ index 0000000..68865be
 ++    }
 ++    eglRenderer.setLayoutAspectRatio(tmpRatio);
 +     updateSurfaceSize();
++   }
++ 
++@@ -272,9 +285,6 @@ public class SurfaceViewRenderer extends SurfaceView
++ 
++   @Override
++   public void onFrameResolutionChanged(int videoWidth, int videoHeight, int rotation) {
++-    if (rendererEvents != null) {
++-      rendererEvents.onFrameResolutionChanged(videoWidth, videoHeight, rotation);
++-    }
++     int rotatedWidth = rotation == 0 || rotation == 180 ? videoWidth : videoHeight;
++     int rotatedHeight = rotation == 0 || rotation == 180 ? videoHeight : videoWidth;
++     // run immediately if possible for ui thread tests
++@@ -283,6 +293,9 @@ public class SurfaceViewRenderer extends SurfaceView
++       rotatedFrameHeight = rotatedHeight;
++       updateSurfaceSize();
++       requestLayout();
+++      if (rendererEvents != null) {
+++        rendererEvents.onFrameResolutionChanged(videoWidth, videoHeight, rotation);
+++      }
++     });
 +   }
 + 
 +-- 

@@ -30,6 +30,7 @@ import android.view.InputDevice;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -118,6 +119,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private SurfaceViewRenderer fullRenderer = null;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
+    private ProgressBar loading;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -132,8 +134,23 @@ public class PlayGameRtcActivity extends AppCompatActivity
         initUIFeature();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_game_rtc);
+        loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
-        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), null);
+        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), new RendererCommon.RendererEvents() {
+            @Override
+            public void onFirstFrameRendered() {
+
+            }
+
+            @Override
+            public void onFrameResolutionChanged(int i, int i1, int i2) {
+                if (loading != null) {
+                    loading.setVisibility(View.GONE);
+                }
+                if (fullRenderer.getVisibility() != View.VISIBLE)
+                    fullRenderer.setVisibility(View.VISIBLE);
+            }
+        });
         fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
         fullRenderer.setEnableHardwareScaler(true);
         fullRenderer.setZOrderMediaOverlay(true);
@@ -1061,7 +1078,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         }
     }
 
-    public static class GameHandler extends Handler {
+    public class GameHandler extends Handler {
         private final WeakReference<PlayGameRtcActivity> activity;
 
         public GameHandler(PlayGameRtcActivity act) {
@@ -1093,6 +1110,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     } else {
                         LogEx.i(" Stream is not added. Sent 'Start' again.");
                         Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
+                        if (loading != null) {
+                            loading.setVisibility(View.GONE);
+                        }
                         this.sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
                     }
                     break;
