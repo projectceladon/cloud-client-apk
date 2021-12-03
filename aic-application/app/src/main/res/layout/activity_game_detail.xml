@@ -86,7 +86,7 @@
                             style="@style/text_16_black"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:autofillHints=""
+                            android:autofillHints="Config server IP"
                             android:background="@color/white"
                             android:hint="@string/config_server_ip"
                             android:inputType="text"
@@ -113,7 +113,7 @@
                             style="@style/text_16_black"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:autofillHints=""
+                            android:autofillHints="Config Coturn IP"
                             android:background="@color/white"
                             android:hint="@string/config_coturn_ip"
                             android:inputType="text"
@@ -140,9 +140,9 @@
                             style="@style/text_16_black"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:autofillHints=""
+                            android:autofillHints="Peer ID"
                             android:background="@color/white"
-                            android:hint="@string/config_server_ip"
+                            android:hint="@string/peer_id"
                             android:inputType="text"
                             android:text="@string/s0" />
                     </LinearLayout>
@@ -167,9 +167,9 @@
                             style="@style/text_16_black"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:autofillHints=""
+                            android:autofillHints="Client ID"
                             android:background="@color/white"
-                            android:hint="@string/config_server_ip"
+                            android:hint="@string/c0"
                             android:inputType="text"
                             android:text="@string/c0" />
                     </LinearLayout>

@@ -52,13 +52,13 @@
     <string name="no_h264">设备不支持h264</string>
     <string name="connect_failed">连接服务器失败: </string>
     <string name="title_activity_player">PlayerActivity</string>
-    <string name="back">回退</string>
+    <string name="back">Back</string>
     <string name="for_aic">For AIC</string>
-    <string name="serverip">服务器地址</string>
-    <string name="config_server_ip">配置服务器地址</string>
+    <string name="serverip">ServerIP</string>
+    <string name="config_server_ip">Config server IP</string>
     <string name="default_ip">10.239.93.59</string>
     <string name="coturn_ip">Coturn IP</string>
-    <string name="config_coturn_ip">配置Coturn IP</string>
+    <string name="config_coturn_ip">Config Coturn IP</string>
     <string name="peer_id">Peer ID</string>
     <string name="s0">s0</string>
     <string name="client_id">Client ID</string>
