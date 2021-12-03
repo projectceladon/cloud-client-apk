@@ -11,8 +11,7 @@
         </activity>
         <activity
             android:name="com.commonlibrary.activity.calendar.CalendarActivity"
-            android:label="选择日期">
-        </activity>
+            android:label="选择日期" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

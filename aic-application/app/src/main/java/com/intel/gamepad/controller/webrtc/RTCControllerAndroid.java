@@ -1,4 +1,3 @@
-
 package com.intel.gamepad.controller.webrtc;
 
 import android.os.Handler;
@@ -11,10 +10,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.commonlibrary.utils.LogEx;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
-import com.commonlibrary.utils.LogEx;
 
 /**
  * Android触屏专用
@@ -23,18 +22,65 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     public static final String NAME = "ANDROID";
     public static final String DESC = "Android Touch Screen ";
     public static final String TAG = "RTCCTLAndroid";
-    private ViewGroup vgRoot;
     public static final int invalidDeviceId = -100;
     public static final int deviceSlotIndexZero = 0;
     public static final int deviceSlotIndexOne = 1;
     public static int[] deviceSlot = {invalidDeviceId, invalidDeviceId};
+    private final int[] pointArray = new int[10];
+    private ViewGroup vgRoot;
     private int nPointCount = 0;
-    private final int[] pointArray =  new int[10];
     private int nCountInput;
+    private float rightAxisX = 0f;
+    private float rightAxisY = 0f;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
         initRightAxisMotion();
+    }
+
+    public static int getDeviceSlotIndex(int deviceId) {
+        if (deviceSlot[deviceSlotIndexZero] == deviceId) {
+            return deviceSlotIndexZero;
+        } else if (deviceSlot[deviceSlotIndexOne] == deviceId) {
+            return deviceSlotIndexOne;
+        } else if (deviceSlot[deviceSlotIndexZero] == invalidDeviceId) {
+            deviceSlot[deviceSlotIndexZero] = deviceId;
+            return deviceSlotIndexZero;
+        } else if (deviceSlot[deviceSlotIndexOne] == invalidDeviceId) {
+            deviceSlot[deviceSlotIndexOne] = deviceId;
+            return deviceSlotIndexOne;
+        }
+        return invalidDeviceId;
+    }
+
+    public static int updateDeviceSlot(int deviceId) {
+        if (deviceSlot[deviceSlotIndexZero] == deviceId) {
+            deviceSlot[deviceSlotIndexZero] = invalidDeviceId;
+            return deviceSlotIndexZero;
+        } else if (deviceSlot[deviceSlotIndexOne] == deviceId) {
+            deviceSlot[deviceSlotIndexOne] = invalidDeviceId;
+            return deviceSlotIndexOne;
+        }
+        return -1;
+    }
+
+    private static float getCenteredAxis(MotionEvent event, InputDevice device,
+                                         int axis, int historyPos) {
+        final InputDevice.MotionRange range = device.getMotionRange(axis, event.getSource());
+        if (range != null) {
+            final float flat = range.getFlat();
+            final float value = historyPos < 0 ? event.getAxisValue(axis)
+                    : event.getHistoricalAxisValue(axis, historyPos);
+
+            // Ignore axis values that are within the 'flat' region of the
+            // joystick axis center.
+            // A joystick at rest does not always report an absolute position of
+            // (0,0).
+            if (Math.abs(value) > flat) {
+                return value;
+            }
+        }
+        return 0;
     }
 
     public String getName() {
@@ -54,8 +100,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         this.vgRoot = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.game_pad_android, null, false);
         addControllerView(vgRoot);
         initBackButton(vgRoot.findViewById(R.id.btnBack));
-        initSwitchDeviceButton(vgRoot.findViewById(R.id.ibtnShowKeyBoard));
-        initSwitchDPadButton(vgRoot.findViewById(R.id.ibtnShowDPad));
 
         // 这个控件用于接收物理手柄的事件
         View viewTouch = vgRoot.findViewById(R.id.viewMouse);
@@ -81,8 +125,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         int pointId;
         float width = 32767, height = 32767;
         int action = evt.getActionMasked();
-        if(action == MotionEvent.ACTION_UP || action ==  MotionEvent.ACTION_CANCEL) {
-            if(action == MotionEvent.ACTION_UP) {
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            if (action == MotionEvent.ACTION_UP) {
                 nCountInput++;
                 Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
                 Trace.endSection();
@@ -94,8 +138,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             sendAndroidEventAsString(strCmd.toString());
             return true;
         } else {
-            nPointCount =  evt.getPointerCount();
-            if(nPointCount > 10) {
+            nPointCount = evt.getPointerCount();
+            if (nPointCount > 10) {
                 nPointCount = 10;
             }
             for (int i = 0; i < nPointCount; i++) {
@@ -126,7 +170,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         nRomoteY = Math.round((y * height) / v.getHeight());
         //pressure = (int)evt.getPressure(pointId);
         String strCmd;
-        if(action == MotionEvent.ACTION_POINTER_UP) {
+        if (action == MotionEvent.ACTION_POINTER_UP) {
             strCmd = "u " + pointId + "\n";
         } else {
             strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
@@ -135,9 +179,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         sendAndroidEventAsString(strCmd);
         return true;
     }
-
-    private float rightAxisX = 0f;
-    private float rightAxisY = 0f;
 
     /**
      * 当右摇杆移动时持续发送消息。由于右摇杆被拉着不放时只会发送一次事件，所以这里需要用一个线程循环处理。
@@ -296,32 +337,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         return false;
     }
 
-    public static int getDeviceSlotIndex(int deviceId) {
-        if (deviceSlot[deviceSlotIndexZero] == deviceId) {
-            return deviceSlotIndexZero;
-        } else if (deviceSlot[deviceSlotIndexOne] == deviceId) {
-            return deviceSlotIndexOne;
-        } else if (deviceSlot[deviceSlotIndexZero] == invalidDeviceId) {
-            deviceSlot[deviceSlotIndexZero] = deviceId;
-            return deviceSlotIndexZero;
-        } else if (deviceSlot[deviceSlotIndexOne] == invalidDeviceId) {
-            deviceSlot[deviceSlotIndexOne] = deviceId;
-            return deviceSlotIndexOne;
-        }
-        return invalidDeviceId;
-    }
-
-    public static int updateDeviceSlot(int deviceId) {
-        if (deviceSlot[deviceSlotIndexZero] == deviceId) {
-            deviceSlot[deviceSlotIndexZero] = invalidDeviceId;
-            return deviceSlotIndexZero;
-        } else if (deviceSlot[deviceSlotIndexOne] == deviceId) {
-            deviceSlot[deviceSlotIndexOne] = invalidDeviceId;
-            return deviceSlotIndexOne;
-        }
-        return -1;
-    }
-
     private void processJoystickInput(MotionEvent event, int historyPos, int indexDeviceSlot) {
         // Get joystick position.
         // Many game pads with two joysticks report the position of the
@@ -356,24 +371,5 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             typeY = BaseController.AXIS_RIGHT_Y;
         }
         sendJoyStickEvent(BaseController.EV_ABS, typeY, y, true, indexDeviceSlot);
-    }
-
-    private static float getCenteredAxis(MotionEvent event, InputDevice device,
-                                         int axis, int historyPos) {
-        final InputDevice.MotionRange range = device.getMotionRange(axis, event.getSource());
-        if (range != null) {
-            final float flat = range.getFlat();
-            final float value = historyPos < 0 ? event.getAxisValue(axis)
-                    : event.getHistoricalAxisValue(axis, historyPos);
-
-            // Ignore axis values that are within the 'flat' region of the
-            // joystick axis center.
-            // A joystick at rest does not always report an absolute position of
-            // (0,0).
-            if (Math.abs(value) > flat) {
-                return value;
-            }
-        }
-        return 0;
     }
 }

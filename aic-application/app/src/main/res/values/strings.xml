@@ -11,8 +11,8 @@
     <string name="login">Login</string>
     <string name="register">Register</string>
     <string name="choose_language">Choose Language</string>
-    <string name="battery_infor">Battery Information</string>
-    <string name="memory_infor">Memory Information</string>
+    <string name="battery_information">Battery Information</string>
+    <string name="memory_information">Memory Information</string>
     <string name="tab_home">Home</string>
     <string name="tab_game_list">Game</string>
     <string name="tab_mine">Mine</string>
@@ -31,10 +31,10 @@
     <string name="input_identifying_code">Input identify code</string>
     <string name="sms_verification">SMS Verification</string>
     <string name="input_password_again">Input password again</string>
-    <string name="bluetooth_infor">Bluetooth Pad Information</string>
-    <string name="search_game_name">Search Game...</string>
+    <string name="bluetooth_information">Bluetooth Pad Information</string>
+    <string name="search_game_name">Search Game…</string>
     <string name="no_game">No Game</string>
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
     <string name="current_battery">Battery</string>
     <string name="status">Status：</string>
     <string name="voltage">Voltage：</string>
@@ -53,4 +53,18 @@
     <string name="no_hevc">The device does not support hevc</string>
     <string name="no_h264">The device does not Support h264</string>
     <string name="connect_failed">Connect server failed: </string>
+    <string name="back">Back</string>
+    <string name="for_aic">For AIC</string>
+    <string name="serverip">ServerIP</string>
+    <string name="config_server_ip">Config server IP</string>
+    <string name="default_ip">10.239.93.59</string>
+    <string name="coturn_ip">Coturn IP</string>
+    <string name="config_coturn_ip">Config Coturn IP</string>
+    <string name="peer_id">Peer ID</string>
+    <string name="s0">s0</string>
+    <string name="client_id">Client ID</string>
+    <string name="c0">c0</string>
+    <string name="splash">Splash</string>
+    <string name="title">Title</string>
+    <string name="back_button">Back Button</string>
 </resources>

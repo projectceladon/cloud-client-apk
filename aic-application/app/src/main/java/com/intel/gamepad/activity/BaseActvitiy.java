@@ -12,10 +12,10 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.commonlibrary.utils.StatusBarUtil;
 import com.intel.gamepad.R;
 import com.intel.gamepad.utils.ActivityManager;
 import com.intel.gamepad.utils.LanguageUtils;
-import com.commonlibrary.utils.StatusBarUtil;
 
 import java.util.Locale;
 

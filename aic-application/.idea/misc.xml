@@ -9,11 +9,31 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="../../../layout/custom_preview.xml" value="0.17552083333333332" />
+        <entry key="app/src/main/res/layout-v26/game_pad_android.xml" value="0.12708333333333333" />
+        <entry key="app/src/main/res/layout-w720dp/activity_splash.xml" value="0.1675485008818342" />
         <entry key="app/src/main/res/layout/activity_game_detail.xml" value="0.24048913043478262" />
         <entry key="app/src/main/res/layout/activity_play_game_rtc.xml" value="0.17864583333333334" />
+        <entry key="app/src/main/res/layout/activity_splash.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/dlg_rating_score.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/dlg_room_list.xml" value="0.35572916666666665" />
+        <entry key="app/src/main/res/layout/fragment_memory.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/game_device_switch.xml" value="0.19791666666666666" />
         <entry key="app/src/main/res/layout/game_pad_android.xml" value="0.14739583333333334" />
+        <entry key="app/src/main/res/layout/game_pad_fps.xml" value="0.19791666666666666" />
         <entry key="app/src/main/res/layout/game_pad_keyboard.xml" value="0.17864583333333334" />
-        <entry key="app/src/main/res/layout/game_pad_mouse.xml" value="0.17864583333333334" />
+        <entry key="app/src/main/res/layout/game_pad_mouse.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/game_pad_psp.xml" value="0.25" />
+        <entry key="app/src/main/res/layout/game_pad_rac.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/game_pad_xbox.xml" value="0.33" />
+        <entry key="app/src/main/res/layout/include_device_info.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/include_game_cover_header.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/include_home_title_search.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/include_title.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/include_title_with_status_bar.xml" value="0.12708333333333333" />
+        <entry key="app/src/main/res/layout/include_title_with_statusbar.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/item_controller.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/item_game_image.xml" value="0.19791666666666666" />
+        <entry key="app/src/main/res/layout/item_room.xml" value="0.19791666666666666" />
       </map>
     </option>
   </component>

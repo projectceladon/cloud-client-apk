@@ -5,6 +5,7 @@ import android.content.res.Configuration;
 
 import androidx.annotation.NonNull;
 
+import com.commonlibrary.application.UtilsApplication;
 import com.intel.gamepad.utils.LanguageUtils;
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 import com.jeremyliao.liveeventbus.LiveEventBus;
@@ -14,7 +15,6 @@ import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.cookie.CookieJarImpl;
 import com.lzy.okgo.cookie.store.SPCookieStore;
 import com.lzy.okgo.interceptor.HttpLoggingInterceptor;
-import com.commonlibrary.application.UtilsApplication;
 
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;

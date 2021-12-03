@@ -897,6 +897,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
+    private void stopLoadingFlash() {
+        if (loading != null) {
+            loading.setVisibility(View.GONE);
+        }
+    }
+
     private void initJoyStickDevices() {
         final int[] devices = InputDevice.getDeviceIds();
         for (int deviceId : devices) {
@@ -1078,7 +1084,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         }
     }
 
-    public class GameHandler extends Handler {
+    public static class GameHandler extends Handler {
         private final WeakReference<PlayGameRtcActivity> activity;
 
         public GameHandler(PlayGameRtcActivity act) {
@@ -1110,9 +1116,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     } else {
                         LogEx.i(" Stream is not added. Sent 'Start' again.");
                         Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
-                        if (loading != null) {
-                            loading.setVisibility(View.GONE);
-                        }
+                        actPlay.stopLoadingFlash();
                         this.sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
                     }
                     break;
