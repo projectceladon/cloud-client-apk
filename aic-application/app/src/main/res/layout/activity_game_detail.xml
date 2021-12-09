@@ -60,12 +60,6 @@
                     android:showDividers="middle"
                     tools:ignore="UselessParent">
 
-                    <CheckBox
-                        android:id="@+id/chkAndroid"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/for_aic" />
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

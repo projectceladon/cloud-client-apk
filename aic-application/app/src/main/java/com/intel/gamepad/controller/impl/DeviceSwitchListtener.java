@@ -1,5 +1,7 @@
 package com.intel.gamepad.controller.impl;
 
+import android.widget.CheckBox;
+
 public interface DeviceSwitchListtener {
     void switchKeyBoard();
 
@@ -8,4 +10,6 @@ public interface DeviceSwitchListtener {
     void switchGamePad();
 
     void showDeviceMenu();
+
+    void switchAlpha(CheckBox btnDevice, boolean state);
 }

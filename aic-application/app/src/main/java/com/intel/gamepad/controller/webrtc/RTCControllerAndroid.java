@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 
 import com.commonlibrary.utils.LogEx;
 import com.intel.gamepad.R;
@@ -32,6 +33,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     private int nCountInput;
     private float rightAxisX = 0f;
     private float rightAxisY = 0f;
+    private CheckBox chkAlpha;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -100,6 +102,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         this.vgRoot = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.game_pad_android, null, false);
         addControllerView(vgRoot);
         initBackButton(vgRoot.findViewById(R.id.btnBack));
+        chkAlpha = vgRoot.findViewById(R.id.chkAlpha);
+        initSwitchAlpha(chkAlpha);
 
         // 这个控件用于接收物理手柄的事件
         View viewTouch = vgRoot.findViewById(R.id.viewMouse);
@@ -108,6 +112,17 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         viewTouch.setOnGenericMotionListener(this);
         viewTouch.setOnKeyListener(this);
         vgRoot.setOnTouchListener(this);
+    }
+
+    @Override
+    public void switchAlpha(boolean status) {
+        super.switchAlpha(status);
+        chkAlpha.setChecked(status);
+        if (status) {
+            chkAlpha.setText(R.string.alpha_enabled);
+        } else {
+            chkAlpha.setText(R.string.alpha_disabled);
+        }
     }
 
     /**

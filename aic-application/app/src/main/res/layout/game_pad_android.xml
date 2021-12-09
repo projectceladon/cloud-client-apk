@@ -7,6 +7,7 @@
     android:focusable="true"
     android:focusableInTouchMode="true"
     android:focusedByDefault="true"
+    android:theme="@style/AppTheme"
     tools:targetApi="o">
 
     <View
@@ -33,5 +34,14 @@
             android:text="@string/back"
             android:textColor="@color/white"
             android:textSize="@dimen/ft12" />
+
+        <CheckBox
+            android:id="@+id/chkAlpha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/side2x"
+            android:text="@string/for_alpha"
+            android:textColor="@color/colorPrimaryDark" />
+
     </LinearLayout>
 </RelativeLayout>

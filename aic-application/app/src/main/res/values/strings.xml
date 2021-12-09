@@ -54,7 +54,6 @@
     <string name="no_h264">The device does not Support h264</string>
     <string name="connect_failed">Connect server failed: </string>
     <string name="back">Back</string>
-    <string name="for_aic">For AIC</string>
     <string name="serverip">ServerIP</string>
     <string name="config_server_ip">Config server IP</string>
     <string name="default_ip">10.239.93.59</string>
@@ -67,4 +66,8 @@
     <string name="splash">Splash</string>
     <string name="title">Title</string>
     <string name="back_button">Back Button</string>
+    <string name="alpha_enabled">Alpha Enabled</string>
+    <string name="alpha_disabled">Alpha Disabled</string>
+    <string name="for_alpha">For Alpha</string>
+    <string name="alpha_configuring">Alpha Configuring</string>
 </resources>

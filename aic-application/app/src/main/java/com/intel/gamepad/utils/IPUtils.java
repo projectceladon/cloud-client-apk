@@ -13,6 +13,11 @@ public class IPUtils {
     public static final String DEFAULT_COTURN_IP = "10.239.93.183";
     public static final String DEFAULT_PEERID = "s0";
     public static final String DEFAULT_TOKENID = "c0";
+    public static final boolean DEFAULT_ALPHA_CHANNEL = true;
+
+    public static void savealphachannel(boolean alphaChannel) {
+        FastSharedPreferences.get("ip_file").edit().putBoolean("alphachannel", alphaChannel).commit();
+    }
 
     public static void saveip(String IP) {
         FastSharedPreferences.get("ip_file").edit().putString("ip", IP).commit();
@@ -54,9 +59,15 @@ public class IPUtils {
         return token;
     }
 
+    public static boolean loadAlphaChannel() {
+        boolean alphaChannel = FastSharedPreferences.get("ip_file").getBoolean("alphachannel", DEFAULT_ALPHA_CHANNEL);
+        LogEx.i(alphaChannel + "");
+        return alphaChannel;
+    }
+
     public static List<String> getIp(String str) {
-        List<String> ipInfo = new ArrayList();
-        Pattern p = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+)\\:(\\d+)");
+        ArrayList<String> ipInfo = new ArrayList<>();
+        Pattern p = Pattern.compile("(\\d+\\.\\d+\\.\\d+\\.\\d+):(\\d+)");
         Matcher m = p.matcher(str);
         while (m.find()) {
             ipInfo.add(m.group(1));

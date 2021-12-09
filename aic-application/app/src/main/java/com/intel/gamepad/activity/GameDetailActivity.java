@@ -3,7 +3,6 @@ package com.intel.gamepad.activity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.widget.CheckBox;
 import android.widget.EditText;
 
 import com.commonlibrary.utils.StatusBarUtil;
@@ -21,7 +20,6 @@ import java.util.List;
 public class GameDetailActivity extends BaseActvitiy {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
-    private CheckBox chkAndroid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +28,6 @@ public class GameDetailActivity extends BaseActvitiy {
         setContentView(R.layout.activity_game_detail);
         initView();
         loadData();
-        chkAndroid.setChecked(true);
         EditText etServerIP = findViewById(R.id.etServerIP);
         EditText etCoturnIP = findViewById(R.id.etCoturnIP);
         EditText etPeerID = findViewById(R.id.etPeerID);
@@ -132,6 +129,11 @@ public class GameDetailActivity extends BaseActvitiy {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
 
     @Override
     protected void onStart() {
@@ -145,7 +147,6 @@ public class GameDetailActivity extends BaseActvitiy {
 
     private void initView() {
         initBackButton(R.id.ibtnBack);
-        chkAndroid = findViewById(R.id.chkAndroid);
         MaterialButton btnPlay = findViewById(R.id.btnPlay);
         btnPlay.setOnClickListener(v -> {
             BaseController.manuallyPressBackButton.set(false);
@@ -162,9 +163,7 @@ public class GameDetailActivity extends BaseActvitiy {
 
     private void gotoGamePlay() {
         if (bean != null) {
-            if (chkAndroid.isChecked()) {
-                bean.setAddurl("android");
-            }
+            bean.setAddurl("android");
             PlayGameRtcActivity.actionStart(this, RTCControllerAndroid.NAME, bean.getIid(), bean.getConf());
         }
     }

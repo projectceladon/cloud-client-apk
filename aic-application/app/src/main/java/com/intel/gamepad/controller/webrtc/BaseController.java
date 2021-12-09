@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
@@ -24,6 +25,7 @@ import com.intel.gamepad.app.KeyConst;
 import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.owt.p2p.P2PHelper;
+import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.TimeDelayUtils;
 
 import org.json.JSONObject;
@@ -136,6 +138,8 @@ public abstract class BaseController implements OnTouchListener {
         if (btnBack == null) return;
         btnBack.setOnClickListener(view -> {
             onBackPress();
+            IPUtils.savealphachannel(false);
+            sendAlphaEvent(0);
             P2PHelper.closeP2PClient();
         });
     }
@@ -313,6 +317,44 @@ public abstract class BaseController implements OnTouchListener {
     protected void initSwitchDPadButton(View btnDevice) {
         if (btnDevice == null) return;
         btnDevice.setOnClickListener(v -> devSwitch.switchGamePad());
+    }
+
+    protected void initSwitchAlpha(CheckBox chkAlpha) {
+        if (chkAlpha == null) return;
+        chkAlpha.setVisibility(View.VISIBLE);
+        IPUtils.savealphachannel(false);
+        chkAlpha.setOnClickListener(v -> devSwitch.switchAlpha(chkAlpha, !IPUtils.loadAlphaChannel()));
+    }
+
+    public void switchAlpha(boolean status) {
+    }
+
+
+    /**
+     * 发送alpha开启事件
+     */
+    public void sendAlphaEvent(int strCommand) {
+        Map<String, Object> mapKey = new HashMap<>();
+        Map<String, Object> mapData = new HashMap<>();
+        Map<String, Object> mapParams = new HashMap<>();
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        mapData.put("event", "videoalpha");
+        mapData.put("parameters", mapParams);
+        mapParams.put("action", strCommand);
+        String jsonString = new JSONObject(mapKey).toString();
+        LogEx.e("sendAlphaEvent data:" + jsonString);
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                LogEx.e("sendAlphaEvent Success");
+            }
+
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e("sendAlphaEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
+            }
+        });
     }
 
     /**

@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -30,6 +32,7 @@ import android.view.InputDevice;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.CheckBox;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -53,11 +56,14 @@ import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.AicVideoCapturer;
 import com.intel.gamepad.utils.AudioHelper;
+import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.LocationUtils;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.webrtc.GlDrawerBg;
+import org.webrtc.GlUtil;
 import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceViewRenderer;
 
@@ -66,6 +72,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -120,6 +127,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
     private ProgressBar loading;
+    private boolean isStreamAdded = false;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -136,7 +144,10 @@ public class PlayGameRtcActivity extends AppCompatActivity
         setContentView(R.layout.activity_play_game_rtc);
         loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
-        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), new RendererCommon.RendererEvents() {
+
+        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.bg_alpha, null);
+        GlDrawerBg bg = DecorateBg(bitmap);
+        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, bg, new RendererCommon.RendererEvents() {
             @Override
             public void onFirstFrameRendered() {
 
@@ -176,6 +187,22 @@ public class PlayGameRtcActivity extends AppCompatActivity
         filter.addAction("com.intel.gamepad.sendfiletoaic");
         filter.addAction("com.intel.gamepad.sendfiletoapp");
         dynamicReceiver = new DynamicReceiver();
+    }
+
+
+    private GlDrawerBg DecorateBg(Bitmap bitmap) {
+        byte[] buffer = new byte[bitmap.getWidth() * bitmap.getHeight() * 3];
+        for (int y = 0; y < bitmap.getHeight(); y++)
+            for (int x = 0; x < bitmap.getWidth(); x++) {
+                int pixel = bitmap.getPixel(x, y);
+                buffer[(y * bitmap.getWidth() + x) * 3] = (byte) ((pixel >> 16) & 0xFF);
+                buffer[(y * bitmap.getWidth() + x) * 3 + 1] = (byte) ((pixel >> 8) & 0xFF);
+                buffer[(y * bitmap.getWidth() + x) * 3 + 2] = (byte) ((pixel) & 0xFF);
+            }
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bitmap.getWidth() * bitmap.getHeight() * 3);
+        byteBuffer.put(buffer).position(0);
+
+        return new GlDrawerBg(bitmap.getWidth(), bitmap.getHeight(), byteBuffer);
     }
 
     @Override
@@ -263,6 +290,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 remoteStream.addObserver(new owt.base.RemoteStream.StreamObserver() {
                     @Override
                     public void onEnded() {
+                        isStreamAdded = false;
                         if (BaseController.manuallyPressBackButton.get()) {
                             LogEx.i(" remoteStream onEnded(). Manually press back button. Do not reconnect.");
                         } else {
@@ -285,6 +313,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         remoteStream.attach(fullRenderer);
                     }
                 });
+                controller.sendAlphaEvent(IPUtils.loadAlphaChannel() ? 1 : 0);
+                isStreamAdded = true;
             }
 
             @Override
@@ -375,6 +405,19 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                         int type = jsonObject.getInt("type");
                                         deRegisterSensorEvents(type);
                                     }
+                                    break;
+                                case "video-alpha-success":
+                                    LogEx.d("video-alpha-success");
+                                    runOnUiThread(() -> {
+                                        controller.switchAlpha(IPUtils.loadAlphaChannel());
+                                        GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
+                                        fullRenderer.requestLayout();
+                                    });
+                                    break;
+                                case "video-alpha-failed":
+                                    LogEx.d("video-alpha-failed");
+                                    IPUtils.savealphachannel(!IPUtils.loadAlphaChannel());
+                                    runOnUiThread(() -> controller.switchAlpha(IPUtils.loadAlphaChannel()));
                                     break;
                             }
                         }
@@ -969,6 +1012,18 @@ public class PlayGameRtcActivity extends AppCompatActivity
     @Override
     public void showDeviceMenu() {
 
+    }
+
+    @Override
+    public void switchAlpha(CheckBox chkAlpha, boolean state) {
+        if (isStreamAdded) {
+            chkAlpha.setText(R.string.alpha_configuring);
+            IPUtils.savealphachannel(state);
+            controller.sendAlphaEvent(IPUtils.loadAlphaChannel() ? 1 : 0);
+        } else {
+            chkAlpha.setChecked(IPUtils.loadAlphaChannel());
+            Toast.makeText(PlayGameRtcActivity.this, "Stream is not added. Do not send video alpha command.", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

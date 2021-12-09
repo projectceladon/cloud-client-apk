@@ -1,0 +1,269 @@
+From 69055281710eced2e1e8cf20ab0ac50f1c3f2b2c Mon Sep 17 00:00:00 2001
+From: shipeigx <peigangx.shi@intel.com>
+Date: Thu, 9 Dec 2021 14:50:39 +0800
+Subject: [PATCH] Add
+ talk/owt/patches/0022-Implemented-the-new-transparent-composition-feature.patch.
+
+Tracks-On: ACP-1805
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ scripts/prepare_dev.py                        |   3 +-
+ ...-new-transparent-composition-feature.patch | 232 ++++++++++++++++++
+ 2 files changed, 234 insertions(+), 1 deletion(-)
+ create mode 100644 talk/owt/patches/0022-Implemented-the-new-transparent-composition-feature.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index b8a0fc4..a0d3c8d 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -48,7 +48,8 @@ patchList = [
+     ('0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch', WEBRTC_PATH),
+     ('0019-Support-h264-and-hevc-of-MTK-device-for-application.patch', WEBRTC_PATH),
+     ('0020-Add-atrace-points-for-camera-in-apk.patch', WEBRTC_PATH),
+-    ('0021-Fix-display-is-incomplete.patch', WEBRTC_PATH)
++    ('0021-Fix-display-is-incomplete.patch', WEBRTC_PATH),
++    ('0022-Implemented-the-new-transparent-composition-feature.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0022-Implemented-the-new-transparent-composition-feature.patch b/talk/owt/patches/0022-Implemented-the-new-transparent-composition-feature.patch
+new file mode 100644
+index 0000000..d6cd629
+--- /dev/null
++++ b/talk/owt/patches/0022-Implemented-the-new-transparent-composition-feature.patch
+@@ -0,0 +1,232 @@
++From bd1a01f257c0ca83aa3764a6a56393f7270cfcfc Mon Sep 17 00:00:00 2001
++From: shipeigx <peigangx.shi@intel.com>
++Date: Mon, 13 Dec 2021 13:04:35 +0800
++Subject: [PATCH] Implemented the new transparent composition feature.
++
++Tracks-On: ACP-1805
++Signed-off-by: shipeigx <peigangx.shi@intel.com>
++---
++ sdk/android/BUILD.gn                          |  1 +
++ sdk/android/api/org/webrtc/GlUtil.java        | 10 +++++
++ .../api/org/webrtc/SurfaceViewRenderer.java   |  7 ++++
++ .../src/java/org/webrtc/GlDrawerBg.java       | 39 +++++++++++++++++++
++ .../src/java/org/webrtc/GlGenericDrawer.java  | 39 ++++++++++++++++++-
++ 5 files changed, 94 insertions(+), 2 deletions(-)
++ create mode 100644 sdk/android/src/java/org/webrtc/GlDrawerBg.java
++
++diff --git a/sdk/android/BUILD.gn b/sdk/android/BUILD.gn
++index 2ef60d350a..c1660e488e 100644
++--- a/sdk/android/BUILD.gn
+++++ b/sdk/android/BUILD.gn
++@@ -243,6 +243,7 @@ if (is_android) {
++       "src/java/org/webrtc/VideoDecoderWrapper.java",
++       "src/java/org/webrtc/VideoEncoderWrapper.java",
++       "src/java/org/webrtc/WrappedNativeI420Buffer.java",
+++      "src/java/org/webrtc/GlDrawerBg.java",
++     ]
++ 
++     deps = [
++diff --git a/sdk/android/api/org/webrtc/GlUtil.java b/sdk/android/api/org/webrtc/GlUtil.java
++index bdafe81fd8..afe59db903 100644
++--- a/sdk/android/api/org/webrtc/GlUtil.java
+++++ b/sdk/android/api/org/webrtc/GlUtil.java
++@@ -22,6 +22,16 @@ import java.nio.FloatBuffer;
++ public class GlUtil {
++   private GlUtil() {}
++ 
+++  private static boolean ALPHA_CHANNEL_SWITCH = false;
+++
+++  public static boolean getAlphaChannel() {
+++    return ALPHA_CHANNEL_SWITCH;
+++  }
+++
+++  public static void setAlphaChannel(boolean alphaChannelSwitch) {
+++    ALPHA_CHANNEL_SWITCH = alphaChannelSwitch;
+++  }
+++
++   public static class GlOutOfMemoryException extends RuntimeException {
++     public GlOutOfMemoryException(String msg) {
++       super(msg);
++diff --git a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
++index 2b02b9e04a..b41d2e3f03 100644
++--- a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
+++++ b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
++@@ -17,6 +17,7 @@ import android.os.Looper;
++ import android.util.AttributeSet;
++ import android.view.SurfaceHolder;
++ import android.view.SurfaceView;
+++import org.webrtc.GlDrawerBg;
++ 
++ /**
++  * Display the video stream on a SurfaceView.
++@@ -71,6 +72,12 @@ public class SurfaceViewRenderer extends SurfaceView
++     init(sharedContext, rendererEvents, EglBase.CONFIG_PLAIN, new GlRectDrawer());
++   }
++ 
+++  public void init(EglBase.Context sharedContext, boolean alphaChannel,GlDrawerBg background,RendererCommon.RendererEvents rendererEvents) {
+++    GlUtil.setAlphaChannel(alphaChannel);
+++    GlRectDrawer glRectDrawer = new GlRectDrawer();
+++    init(sharedContext, rendererEvents, alphaChannel ? EglBase.CONFIG_RGBA : EglBase.CONFIG_PLAIN, new GlRectDrawer().setBackground(background));
+++  }
+++
++   /**
++    * Initialize this class, sharing resources with |sharedContext|. The custom |drawer| will be used
++    * for drawing frames on the EGLSurface. This class is responsible for calling release() on
++diff --git a/sdk/android/src/java/org/webrtc/GlDrawerBg.java b/sdk/android/src/java/org/webrtc/GlDrawerBg.java
++new file mode 100644
++index 0000000000..33c1eb3fb1
++--- /dev/null
+++++ b/sdk/android/src/java/org/webrtc/GlDrawerBg.java
++@@ -0,0 +1,39 @@
+++package org.webrtc;
+++
+++import java.nio.ByteBuffer;
+++
+++public class GlDrawerBg{
+++    private int width;
+++    private int height;
+++    private ByteBuffer background;
+++
+++    public GlDrawerBg(int width, int height, ByteBuffer background) {
+++        this.width = width;
+++        this.height = height;
+++        this.background = background;
+++    }
+++
+++    public int getWidth() {
+++        return width;
+++    }
+++
+++    public void setWidth(int width) {
+++        this.width = width;
+++    }
+++
+++    public int getHeight() {
+++        return height;
+++    }
+++
+++    public void setHeight(int height) {
+++        this.height = height;
+++    }
+++
+++    public ByteBuffer getBackground() {
+++        return background;
+++    }
+++
+++    public void setBackground(ByteBuffer background) {
+++        this.background = background;
+++    }
+++}
++\ No newline at end of file
++diff --git a/sdk/android/src/java/org/webrtc/GlGenericDrawer.java b/sdk/android/src/java/org/webrtc/GlGenericDrawer.java
++index 92b4245499..87c2ebfd0b 100644
++--- a/sdk/android/src/java/org/webrtc/GlGenericDrawer.java
+++++ b/sdk/android/src/java/org/webrtc/GlGenericDrawer.java
++@@ -17,6 +17,7 @@ import java.nio.FloatBuffer;
++ import org.webrtc.GlShader;
++ import org.webrtc.GlUtil;
++ import org.webrtc.RendererCommon;
+++import org.webrtc.GlDrawerBg;
++ 
++ /**
++  * Helper class to implement an instance of RendererCommon.GlDrawer that can accept multiple input
++@@ -69,6 +70,11 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++       + "  gl_Position = in_pos;\n"
++       + "  tc = (tex_mat * in_tc).xy;\n"
++       + "}\n";
+++  private static final String DEFAULT_FRAGMENT_SHADER_STRING_FOR_ALPHA = "texture2D(tex,tc);\n"
+++      + "vec4 baseColor = texture2D( basemap, tc);\n"
+++      + "vec4 videoColor = texture2D(tex, vec2(tc.x*0.5, tc.y));\n"
+++      + "vec4 videoColorAlpha = texture2D( tex, vec2(tc.x*0.5+0.5, tc.y));\n "
+++      + "gl_FragColor = mix( baseColor, videoColor, videoColorAlpha);\n";
++ 
++   // Vertex coordinates in Normalized Device Coordinates, i.e. (-1, -1) is bottom-left and (1, 1)
++   // is top-right.
++@@ -113,11 +119,20 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++       stringBuilder.append("}\n");
++       stringBuilder.append(genericFragmentSource);
++     } else {
+++      stringBuilder.append("uniform sampler2D basemap;\n");
++       final String samplerName = shaderType == ShaderType.OES ? "samplerExternalOES" : "sampler2D";
++       stringBuilder.append("uniform ").append(samplerName).append(" tex;\n");
++ 
++       // Update the sampling function in-place.
++-      stringBuilder.append(genericFragmentSource.replace("sample(", "texture2D(tex, "));
+++      if (GlUtil.getAlphaChannel()) {
+++        stringBuilder.append(
+++                genericFragmentSource.replace("sample(tc);", DEFAULT_FRAGMENT_SHADER_STRING_FOR_ALPHA)
+++        );
+++
+++      } else {
+++        stringBuilder.append(genericFragmentSource.replace("sample(", "texture2D(tex, "));
+++      }
+++
++     }
++ 
++     return stringBuilder.toString();
++@@ -131,6 +146,7 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++   private int inPosLocation;
++   private int inTcLocation;
++   private int texMatrixLocation;
+++  private GlDrawerBg background;
++ 
++   public GlGenericDrawer(String genericFragmentSource, ShaderCallbacks shaderCallbacks) {
++     this(DEFAULT_VERTEX_SHADER_STRING, genericFragmentSource, shaderCallbacks);
++@@ -143,6 +159,11 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++     this.shaderCallbacks = shaderCallbacks;
++   }
++ 
+++  public GlGenericDrawer setBackground(GlDrawerBg background) {
+++    this.background = background;
+++    return this;
+++  }
+++
++   // Visible for testing.
++   GlShader createShader(ShaderType shaderType) {
++     return new GlShader(
++@@ -158,6 +179,15 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++       int viewportX, int viewportY, int viewportWidth, int viewportHeight) {
++     prepareShader(
++         ShaderType.OES, texMatrix, frameWidth, frameHeight, viewportWidth, viewportHeight);
+++    // Bind base map texture.
+++    if (GlUtil.getAlphaChannel() && background != null) {
+++      GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB, background.getWidth(), background.getHeight(), 0,
+++              GLES20.GL_RGB, GLES20.GL_UNSIGNED_BYTE, background.getBackground());
+++      GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+++      GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+++      GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+++      GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+++    }
++     // Bind the texture.
++     GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
++     GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, oesTextureId);
++@@ -211,13 +241,15 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++     }
++   }
++ 
+++  private boolean currentChannelStatus = false;
++   private void prepareShader(ShaderType shaderType, float[] texMatrix, int frameWidth,
++       int frameHeight, int viewportWidth, int viewportHeight) {
++     final GlShader shader;
++-    if (shaderType.equals(currentShaderType)) {
+++    if (shaderType.equals(currentShaderType) && GlUtil.getAlphaChannel() == currentChannelStatus) {
++       // Same shader type as before, reuse exising shader.
++       shader = currentShader;
++     } else {
+++      currentChannelStatus = GlUtil.getAlphaChannel();
++       // Allocate new shader.
++       currentShaderType = shaderType;
++       if (currentShader != null) {
++@@ -234,6 +266,9 @@ class GlGenericDrawer implements RendererCommon.GlDrawer {
++         GLES20.glUniform1i(shader.getUniformLocation("v_tex"), 2);
++       } else {
++         GLES20.glUniform1i(shader.getUniformLocation("tex"), 0);
+++        if(GlUtil.getAlphaChannel()){
+++          GLES20.glUniform1i(shader.getUniformLocation("basemap"), 1);
+++        }
++       }
++ 
++       GlUtil.checkNoGLES2Error("Create shader");
++-- 
++2.25.1
++
+-- 
+2.25.1
+
