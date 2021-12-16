@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
 import owt.base.ActionCallback;
 import owt.base.OwtError;
 
@@ -353,6 +354,33 @@ public abstract class BaseController implements OnTouchListener {
             @Override
             public void onFailure(OwtError owtError) {
                 LogEx.e("sendAlphaEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
+            }
+        });
+    }
+
+    /**
+     * Send LifeCycleSync Event
+     */
+    public void sendLifeCycleSyncEvent(String strCommand) {
+        Map<String, Object> mapKey = new HashMap<>();
+        Map<String, Object> mapData = new HashMap<>();
+        Map<String, Object> mapParams = new HashMap<>();
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        mapData.put("event", "cmdchannel");
+        mapData.put("parameters", mapParams);
+        mapParams.put("cmd", strCommand);
+        String jsonString = new JSONObject(mapKey).toString();
+        LogEx.e("sendLifeCycleSyncEvent data: " + jsonString);
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                LogEx.e("sendLifeCycleSyncEvent Success");
+            }
+
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e("sendLifeCycleSyncEvent Failed: " + owtError.errorMessage + " " + owtError.errorCode);
             }
         });
     }
@@ -1222,4 +1250,5 @@ public abstract class BaseController implements OnTouchListener {
             }
         });
     }
+
 }

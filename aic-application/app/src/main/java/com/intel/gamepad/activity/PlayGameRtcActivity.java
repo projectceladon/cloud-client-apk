@@ -128,6 +128,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private FileOutputStream fileOutputStream = null;
     private ProgressBar loading;
     private boolean isStreamAdded = false;
+    private boolean isOnPause = false;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -854,6 +855,27 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         public void onDestroy() {
                             LogEx.e(" webrtc onDestroy called");
                         }
+
+                        @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+                        public void onPause() {
+                            LogEx.e(" webrtc onPause called");
+                            if(controller!=null && !isOnPause){
+                                isOnPause = true;
+                                controller.sendLifeCycleSyncEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
+                            }
+                        }
+
+                        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+                        public void onResume() {
+                            LogEx.e(" webrtc onResume called");
+                            if(controller!=null){
+                                if(isOnPause){
+                                    isOnPause = false;
+                                    controller.sendLifeCycleSyncEvent("input keyevent KEYCODE_BACK && pm clear com.intel.aic.lifecyclesync");
+                                }
+                            }
+                        }
+
                     }));
                 }
 
