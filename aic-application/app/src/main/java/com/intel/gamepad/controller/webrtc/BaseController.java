@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 import owt.base.ActionCallback;
 import owt.base.OwtError;
 
@@ -127,7 +126,9 @@ public abstract class BaseController implements OnTouchListener {
         return this.context;
     }
 
-    protected void onBackPress() {
+    public void onBackPress() {
+        IPUtils.savealphachannel(false);
+        sendAlphaEvent(0);
         BaseController.manuallyPressBackButton.set(true);
         Message.obtain(refHandler.get(), AppConst.MSG_QUIT, AppConst.EXIT_NORMAL).sendToTarget();
     }
@@ -139,8 +140,6 @@ public abstract class BaseController implements OnTouchListener {
         if (btnBack == null) return;
         btnBack.setOnClickListener(view -> {
             onBackPress();
-            IPUtils.savealphachannel(false);
-            sendAlphaEvent(0);
             P2PHelper.closeP2PClient();
         });
     }

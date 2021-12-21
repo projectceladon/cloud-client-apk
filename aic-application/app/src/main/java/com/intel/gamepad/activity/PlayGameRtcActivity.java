@@ -29,6 +29,7 @@ import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.InputDevice;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -234,6 +235,19 @@ public class PlayGameRtcActivity extends AppCompatActivity
         disableLocation();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_BACK:
+                if (controller != null) {
+                    controller.onBackPress();
+                }
+                P2PHelper.closeP2PClient();
+                break;
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void initUIFeature() {
