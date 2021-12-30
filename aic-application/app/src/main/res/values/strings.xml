@@ -53,6 +53,7 @@
     <string name="no_hevc">The device does not support hevc</string>
     <string name="no_h264">The device does not Support h264</string>
     <string name="connect_failed">Connect server failed: </string>
+    <string name="menu">Menu</string>
     <string name="back">Back</string>
     <string name="serverip">ServerIP</string>
     <string name="config_server_ip">Config server IP</string>
@@ -70,4 +71,6 @@
     <string name="alpha_disabled">Alpha Disabled</string>
     <string name="for_alpha">For Alpha</string>
     <string name="alpha_configuring">Alpha Configuring</string>
+    <string name="for_test">for test</string>
+    <string name="move">move</string>
 </resources>

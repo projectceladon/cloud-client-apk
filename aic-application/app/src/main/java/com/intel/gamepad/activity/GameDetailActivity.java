@@ -3,6 +3,7 @@ package com.intel.gamepad.activity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.widget.CheckBox;
 import android.widget.EditText;
 
 import com.commonlibrary.utils.StatusBarUtil;
@@ -32,6 +33,7 @@ public class GameDetailActivity extends BaseActvitiy {
         EditText etCoturnIP = findViewById(R.id.etCoturnIP);
         EditText etPeerID = findViewById(R.id.etPeerID);
         EditText etClientID = findViewById(R.id.etClientID);
+        CheckBox chkTest = findViewById(R.id.chkTest);
 
         etServerIP.setText(IPUtils.loadIP());
         P2PHelper.serverIP = IPUtils.loadIP();
@@ -127,6 +129,10 @@ public class GameDetailActivity extends BaseActvitiy {
 
             }
         });
+
+        chkTest.setChecked(IPUtils.loadTest());
+        chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
+
     }
 
     @Override

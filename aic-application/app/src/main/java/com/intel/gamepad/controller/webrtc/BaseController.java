@@ -144,6 +144,24 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
+    /**
+     * 初始化菜单
+     */
+    protected void initMenuButton(View btnBack) {
+        if (btnBack == null) return;
+        if (IPUtils.loadTest()) {
+            btnBack.setVisibility(View.VISIBLE);
+            btnBack.setOnClickListener(view -> BaseController.this.showPopupWindow(btnBack));
+        } else {
+            btnBack.setVisibility(View.GONE);
+        }
+
+    }
+
+    public void showPopupWindow(View parent) {
+
+    }
+
     public void sendFile(String fileName) {
         new Thread(() -> {
             send_block_success_ = false;
@@ -358,9 +376,9 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     /**
-     * Send LifeCycleSync Event
+     * Send ADB Cmd Event
      */
-    public void sendLifeCycleSyncEvent(String strCommand) {
+    public void sendAdbCmdEvent(String strCommand) {
         Map<String, Object> mapKey = new HashMap<>();
         Map<String, Object> mapData = new HashMap<>();
         Map<String, Object> mapParams = new HashMap<>();
