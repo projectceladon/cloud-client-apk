@@ -14,6 +14,7 @@ import owt.base.Stream;
 import owt.base.VideoCapturer;
 
 public final class AicVideoCapturer extends Camera1Capturer implements VideoCapturer {
+    public static String cameraId;
     private int width, height, fps;
 
     private AicVideoCapturer(String deviceName, boolean captureToTexture) {
@@ -55,17 +56,28 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
     }
 
     private static String getDeviceName(boolean captureToTexture) {
-        CameraEnumerator enumerator = new Camera1Enumerator(captureToTexture);
-
         String deviceName = null;
+        int numOfCamerasAvailable = 0;
+        int camId = Integer.parseInt(cameraId);
+
+        CameraEnumerator enumerator = new Camera1Enumerator(captureToTexture);
         for (String device : enumerator.getDeviceNames()) {
-            if (enumerator.isFrontFacing(device)) {
-                deviceName = device;
-                break;
-            }
+            numOfCamerasAvailable++;
+        }
+        LogEx.d("Number of cameras available in the client = " + numOfCamerasAvailable);
+
+        if (numOfCamerasAvailable >= 2) {
+            // Switch between cameras based on user request by using corresponding camera Id.
+            deviceName = enumerator.getDeviceNames()[camId];
+        } else if (numOfCamerasAvailable == 1){
+            LogEx.d("Only One camera HW is available in the client device");
+            deviceName = enumerator.getDeviceNames()[0];
+        } else {
+            LogEx.e("[error] No camera HW is available in the client device");
         }
 
-        return deviceName == null ? enumerator.getDeviceNames()[0] : deviceName;
+        LogEx.d("deviceName = " + deviceName);
+        return deviceName;
     }
 
     @Override

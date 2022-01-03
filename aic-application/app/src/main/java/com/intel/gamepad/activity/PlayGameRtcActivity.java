@@ -130,6 +130,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private ProgressBar loading;
     private boolean isStreamAdded = false;
     private boolean isOnPause = false;
+    private static String cameraRes;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -392,6 +393,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     break;
                                 case "start-camera-preview": {
                                     LogEx.d("Received start-camera-preview");
+                                    AicVideoCapturer.cameraId = jsonObject.getString("cameraId");
+                                    cameraRes = jsonObject.getString("cameraRes");
+                                    LogEx.d("cameraId = " + AicVideoCapturer.cameraId + ", cameraRes = " + cameraRes);
                                     Thread thread = new Thread(() -> publishLocalVideo());
                                     thread.start();
                                     break;
@@ -732,7 +736,19 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private void publishLocalVideo() {
         LogEx.d("publishing localVideoStream.");
         videoPublication = null;
-        videoCapturer = AicVideoCapturer.create(640, 480);
+
+        // Set resolution based on the user request.
+        if (cameraRes.equals("1")) {
+            LogEx.d("Requested for 480p");
+            videoCapturer = AicVideoCapturer.create(640, 480);
+        } else if (cameraRes.equals("2")) {
+            LogEx.d("Requested for 720p");
+            videoCapturer = AicVideoCapturer.create(1280, 720);
+        } else if (cameraRes.equals("4")) {
+            LogEx.d("Requested for 1080p");
+            videoCapturer = AicVideoCapturer.create(1920, 1080);
+        }
+
         localVideoStream = createLocalStream(videoCapturer);
         P2PHelper.getClient().publish(P2PHelper.peerId,
                 localVideoStream,
