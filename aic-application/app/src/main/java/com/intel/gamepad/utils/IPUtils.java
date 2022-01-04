@@ -14,6 +14,11 @@ public class IPUtils {
     public static final String DEFAULT_PEERID = "s0";
     public static final String DEFAULT_TOKENID = "c0";
     public static final boolean DEFAULT_ALPHA_CHANNEL = true;
+    public static final boolean DEFAULT_FOR_TEST = false;
+
+    public static void savetest(boolean test) {
+        FastSharedPreferences.get("ip_file").edit().putBoolean("fortest", test).commit();
+    }
 
     public static void savealphachannel(boolean alphaChannel) {
         FastSharedPreferences.get("ip_file").edit().putBoolean("alphachannel", alphaChannel).commit();
@@ -63,6 +68,10 @@ public class IPUtils {
         boolean alphaChannel = FastSharedPreferences.get("ip_file").getBoolean("alphachannel", DEFAULT_ALPHA_CHANNEL);
         LogEx.i(alphaChannel + "");
         return alphaChannel;
+    }
+
+    public static boolean loadTest() {
+        return FastSharedPreferences.get("ip_file").getBoolean("fortest", DEFAULT_FOR_TEST);
     }
 
     public static List<String> getIp(String str) {

@@ -225,7 +225,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
             unregisterReceiver(dynamicReceiver);
         }
         if (remoteStream != null) {
-            remoteStream.detach(fullRenderer);
+            try {
+                remoteStream.detach(fullRenderer);
+            } catch (Exception e) {
+                LogEx.e("remoteStream connect wrong");
+                e.printStackTrace();
+            }
         }
     }
 
@@ -239,13 +244,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        switch (keyCode) {
-            case KeyEvent.KEYCODE_BACK:
-                if (controller != null) {
-                    controller.onBackPress();
-                }
-                P2PHelper.closeP2PClient();
-                break;
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (controller != null) {
+                controller.onBackPress();
+            }
+            P2PHelper.closeP2PClient();
         }
         return super.onKeyDown(keyCode, event);
     }
@@ -875,7 +878,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             LogEx.e(" webrtc onPause called");
                             if(controller!=null && !isOnPause){
                                 isOnPause = true;
-                                controller.sendLifeCycleSyncEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
+                                controller.sendAdbCmdEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
                             }
                         }
 
@@ -885,7 +888,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                             if(controller!=null){
                                 if(isOnPause){
                                     isOnPause = false;
-                                    controller.sendLifeCycleSyncEvent("input keyevent KEYCODE_BACK && pm clear com.intel.aic.lifecyclesync");
+                                    controller.sendAdbCmdEvent("input keyevent KEYCODE_BACK && pm clear com.intel.aic.lifecyclesync");
                                 }
                             }
                         }

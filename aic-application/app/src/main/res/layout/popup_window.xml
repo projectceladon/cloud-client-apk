@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+
+    <TextView
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:background="@drawable/button_popup_selector_bg"
+        android:gravity="center"
+        android:text="@string/move"
+        android:textColor="@color/white"
+        android:textSize="@dimen/ft18" />
+
+    <RelativeLayout
+        android:id="@+id/back"
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="1dp"
+        android:background="@drawable/button_popup_selector_bg">
+
+        <View
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/bg_delta" />
+    </RelativeLayout>
+
+
+    <ImageButton
+        android:id="@+id/home"
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="1dp"
+        android:background="@drawable/button_popup_selector_bg"
+        android:contentDescription="@string/splash"
+        android:padding="5dp"
+        android:src="@drawable/bg_circle" />
+
+
+    <ImageButton
+        android:id="@+id/app_switch"
+        android:layout_width="60dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="1dp"
+        android:background="@drawable/button_popup_selector_bg"
+        android:contentDescription="@string/splash"
+        android:padding="5dp"
+        android:src="@drawable/bg_square" />
+
+    <ImageButton
+        android:id="@+id/close"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="1dp"
+        android:background="@drawable/button_popup_selector_bg"
+        android:contentDescription="@string/splash"
+        android:padding="5dp"
+        android:src="@drawable/ic_close_white_18dp" />
+
+
+</LinearLayout>

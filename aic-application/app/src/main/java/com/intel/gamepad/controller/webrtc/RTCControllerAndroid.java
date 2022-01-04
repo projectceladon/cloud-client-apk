@@ -1,5 +1,9 @@
 package com.intel.gamepad.controller.webrtc;
 
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.Point;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Handler;
 import android.os.Trace;
 import android.util.Log;
@@ -9,12 +13,18 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 
+import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.LogEx;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
+
+import java.util.Locale;
 
 /**
  * Android触屏专用
@@ -34,6 +44,13 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     private float rightAxisX = 0f;
     private float rightAxisY = 0f;
     private CheckBox chkAlpha;
+    private static final int FULL_SCREEN_FLAG =
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN;
+    private PopupWindow mPop;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -102,6 +119,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         this.vgRoot = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.game_pad_android, null, false);
         addControllerView(vgRoot);
         initBackButton(vgRoot.findViewById(R.id.btnBack));
+        initMenuButton(vgRoot.findViewById(R.id.btnMenu));
         chkAlpha = vgRoot.findViewById(R.id.chkAlpha);
         initSwitchAlpha(chkAlpha);
 
@@ -192,6 +210,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         }
 
         sendAndroidEventAsString(strCmd);
+        v.performClick();
         return true;
     }
 
@@ -256,7 +275,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             axisHatX = BaseController.filterMinValue(axisHatX);
             axisHatY = BaseController.filterMinValue(axisHatY);
 
-            LogEx.i(String.format("%.1f %.1f | %.1f %.1f %.1f %.1f", axisHatX, axisHatY, leftAxisX, leftAsixY, rightAxisX, rightAxisY));
+            LogEx.i(String.format(Locale.ENGLISH, "%.1f %.1f | %.1f %.1f %.1f %.1f", axisHatX, axisHatY, leftAxisX, leftAsixY, rightAxisX, rightAxisY));
         }
         return false;
     }
@@ -387,4 +406,59 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         }
         sendJoyStickEvent(BaseController.EV_ABS, typeY, y, true, indexDeviceSlot);
     }
+
+    @Override
+    public void showPopupWindow(View parent) {
+        View popView = getView().inflate(getContext(), R.layout.popup_window, null);
+        popView.setAlpha(0.8f);
+        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        int xPos = DensityUtils.dp2px(284f);
+        if (mPop == null) {
+            mPop = new PopupWindow(popView,
+                    xPos, LinearLayout.LayoutParams.WRAP_CONTENT);
+        }
+        mPop.setFocusable(false);
+        mPop.showAsDropDown(parent, 0, 0);
+        mPop.setOutsideTouchable(false);
+        mPop.setTouchable(true);
+        mPop.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        mPop.getContentView().setSystemUiVisibility(FULL_SCREEN_FLAG);
+        mPop.update();
+
+        popView.findViewById(R.id.back).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_BACK"));
+        popView.findViewById(R.id.home).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_HOME"));
+        popView.findViewById(R.id.app_switch).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_APP_SWITCH"));
+        popView.findViewById(R.id.close).setOnClickListener(v -> mPop.dismiss());
+        popView.setOnTouchListener(new View.OnTouchListener() {
+            int orgX, orgY;
+            int offsetX, offsetY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        orgX = (int) event.getX();
+                        orgY = (int) event.getY();
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        popView.setAlpha(0.2f);
+                        offsetX = (int) event.getRawX() - orgX;
+                        offsetY = (int) event.getRawY() - orgY;
+                        mPop.update(offsetX, offsetY, -1, -1, true);
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        popView.setAlpha(0.8f);
+                        break;
+                }
+                v.performClick();
+                return true;
+            }
+        });
+    }
+
+    private void clickMenu(String cmd) {
+        sendAdbCmdEvent(cmd);
+    }
+
+
 }

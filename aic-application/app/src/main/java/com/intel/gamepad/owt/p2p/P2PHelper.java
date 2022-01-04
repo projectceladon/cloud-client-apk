@@ -208,13 +208,13 @@ public class P2PHelper {
             if ((bHEVCEncoder && bHEVCDecoder)) {
                 haveHEVC = true;
             } else {
-                Toast.makeText(null, R.string.no_hevc, Toast.LENGTH_LONG).show();
+                Toast.makeText(MyApp.context, R.string.no_hevc, Toast.LENGTH_LONG).show();
             }
 
             if ((bH264Encoder && bH264Decoder)) {
                 haveH264 = true;
             } else {
-                Toast.makeText(null, R.string.no_h264, Toast.LENGTH_LONG).show();
+                Toast.makeText(MyApp.context, R.string.no_h264, Toast.LENGTH_LONG).show();
             }
         }
     }
