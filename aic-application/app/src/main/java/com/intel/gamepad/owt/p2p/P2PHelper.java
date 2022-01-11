@@ -1,14 +1,6 @@
 package com.intel.gamepad.owt.p2p;
 
-import static owt.base.MediaCodecs.AudioCodec.OPUS;
-import static owt.base.MediaCodecs.VideoCodec.H264;
-import static owt.base.MediaCodecs.VideoCodec.H265;
-
-import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
-import android.os.Build;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Lifecycle;
@@ -28,10 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import owt.base.ActionCallback;
-import owt.base.AudioCodecParameters;
-import owt.base.AudioEncodingParameters;
 import owt.base.ContextInitialization;
-import owt.base.VideoEncodingParameters;
 import owt.p2p.P2PClient;
 import owt.p2p.P2PClientConfiguration;
 
@@ -45,15 +34,12 @@ public class P2PHelper {
     public static String turnAddrUDP = "turn:153.35.78.77:3478?transport=udp";
     public static String strIP = "153.35.78.77";
     public static String strCoturn = "153.35.78.77";
-    private static boolean haveHEVC = false;
-    private static boolean haveH264 = false;
     private P2PClientConfiguration p2pConfig;
     private P2PClient client;
     private EglBase rootEglBase;
     private boolean inited = false;
 
     private P2PHelper() {
-        checkMediaCodecSupportTypes();
         initP2PClientConfig();
     }
 
@@ -104,12 +90,6 @@ public class P2PHelper {
                     .initialize();
             inited = true;
         }
-        VideoEncodingParameters h264 = new VideoEncodingParameters(H264);
-        VideoEncodingParameters h265 = new VideoEncodingParameters(H265);
-        /*VideoEncodingParameters vp8 = new VideoEncodingParameters(VP8);
-        VideoEncodingParameters vp9 = new VideoEncodingParameters(VP9);*/
-        AudioCodecParameters opusCodec = new AudioCodecParameters(OPUS);
-        AudioEncodingParameters opus = new AudioEncodingParameters(opusCodec);
         updateP2PCoturnIP();
         List<PeerConnection.IceServer> iceServers = new ArrayList<>();
         List<String> urls = new ArrayList<>();
@@ -119,37 +99,11 @@ public class P2PHelper {
         PeerConnection.IceServer iceServer = PeerConnection.IceServer.builder(urls).setUsername("username").setPassword("password").createIceServer();
         iceServers.add(iceServer);
         PeerConnection.RTCConfiguration rtcConf = new PeerConnection.RTCConfiguration(iceServers);
-        if (haveH264 && haveHEVC) {
-            Log.i(TAG, "Add H264 and HEVC codec.");
-            p2pConfig = P2PClientConfiguration.builder()
-                    // .addVideoParameters(vp8)
-                    // .addVideoParameters(vp9)
-                    .addVideoParameters(h264)
-                    .addVideoParameters(h265)
-                    .addAudioParameters(opus)
-                    .setRTCConfiguration(rtcConf)
-                    .build();
-        } else if (haveH264) {
-            Log.i(TAG, "Add H264 codec.");
-            p2pConfig = P2PClientConfiguration.builder()
-                    // .addVideoParameters(vp8)
-                    // .addVideoParameters(vp9)
-                    .addVideoParameters(h264)
-                    .addAudioParameters(opus)
-                    .setRTCConfiguration(rtcConf)
-                    .build();
-        } else if (haveHEVC) {
-            Log.i(TAG, "Add HEVC codec.");
-            p2pConfig = P2PClientConfiguration.builder()
-                    // .addVideoParameters(vp8)
-                    // .addVideoParameters(vp9)
-                    .addVideoParameters(h265)
-                    .addAudioParameters(opus)
-                    .setRTCConfiguration(rtcConf)
-                    .build();
-        } else {
-            Log.i(TAG, "Device so not support both H264 and HEVC.");
-        }
+
+        Log.i(TAG, "Configuring p2pClient with default codecs.");
+        p2pConfig = P2PClientConfiguration.builder()
+                .setRTCConfiguration(rtcConf)
+                .build();
     }
 
     private void initP2PClient(AppCompatActivity activity, P2PClient.P2PClientObserver observer) {
@@ -172,51 +126,6 @@ public class P2PHelper {
 
     public P2PClientConfiguration getConfig() {
         return p2pConfig;
-    }
-
-    private void checkMediaCodecSupportTypes() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            MediaCodecList mediaCodecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
-            boolean bHEVCEncoder = false;
-            boolean bHEVCDecoder = false;
-            boolean bH264Encoder = false;
-            boolean bH264Decoder = false;
-            for (MediaCodecInfo mediaCodecInfo : mediaCodecList.getCodecInfos()) {
-                String mediaCodecName = mediaCodecInfo.getName().toLowerCase(Locale.ROOT);
-                String TYPE_MEDIA_HEVC = "hevc";
-                String TYPE_MEDIA_ENCODER = "encoder";
-                if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
-                        && mediaCodecName.contains(TYPE_MEDIA_ENCODER)) {
-                    bHEVCEncoder = true;
-                }
-                String TYPE_MEDIA_DECODER = "decoder";
-                if (mediaCodecName.contains(TYPE_MEDIA_HEVC)
-                        && mediaCodecName.contains(TYPE_MEDIA_DECODER)) {
-                    bHEVCDecoder = true;
-                }
-                String TYPE_MEDIA_H264 = "h264";
-                if (mediaCodecName.contains(TYPE_MEDIA_H264)
-                        && mediaCodecName.contains(TYPE_MEDIA_ENCODER)) {
-                    bH264Encoder = true;
-                }
-                if (mediaCodecName.contains(TYPE_MEDIA_H264)
-                        && mediaCodecName.contains(TYPE_MEDIA_DECODER)) {
-                    bH264Decoder = true;
-                }
-            }
-
-            if ((bHEVCEncoder && bHEVCDecoder)) {
-                haveHEVC = true;
-            } else {
-                Toast.makeText(MyApp.context, R.string.no_hevc, Toast.LENGTH_LONG).show();
-            }
-
-            if ((bH264Encoder && bH264Decoder)) {
-                haveH264 = true;
-            } else {
-                Toast.makeText(MyApp.context, R.string.no_h264, Toast.LENGTH_LONG).show();
-            }
-        }
     }
 
     private static class Inner {
