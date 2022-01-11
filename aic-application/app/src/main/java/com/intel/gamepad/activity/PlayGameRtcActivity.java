@@ -13,6 +13,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.hardware.Camera;
 import android.hardware.input.InputManager;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -881,6 +882,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 @Override
                 public void onSuccess(Void unused) {
                     sendSizeChange();
+                    getCameraHwCapability();
                     initJoyStickDevices();
                     sensorsInit();
                     runOnUiThread(() -> getLifecycle().addObserver(new LifecycleObserver() {
@@ -919,6 +921,67 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 }
             });
         }
+    }
+
+    private void getCameraHwCapability() {
+        int numOfCameras = Camera.getNumberOfCameras();
+        String[] camOrientation = new String[numOfCameras];
+        String[] camFacing = new String[numOfCameras];
+        String[] maxCameraRes = new String[numOfCameras];
+
+        LogEx.d("Num of cameras available in the HW = " + numOfCameras);
+
+        for (int i = 0; i < numOfCameras; i++) {
+            Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, cameraInfo);
+            camOrientation[i] = Integer.toString(cameraInfo.orientation);
+            camFacing[i] = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) ? "front" : "back";
+
+            Camera camera = Camera.open(i);
+            Camera.Parameters cameraParams = camera.getParameters();
+            // getSupportedPictureSizes() API would give maximum resolution info and it lists its maximum
+            // value at 0th index. Tested and verified with multiple devices.
+            int width = cameraParams.getSupportedPictureSizes().get(0).width;
+            int height = cameraParams.getSupportedPictureSizes().get(0).height;
+            LogEx.d("width = " + width + ", height = " + height + ", facing = " +
+                    camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
+
+            if (width >= 7680 && height >= 4320)
+                maxCameraRes[i] = "4320p"; // 8k
+            else if (width >= 3840 && height >= 2160)
+                maxCameraRes[i] = "2160p"; // 4k
+            else if (width >= 1920 && height >= 1080)
+                maxCameraRes[i] = "1080p";
+            else if (width >= 1280 && height >= 720)
+                maxCameraRes[i] = "720p";
+            else
+                maxCameraRes[i] = "480p";
+            LogEx.d("Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
+
+            camera.release();
+        }
+
+        Map<String, Object> mapParams = new HashMap<>();
+        mapParams.put("numOfCameras", numOfCameras);
+        mapParams.put("camOrientation", camOrientation);
+        mapParams.put("camFacing", camFacing);
+        mapParams.put("maxCameraRes", maxCameraRes);
+
+        Map<String, Object> mapData = new HashMap<>();
+        mapData.put("event", "camerainfo");
+        mapData.put("parameters", mapParams);
+        Map<String, Object> mapKey = new HashMap<>();
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        JSONObject json = new JSONObject(mapKey);
+        String jsonString = json.toString();
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+            }
+        });
+        LogEx.d("Sent camera HW capability info to remote server..");
     }
 
     private void sensorsInit() {
