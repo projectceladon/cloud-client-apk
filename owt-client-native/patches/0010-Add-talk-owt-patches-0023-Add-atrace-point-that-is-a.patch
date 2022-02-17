@@ -1,0 +1,75 @@
+From da6a7602b00bf42ed50c2f5536578ffb52e5a69d Mon Sep 17 00:00:00 2001
+From: "Liu, Kai1" <kai1.liu@intel.com>
+Date: Thu, 17 Feb 2022 15:39:22 +0800
+Subject: [PATCH] Add
+ talk/owt/patches/0023-Add-atrace-point-that-is-after-decoding.patch
+
+Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
+---
+ scripts/prepare_dev.py                        |  1 +
+ ...-atrace-point-that-is-after-decoding.patch | 41 +++++++++++++++++++
+ 2 files changed, 42 insertions(+)
+ create mode 100644 talk/owt/patches/0023-Add-atrace-point-that-is-after-decoding.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index a0d3c8d..0e12013 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -50,6 +50,7 @@ patchList = [
+     ('0020-Add-atrace-points-for-camera-in-apk.patch', WEBRTC_PATH),
+     ('0021-Fix-display-is-incomplete.patch', WEBRTC_PATH),
+     ('0022-Implemented-the-new-transparent-composition-feature.patch', WEBRTC_PATH),
++    ('0023-Add-atrace-point-that-is-after-decoding.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0023-Add-atrace-point-that-is-after-decoding.patch b/talk/owt/patches/0023-Add-atrace-point-that-is-after-decoding.patch
+new file mode 100644
+index 0000000..257a1d4
+--- /dev/null
++++ b/talk/owt/patches/0023-Add-atrace-point-that-is-after-decoding.patch
+@@ -0,0 +1,41 @@
++From ca0bb748c69e7324e497e8990865d54f21c16cda Mon Sep 17 00:00:00 2001
++From: "Liu, Kai1" <kai1.liu@intel.com>
++Date: Thu, 17 Feb 2022 15:32:00 +0800
++Subject: [PATCH] Add atrace point that is after decoding
++
++Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
++---
++ modules/video_coding/generic_decoder.cc | 10 +++++++++-
++ 1 file changed, 9 insertions(+), 1 deletion(-)
++
++diff --git a/modules/video_coding/generic_decoder.cc b/modules/video_coding/generic_decoder.cc
++index 13a67c56db..6ffd7d80fd 100644
++--- a/modules/video_coding/generic_decoder.cc
+++++ b/modules/video_coding/generic_decoder.cc
++@@ -100,6 +100,14 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
++     return;
++   }
++ 
+++  if (ATRACE_ENABLED()) {
+++    static int nCount = 0;
+++    nCount++;
+++    std::string str = "atou C5 ID: " + std::to_string(nCount) + " size: 0 ts: " + std::to_string(decodedImage.timestamp());
+++    ATRACE_BEGIN(str.c_str());
+++    ATRACE_END();
+++  }
+++
++   decodedImage.set_ntp_time_ms(frameInfo->ntp_time_ms);
++   decodedImage.set_packet_infos(frameInfo->packet_infos);
++   decodedImage.set_rotation(frameInfo->rotation);
++@@ -224,7 +232,7 @@ int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
++   if (ATRACE_ENABLED()) {
++     static int nCount = 0;
++     nCount++;
++-    std::string str = "atou C4 ID: " + std::to_string(nCount) + " size: " + std::to_string(frame.size());
+++    std::string str = "atou C4 ID: " + std::to_string(nCount) + " size: " + std::to_string(frame.size()) + " ts: " + std::to_string(frame.Timestamp());
++     ATRACE_BEGIN(str.c_str());
++     ATRACE_END();
++   }
++-- 
++2.17.1
++
+-- 
+2.17.1
+

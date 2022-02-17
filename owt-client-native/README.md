@@ -28,6 +28,7 @@ Download owt-client-native source code:
     $ git am -3 ../patches/0007-Remove-talk-owt-patches-0015-Adopt-SingletonSurfaceV.patch
     $ git am -3 ../patches/0008-Add-and-update-talk-owt-patches-0021-Fix-display-is-.patch
     $ git am -3 ../patches/0009-Add-talk-owt-patches-0022-Implemented-the-new-transp.patch
+    $ git am -3 ../patches/0010-Add-talk-owt-patches-0023-Add-atrace-point-that-is-a.patch
 5. Patch the third_party project: $ gclient sync
 
 Compile:
