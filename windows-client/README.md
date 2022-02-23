@@ -5,7 +5,7 @@ github source file size limitation of 50MB for each file, the owt lib and siocli
 is compressed and you need to uncompress them to the same dir before building the sample.
 
 # How to run:
-.\gawebrtcclient.exe --peer_server_url https://127.0.0.1:8096 --sessionid ga
+.\gawebrtcclient.exe --peer_server_url https://127.0.0.1:8096 --sessionid ga --clientsessionid c0
 
 Here peer_server_url is the signaling server address (not game server address). Port must be 8096 as we're using secure socket.io. Session id is the id of gaming server, by default it is "ga" so you don't need to change it.
 

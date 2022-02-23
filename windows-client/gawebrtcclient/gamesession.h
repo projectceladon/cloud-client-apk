@@ -22,6 +22,7 @@ public:
 
 private:
   std::string session_id_;
+  std::string client_session_id_;
   std::string peer_server_url_;
   std::unique_ptr<PeerConnection> pc_;
   ga::ClientSettings connect_settings_;

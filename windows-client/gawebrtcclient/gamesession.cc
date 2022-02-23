@@ -34,7 +34,7 @@ int GameSession::ConnectPeerServer() {
   pc_->SetWindowHandle(connect_settings_.hwnd_);
   pc_->SetWindowSize(0, 0, connect_settings_.width_,
                        connect_settings_.height_);
-  pc_->Connect(peer_server_url_, session_id_);
+  pc_->Connect(peer_server_url_, session_id_, client_session_id_);
   pc_->Start();
   return 0;
 }
@@ -44,6 +44,7 @@ void GameSession::ConfigConnection(const ga::SessionMetaData &session_info,
   int error_code = 0;
   peer_server_url_ = session_info.peer_server_url_;
   session_id_ = session_info.session_id_;
+  client_session_id_ = session_info.client_session_id_;
   connect_settings_.mousestate_callback_ = client_settings.mousestate_callback_;
   connect_settings_.connection_callback_ = client_settings.connection_callback_;
   connect_settings_.hwnd_ = client_settings.hwnd_;

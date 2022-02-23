@@ -17,10 +17,14 @@ DEFINE_string(peer_server_url, "",
 // sessionid: must be specified. specifies the user id of gaming server side.
 DEFINE_string(sessionid, "",
   "ID used by game server to login to peer server.");
+DEFINE_string(clientsessionid, "",
+    "ID used by game client to login to peer server.");
 // default window width
 DEFINE_int32(w, 512, "game window width");
+//DEFINE_int32(w, 1280, "game window width");
 // default window height
 DEFINE_int32(h, 288, "game window height");
+//DEFINE_int32(h, 720, "game window height");
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   LPSTR lpCmdLine, int nCmdShow) {
@@ -32,6 +36,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   gflags::ParseCommandLineFlags(&__argc, &__argv, true);
   session_info.peer_server_url_ = FLAGS_peer_server_url;
   session_info.session_id_ = FLAGS_sessionid;
+  session_info.client_session_id_ = FLAGS_clientsessionid;
 
   client_settings.mousestate_callback_ = WindowHandler::OnMouseStateChange;
   client_settings.connection_callback_ = WindowHandler::OnGameServerConnected;

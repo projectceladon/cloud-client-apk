@@ -28,7 +28,8 @@ public:
   PeerConnection() : stream_started_(false) {}
   void Init(const std::string &session_token);
   void Connect(const std::string &peer_server_url,
-               const std::string &session_token);
+               const std::string &session_token,
+               const std::string& client_session_token);
   void SetWindowHandle(HWND hwnd);
   void Start();
   void Stop();

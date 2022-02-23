@@ -20,6 +20,7 @@ namespace ga {
 
   struct SessionMetaData {
     string session_id_;
+    string client_session_id_;
     string peer_server_url_;
   };
 

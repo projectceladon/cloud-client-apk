@@ -19,6 +19,7 @@ using owt::p2p::P2PClientObserver;
 DEFINE_bool(allow_async_flip, false, "allow tearing with async flip");
 DEFINE_bool(logging, false, "enable logging from WebRTC");
 DEFINE_bool(streamdump, false, "enable dumping of received stream.");
+//DEFINE_string(stunsvr, "stun:stun.l.google.com:19302", "Stun server");
 DEFINE_string(stunsvr, "stun:10.112.240.116:3478", "Stun server");
 
 long PeerConnection::send_invoke_is_safe_ = 1;
@@ -61,9 +62,9 @@ void PeerConnection::SetWindowHandle(HWND hwnd) {
 
 // Johny: currently this is hard-coded to use id "client"
 void PeerConnection::Connect(const std::string &peer_server_url,
-                             const std::string &session_token) {
-  std::string id(session_token, 1);
-  std::string token = "c" + id;
+                             const std::string &session_token,
+                             const std::string& client_session_token) {
+  std::string token = client_session_token;
   pc_->Connect(
       peer_server_url, token,
       [this](const std::string &id) {
