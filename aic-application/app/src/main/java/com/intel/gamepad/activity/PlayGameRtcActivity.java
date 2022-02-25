@@ -433,7 +433,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     LogEx.d("video-alpha-success");
                                     runOnUiThread(() -> {
                                         controller.switchAlpha(IPUtils.loadAlphaChannel());
-                                        GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
+                                        //GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
                                         fullRenderer.requestLayout();
                                     });
                                     break;
