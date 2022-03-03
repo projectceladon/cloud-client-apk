@@ -61,27 +61,27 @@ private:
 
 int main(int argc, char* argv[]) {
   if (argc < 6) {
-    std::cout << "usage:" << argv[0] << " <ip> <id> <width> <height> <codec>" << std::endl;
+    std::cout << "usage:" << argv[0] << " <ip> <port> <serverId> <clientId> <width> <height> <codec>" << std::endl;
     std::cout << "example:" << argv[0] << " 10.112.240.116 0 1280 720 h265" << std::endl;
     exit(0);
   }
 
   std::string ip = argv[1];
-  std::string id = argv[2];
+  std::string port = argv[2];
+  std::string serverId = argv[3];
+  std::string clientId = argv[4];
 
-  int width = atoi(argv[3]);
-  int height = atoi(argv[4]);
+  int width = atoi(argv[5]);
+  int height = atoi(argv[6]);
 
-  std::string codec = argv[5];
+  std::string codec = argv[7];
 
-  std::string url = "http://" + ip + ":8095";
-  std::string serverId = "s" + id;
-  std::string clientId =  "c" + id;
+  std::string url = "http://" + ip + ":" + port;
 
   SDL_Init(SDL_INIT_VIDEO);
   atexit(SDL_Quit);
 
-  std::string title = ip + "    android" + id + "    " + codec;
+  std::string title = ip + "    android " + serverId + "    " + codec;
   auto win = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_RESIZABLE);
   if (!win) {
     std::cout << "Failed to create SDL window!" << std::endl;
@@ -92,7 +92,9 @@ int main(int argc, char* argv[]) {
   const char *device_name = "vaapi";
 
   FrameResolution resolution = FrameResolution::k480p;
-  if (height == 720)
+  if (height == 600)
+    resolution = FrameResolution::k600p;
+  else if (height == 720)
     resolution = FrameResolution::k720p;
   else if (height == 1080) {
     resolution = FrameResolution::k1080p;

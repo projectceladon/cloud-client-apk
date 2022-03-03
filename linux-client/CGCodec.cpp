@@ -63,6 +63,8 @@ DecodeContext::DecodeContext(int codec_type, int resolution_type) : codec_type(c
   packet = nullptr;
   if (resolution_type == int(FrameResolution::k480p)) {
     resolution = std::make_pair(640, 480);
+  } else if (resolution_type == int(FrameResolution::k600p)) {
+    resolution = std::make_pair(1024, 600);
   } else if (resolution_type == int(FrameResolution::k720p)) {
     resolution = std::make_pair(1280, 720);
   } else if (resolution_type == int(FrameResolution::k1080p)) {

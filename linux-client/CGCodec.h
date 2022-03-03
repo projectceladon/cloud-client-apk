@@ -22,7 +22,7 @@ using namespace std;
 enum CGPixelFormat { I420 = 0, NV12 = 1 };
 
 enum class VideoCodecType { kH264 = 1, kH265 = 2, kAll = 3 };
-enum class FrameResolution { k480p = 1, k720p = 2, k1080p = 4, kAll = 7 };
+enum class FrameResolution { k480p = 1, k600p = 2, k720p = 4, k1080p = 8, kAll = 15 };
 
 class CGVideoFrame {
 public:
