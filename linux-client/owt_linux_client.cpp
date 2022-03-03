@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
   SDL_Init(SDL_INIT_VIDEO);
   atexit(SDL_Quit);
 
-  std::string title = ip + ":" + id;
+  std::string title = ip + "    android" + id + "    " + codec;
   auto win = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_RESIZABLE);
   if (!win) {
     std::cout << "Failed to create SDL window!" << std::endl;
@@ -165,12 +165,69 @@ int main(int argc, char* argv[]) {
     pc->Send(serverId, msg, nullptr, nullptr);
   };
 
-  while (true) {
-    sleep(5);
+  auto onMouseMove = [&](SDL_MouseMotionEvent& e) {
+    if (e.state == 1) {
+      char param[64];
+      int w, h;
+      SDL_GetWindowSize(win, &w, &h);
+
+      int x = e.x * 32767 / w;
+      int y = e.y * 32767 / h;
+      snprintf(param, 64, "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }", x, y, e.xrel, e.yrel);
+      sendCtrl("mousemove", param);
+    }
+  };
+
+  auto onMouseButton = [&](SDL_MouseButtonEvent& e) {
+    char param[64];
+    const char* et = (e.type == SDL_MOUSEBUTTONDOWN) ? "mousedown" : "mouseup";
+    int w, h;
+
+    SDL_GetWindowSize(win, &w, &h);
+
+    int x = e.x * 32767 / w;
+    int y = e.y * 32767 / h;
+    snprintf(param, 64, "{\"which\": %d, \"x\": %d, \"y\": %d }", e.which, x, y);
+    sendCtrl(et, param);
+  };
+
+  bool fullscreen = false;
+  bool running = true;
+  while (running) {
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+      switch (e.type) {
+        case SDL_QUIT:
+          running = false;
+          break;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+          onMouseButton(e.button);
+          break;
+        case SDL_MOUSEMOTION:
+          onMouseMove(e.motion);
+          break;
+        case SDL_KEYDOWN: {
+            if (e.key.keysym.sym == SDLK_F11) {
+              uint32_t flags = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+              SDL_SetWindowFullscreen(win, flags);
+              fullscreen = !fullscreen;
+            }
+          }
+          break;
+        case SDL_WINDOWEVENT:
+          break;
+        default:
+          std::cout << "Unhandled SDL event " << e.type << std::endl;
+          break;
+      }
+    }
   }
 
   pc->Stop(serverId, nullptr, nullptr);
   pc->RemoveObserver(ob);
   pc->Disconnect(nullptr, nullptr);
+  SDL_DestroyWindow(win);
+  SDL_Quit();
   return 0;
 }
