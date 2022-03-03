@@ -22,7 +22,14 @@ using namespace std;
 enum CGPixelFormat { I420 = 0, NV12 = 1 };
 
 enum class VideoCodecType { kH264 = 1, kH265 = 2, kAll = 3 };
-enum class FrameResolution { k480p = 1, k600p = 2, k720p = 4, k1080p = 8, kAll = 15 };
+
+enum class FrameResolution {
+  k480p = 1,
+  k600p = 2,
+  k720p = 4,
+  k1080p = 8,
+  kAll = 15
+};
 
 class CGVideoFrame {
 public:
@@ -100,7 +107,7 @@ public:
    * @param length    buffer size in bytes without the padding. I.e. the full buffer
    *                  size is assumed to be buf_size + CG_INPUT_BUFFER_PADDING_SIZE.
    */
-  int decode(const uint8_t *data, int length, uint8_t *out_buf);
+  int decode(const uint8_t *data, int length, uint8_t *out_buf, int *out_size);
 
   /**
    * Get one decoded video frame
@@ -126,7 +133,7 @@ public:
 private:
   CGDecContex m_decode_ctx;        ///<! cg decoder internal context
   CGHWAccelContex m_hw_accel_ctx;  ///<! hw decoding accelerator context
-  int decode_one_frame(const AVPacket *pkt, uint8_t *out_buf);
+  int decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int *out_size);
   bool decoder_ready = false;
   std::recursive_mutex pull_lock;  // Guard m_decode_ctx at get_decoded_frame
   std::recursive_mutex push_lock;  // Guard m_decode_ctx at decode/decode_one_frame

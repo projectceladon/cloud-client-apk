@@ -244,7 +244,7 @@ int CGVideoDecoder::init(FrameResolution resolution,
   return 0;
 }
 
-int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf) {
+int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf, int *out_size) {
   std::lock_guard<std::recursive_mutex> decode_access_lock(push_lock);
   if (!can_decode()) {
     std::cout << "Decoder not initialized" << std::endl;
@@ -272,7 +272,7 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf)
     data_size -= ret;
 
     if (pkt->size) {
-      if (decode_one_frame(pkt, out_buf) == AVERROR_INVALIDDATA) {
+      if (decode_one_frame(pkt, out_buf, out_size) == AVERROR_INVALIDDATA) {
         std::cout << "re-init" << std::endl;
         flush_decoder();
         destroy();
@@ -291,7 +291,7 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf)
   return 0;
 }
 
-int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf) {
+int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int *out_size) {
   AVCodecContext *c = m_decode_ctx->avcodec_ctx;
   int sent = avcodec_send_packet(c, pkt);
   if (sent < 0) {
@@ -378,6 +378,7 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf) {
         std::cout << "Can not copy image to buffer" << std::endl;
         return -1;
       }
+      *out_size = buf_size;
 #endif
     }
   }
