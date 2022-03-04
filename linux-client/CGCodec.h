@@ -97,7 +97,7 @@ public:
    * @param device_name       the string of hardware acclerator device, such as "vaapi"
    * @param extra_hw_frames   allocate extra frames for hardware acclerator when decoding
    */
-  int init(FrameResolution resolution, uint32_t codec_type,
+  int init(FrameResolution resolution, uint32_t codec_type, bool *sw_codec,
            const char *device_name = nullptr, int extra_hw_frames = 0);
 
   /**

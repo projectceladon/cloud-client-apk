@@ -9,7 +9,7 @@
 
 class VideoRenderer {
 public:
-  VideoRenderer(SDL_Window *w, int width, int height);
+  VideoRenderer(SDL_Window *w, int width, int height, Uint32 format);
   virtual ~VideoRenderer();
 
   void RenderFrame(unsigned char* buffer, int size);
@@ -23,6 +23,7 @@ private:
   SDL_Texture* texture_ = nullptr;
   int width_ = 0;
   int height_ = 0;
+  Uint32 format_ = SDL_PIXELFORMAT_YV12;
 };
 
 #endif

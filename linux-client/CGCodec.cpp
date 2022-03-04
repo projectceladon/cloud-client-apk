@@ -175,6 +175,7 @@ bool CGVideoDecoder::can_decode() const { return decoder_ready; }
 
 int CGVideoDecoder::init(FrameResolution resolution,
                          uint32_t codec_type,
+                         bool *sw_codec,
                          const char *device_name,
                          int extra_hw_frames) {
   std::cout << __func__ << " E" << std::endl;
@@ -195,7 +196,7 @@ int CGVideoDecoder::init(FrameResolution resolution,
 
   const AVCodec *codec = avcodec_find_decoder(codec_id);
   if (codec == nullptr) {
-    std::cout << "Codec id:" << codec_id << " not found!" << std::endl;
+    std::cout << "Codec id: " << codec_id << " not found!" << std::endl;
     return -1;
   }
 
@@ -207,7 +208,7 @@ int CGVideoDecoder::init(FrameResolution resolution,
 
   AVCodecContext *c = avcodec_alloc_context3(codec);
   if (c == nullptr) {
-    std::cout << "Could not allocate video codec context" << std::endl;
+    std::cout << "Could not allocate video codec context!" << std::endl;
     av_parser_close(parser);
     return -1;
   }
@@ -217,20 +218,24 @@ int CGVideoDecoder::init(FrameResolution resolution,
     if (m_hw_accel_ctx->is_hw_accel_valid()) {
       std::cout << "Use device " << device_name << " to accelerate decoding!" << std::endl;
     } else {
-      std::cout << "System doesn't support VAAPI(Video Acceleration API). SW Decoding is used." << std::endl;
+      std::cout << "System doesn't support VAAPI(Video Acceleration API). SW Decoding is used."
+                << std::endl;
+      if (sw_codec) {
+        *sw_codec = true;
+      }
     }
   }
 
   AVPacket *pkt = av_packet_alloc();
   if (pkt == nullptr) {
-    std::cout << "Could not allocate packet" << std::endl;
+    std::cout << "Could not allocate packet!" << std::endl;
     av_parser_close(parser);
     avcodec_free_context(&c);
     return -1;
   }
 
   if (avcodec_open2(c, codec, NULL) < 0) {
-    std::cout << "Could not open codec" << std::endl;
+    std::cout << "Could not open codec!" << std::endl;
     av_parser_close(parser);
     avcodec_free_context(&c);
     av_packet_free(&pkt);
@@ -247,7 +252,7 @@ int CGVideoDecoder::init(FrameResolution resolution,
 int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf, int *out_size) {
   std::lock_guard<std::recursive_mutex> decode_access_lock(push_lock);
   if (!can_decode()) {
-    std::cout << "Decoder not initialized" << std::endl;
+    std::cout << "Decoder not initialized!" << std::endl;
     return -1;
   }
 
@@ -256,28 +261,36 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf,
   }
 
   AVPacket *pkt = m_decode_ctx->packet;
+#if 0
   AVCodecParserContext *parser = m_decode_ctx->parser;
-
   while (data_size > 0) {
-    int ret = av_parser_parse2(parser, m_decode_ctx->avcodec_ctx, &pkt->data, &pkt->size, data,
-                               data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+    int ret = av_parser_parse2(parser,
+                               m_decode_ctx->avcodec_ctx,
+                               &pkt->data,
+                               &pkt->size,
+                               data,
+                               data_size,
+                               AV_NOPTS_VALUE,
+                               AV_NOPTS_VALUE,
+                               0);
     if (ret < 0) {
       std::cout << __func__ << "Error while parsing" << std::endl;
       return -1;
-    } else {
-      //std::cout << "av_parser_parse2 returned " << ret << " pkt->size: " << pkt->size << std::endl;
     }
 
     data += ret;
     data_size -= ret;
-
     if (pkt->size) {
       if (decode_one_frame(pkt, out_buf, out_size) == AVERROR_INVALIDDATA) {
         std::cout << "re-init" << std::endl;
         flush_decoder();
         destroy();
-        if (init((FrameResolution)this->resolution, this->codec_type, this->device_name, 0) < 0) {
-          std::cout << "re-init failed. " << device_name << " decoding" << std::endl;
+        if (init((FrameResolution)this->resolution,
+                 this->codec_type,
+                 this->device_name, 0) < 0) {
+          std::cout << "re-init failed. "
+                    << device_name << " decoding"
+                    << std::endl;
           return -1;
         } else {
           pkt = m_decode_ctx->packet;
@@ -287,6 +300,25 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf,
       }
     }
   }
+#else
+  pkt->data = const_cast<uint8_t*>(data);
+  pkt->size = data_size;
+  if (pkt->size &&
+      decode_one_frame(pkt, out_buf, out_size) == AVERROR_INVALIDDATA) {
+    std::cout << "re-init" << std::endl;
+    flush_decoder();
+    destroy();
+    if (init((FrameResolution)this->resolution,
+             this->codec_type,
+	     nullptr,
+             this->device_name, 0) < 0) {
+      std::cout << "re-init failed. "
+                << device_name << " decoding"
+                << std::endl;
+      return -1;
+    }
+  }
+#endif
 
   return 0;
 }
@@ -325,13 +357,18 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
         (frame->format != AV_PIX_FMT_YUV420P &&
         frame->format != AV_PIX_FMT_VAAPI)) {
       std::cout << "Input res from client is "
-                << frame->width << "x" << frame->height
+                << frame->width << "x"
+                << frame->height
                 << ", but decoder initialized with "
-                << m_decode_ctx->resolution.first << "x" << m_decode_ctx->resolution.second
+                << m_decode_ctx->resolution.first << "x"
+                << m_decode_ctx->resolution.second
                 << std::endl;
 
-      if (frame->format != AV_PIX_FMT_YUV420P && frame->format != AV_PIX_FMT_VAAPI)
-        std::cout << "Input frame format " << frame->format << " is not matching with Decoder format" << std::endl;
+      if (frame->format != AV_PIX_FMT_YUV420P &&
+          frame->format != AV_PIX_FMT_VAAPI)
+        std::cout << "Input frame format " << frame->format
+                  << " is not matching with Decoder format"
+                  << std::endl;
 
       av_frame_free(&frame);
       return -1;
@@ -358,8 +395,9 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
 
       av_frame_free(&frame);
       frame = sw_frame;
-    } else
+    } else {
       std::cout << "Uses SW decoding" << std::endl;
+    }
 
     // push decoded frame
     {
@@ -368,11 +406,19 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
       m_decode_ctx->decoded_frames.push_back(frame);
       frame = nullptr;
 #else
-      int buf_size = av_image_get_buffer_size((AVPixelFormat)frame->format, frame->width, frame->height, 1);
-      int ret = av_image_copy_to_buffer(out_buf, buf_size, (const uint8_t *const *)frame->data,
+      int buf_size = av_image_get_buffer_size((AVPixelFormat)frame->format,
+                                              frame->width,
+                                              frame->height,
+                                              1);
+
+      int ret = av_image_copy_to_buffer(out_buf,
+                                        buf_size,
+                                        (const uint8_t *const *)frame->data,
                                         (const int *)frame->linesize,
-					(AVPixelFormat)frame->format,
-					frame->width, frame->height, 1);
+                                        (AVPixelFormat)frame->format,
+                                        frame->width,
+                                        frame->height,
+                                        1);
 
       if (ret < 0) {
         std::cout << "Can not copy image to buffer" << std::endl;

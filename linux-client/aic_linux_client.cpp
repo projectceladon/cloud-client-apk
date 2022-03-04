@@ -162,7 +162,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Failed to create SDL window!" << std::endl;
   }
 
-  std::shared_ptr<VideoRenderer> renderer = std::make_shared<VideoRenderer>(win, width, height);
   std::shared_ptr<CGVideoDecoder> decoder = std::make_shared<CGVideoDecoder>();
   const char *device_name = "vaapi";
 
@@ -180,11 +179,19 @@ int main(int argc, char* argv[]) {
     codec_type = (uint32_t)VideoCodecType::kH265;
   }
 
-  if (decoder->init(frame_resolution, codec_type, device_name, 0) < 0) {
+  bool sw_codec = false;
+  if (decoder->init(frame_resolution, codec_type, &sw_codec, device_name, 0) < 0) {
     std::cout << "VideoDecoder init failed. " << device_name << " decoding" << std::endl;
+    exit(0);
   } else {
-    std::cout << "VideoDecoder init done. Device: " << device_name << std::endl;
+    std::cout << "VideoDecoder init done. Device: "
+              << device_name
+              << ", is sw codec: " << sw_codec
+              << std::endl;
   }
+
+  std::shared_ptr<VideoRenderer> renderer =
+    std::make_shared<VideoRenderer>(win, width, height, sw_codec ? SDL_PIXELFORMAT_IYUV : SDL_PIXELFORMAT_NV12);
 
   const int frame_size = width * height * 3 / 2;
   std::vector<uint8_t> buffer = std::vector<uint8_t>(frame_size);
