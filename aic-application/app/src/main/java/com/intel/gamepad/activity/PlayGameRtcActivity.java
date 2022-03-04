@@ -9,11 +9,11 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.hardware.Camera;
 import android.hardware.input.InputManager;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -60,12 +60,12 @@ import com.intel.gamepad.utils.AicVideoCapturer;
 import com.intel.gamepad.utils.AudioHelper;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.LocationUtils;
+import com.intel.gamepad.utils.sink.BweStatsVideoSink;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.GlDrawerBg;
-import org.webrtc.GlUtil;
 import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceViewRenderer;
 
@@ -95,6 +95,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         implements InputManager.InputDeviceListener,
         DeviceSwitchListtener,
         SensorEventListener {
+    private static String cameraRes;
     private final String TAG = "PlayGameRtcActivity";
     private final boolean isFirst = false;
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
@@ -126,12 +127,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private long lastGpsLocationTime = 0;
     private SensorManager mSensorManager = null;
     private SurfaceViewRenderer fullRenderer = null;
+    private BweStatsVideoSink bweStatsVideoSink = null;
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
     private ProgressBar loading;
     private boolean isStreamAdded = false;
     private boolean isOnPause = false;
-    private static String cameraRes;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -169,8 +170,37 @@ public class PlayGameRtcActivity extends AppCompatActivity
         fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
         fullRenderer.setEnableHardwareScaler(true);
         fullRenderer.setZOrderMediaOverlay(true);
+        bweStatsVideoSink = new BweStatsVideoSink();
+        bweStatsVideoSink.setBweStatsEvent((frameDelay, frameSize, packetsLost) -> {
+            Map<String, Object> mapKey = new HashMap<>();
+            Map<String, Object> mapData = new HashMap<>();
+            Map<String, Object> mapParams = new HashMap<>();
+            mapKey.put("type", "control");
+            mapKey.put("data", mapData);
+            mapData.put("event", "framestats");
+            mapData.put("parameters", mapParams);
+            mapParams.put("framets", 0);
+            mapParams.put("framesize", frameSize); // Frame size
+            mapParams.put("framedelay", frameDelay); // last_duration - start_duration
+            mapParams.put("framestartdelay", 0);
+            mapParams.put("packetloss", packetsLost);
+            String jsonString = new JSONObject(mapKey).toString();
+            // LogEx.e("setBweStatsEvent data:" + jsonString);
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    // LogEx.e("setBweStatsEvent Success");
+                }
+
+                @Override
+                public void onFailure(OwtError owtError) {
+                    LogEx.e("setBweStatsEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
+                }
+            });
+        });
         executor.execute(() -> {
             if (remoteStream != null && !remoteStreamEnded) {
+                remoteStream.attach(bweStatsVideoSink);
                 remoteStream.attach(fullRenderer);
             }
         });
@@ -215,6 +245,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         registerReceiver(dynamicReceiver, filter);
         hideStatusBar();
         if (remoteStream != null) {
+            remoteStream.attach(bweStatsVideoSink);
             remoteStream.attach(fullRenderer);
         }
         LogEx.e("RTC Activity onResume called");
@@ -330,6 +361,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 });
                 executor.execute(() -> {
                     if (fullRenderer != null) {
+                        remoteStream.attach(bweStatsVideoSink);
                         remoteStream.attach(fullRenderer);
                     }
                 });
@@ -739,15 +771,19 @@ public class PlayGameRtcActivity extends AppCompatActivity
         videoPublication = null;
 
         // Set resolution based on the user request.
-        if (cameraRes.equals("1")) {
-            LogEx.d("Requested for 480p");
-            videoCapturer = AicVideoCapturer.create(640, 480);
-        } else if (cameraRes.equals("2")) {
-            LogEx.d("Requested for 720p");
-            videoCapturer = AicVideoCapturer.create(1280, 720);
-        } else if (cameraRes.equals("4")) {
-            LogEx.d("Requested for 1080p");
-            videoCapturer = AicVideoCapturer.create(1920, 1080);
+        switch (cameraRes) {
+            case "1":
+                LogEx.d("Requested for 480p");
+                videoCapturer = AicVideoCapturer.create(640, 480);
+                break;
+            case "2":
+                LogEx.d("Requested for 720p");
+                videoCapturer = AicVideoCapturer.create(1280, 720);
+                break;
+            case "4":
+                LogEx.d("Requested for 1080p");
+                videoCapturer = AicVideoCapturer.create(1920, 1080);
+                break;
         }
 
         localVideoStream = createLocalStream(videoCapturer);
@@ -894,7 +930,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
                         public void onPause() {
                             LogEx.e(" webrtc onPause called");
-                            if(controller!=null && !isOnPause){
+                            if (controller != null && !isOnPause) {
                                 isOnPause = true;
                                 controller.sendAdbCmdEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
                             }
@@ -903,8 +939,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                         @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
                         public void onResume() {
                             LogEx.e(" webrtc onResume called");
-                            if(controller!=null){
-                                if(isOnPause){
+                            if (controller != null) {
+                                if (isOnPause) {
                                     isOnPause = false;
                                     controller.sendAdbCmdEvent("input keyevent KEYCODE_BACK && pm clear com.intel.aic.lifecyclesync");
                                 }

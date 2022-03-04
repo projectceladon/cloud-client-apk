@@ -1,0 +1,472 @@
+From 8ca228b82a88114aa82cadc824ae68d97b0889a6 Mon Sep 17 00:00:00 2001
+From: "Deng, Bing" <bing.deng@intel.com>
+Date: Mon, 7 Mar 2022 10:06:02 +0800
+Subject: [PATCH] Add talk/owt/patches/0025-Enable-TCAE-in-webrtc.patch.
+
+Signed-off-by: Deng, Bing <bing.deng@intel.com>
+---
+ scripts/prepare_dev.py                        |   1 +
+ .../patches/0025-Enable-TCAE-in-webrtc.patch  | 439 ++++++++++++++++++
+ 2 files changed, 440 insertions(+)
+ create mode 100644 talk/owt/patches/0025-Enable-TCAE-in-webrtc.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index ce02b78..ae9342d 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -52,6 +52,7 @@ patchList = [
+     ('0022-Implemented-the-new-transparent-composition-feature.patch', WEBRTC_PATH),
+     ('0023-Add-atrace-point-that-is-after-decoding.patch', WEBRTC_PATH),
+     ('0024-Alpha-transparent-is-triggered-by-the-change-of-buff.patch', WEBRTC_PATH),
++    ('0025-Enable-TCAE-in-webrtc.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0025-Enable-TCAE-in-webrtc.patch b/talk/owt/patches/0025-Enable-TCAE-in-webrtc.patch
+new file mode 100644
+index 0000000..ea06339
+--- /dev/null
++++ b/talk/owt/patches/0025-Enable-TCAE-in-webrtc.patch
+@@ -0,0 +1,439 @@
++From 8c2503812217898b4183fff76398b20454234ce7 Mon Sep 17 00:00:00 2001
++From: "Deng, Bing" <bing.deng@intel.com>
++Date: Wed, 2 Mar 2022 23:46:18 +0800
++Subject: [PATCH] Enable TCAE in webrtc.
++
++Signed-off-by: Deng, Bing <bing.deng@intel.com>
++---
++ api/video/encoded_image.h                  |  7 ++
++ api/video/video_frame.h                    |  3 +
++ modules/video_coding/frame_object.h        |  7 ++
++ modules/video_coding/generic_decoder.cc    |  3 +
++ modules/video_coding/generic_decoder.h     |  1 +
++ modules/video_coding/packet_buffer.cc      |  2 +
++ modules/video_coding/packet_buffer.h       | 25 +++++++
++ rtc_base/time/BUILD.gn                     |  1 +
++ rtc_base/time/ptp_clock_sync.h             | 78 ++++++++++++++++++++++
++ sdk/android/api/org/webrtc/VideoFrame.java | 19 ++++++
++ sdk/android/src/jni/video_frame.cc         |  9 ++-
++ video/rtp_video_stream_receiver.cc         | 55 ++++++++++-----
++ video/rtp_video_stream_receiver.h          |  2 +
++ 13 files changed, 193 insertions(+), 19 deletions(-)
++ create mode 100644 rtc_base/time/ptp_clock_sync.h
++
++diff --git a/api/video/encoded_image.h b/api/video/encoded_image.h
++index 25f83c7cf3..f5f54c879f 100644
++--- a/api/video/encoded_image.h
+++++ b/api/video/encoded_image.h
++@@ -212,6 +212,13 @@ class RTC_EXPORT EncodedImage {
++     int64_t receive_finish_ms = 0;
++   } timing_;
++ 
+++  struct BWEStats {
+++    double start_duration_ = 0;
+++    double last_duration_ = 0;
+++    int32_t packets_lost_ = 0;
+++    int32_t frame_size_ = 0;
+++  } bwe_stats_;
+++
++  private:
++   // TODO(bugs.webrtc.org/9378): We're transitioning to always owning the
++   // encoded data.
++diff --git a/api/video/video_frame.h b/api/video/video_frame.h
++index 08c939d916..c825e25a79 100644
++--- a/api/video/video_frame.h
+++++ b/api/video/video_frame.h
++@@ -19,6 +19,7 @@
++ #include "api/rtp_packet_infos.h"
++ #include "api/scoped_refptr.h"
++ #include "api/video/color_space.h"
+++#include "api/video/encoded_image.h"
++ #include "api/video/hdr_metadata.h"
++ #include "api/video/video_frame_buffer.h"
++ #include "api/video/video_rotation.h"
++@@ -236,6 +237,8 @@ class RTC_EXPORT VideoFrame {
++     processing_time_ = processing_time;
++   }
++ 
+++  EncodedImage::BWEStats bwe_stats_;
+++
++  private:
++   VideoFrame(uint16_t id,
++              const rtc::scoped_refptr<VideoFrameBuffer>& buffer,
++diff --git a/modules/video_coding/frame_object.h b/modules/video_coding/frame_object.h
++index f7988763d3..d94bb09ae8 100644
++--- a/modules/video_coding/frame_object.h
+++++ b/modules/video_coding/frame_object.h
++@@ -48,6 +48,13 @@ class RtpFrameObject : public EncodedFrame {
++   bool delayed_by_retransmission() const override;
++   const RTPVideoHeader& GetRtpVideoHeader() const;
++   const FrameMarking& GetFrameMarking() const;
+++  void SetBWETiming(double start_duration,
+++                    double last_duration,
+++                    int32_t packets_lost) {
+++    bwe_stats_.start_duration_ = start_duration;
+++    bwe_stats_.last_duration_ = last_duration;
+++    bwe_stats_.packets_lost_ = packets_lost;
+++  }
++ 
++  private:
++   RTPVideoHeader rtp_video_header_;
++diff --git a/modules/video_coding/generic_decoder.cc b/modules/video_coding/generic_decoder.cc
++index 6ffd7d80fd..7872bf286f 100644
++--- a/modules/video_coding/generic_decoder.cc
+++++ b/modules/video_coding/generic_decoder.cc
++@@ -172,6 +172,7 @@ void VCMDecodedFrameCallback::Decoded(VideoFrame& decodedImage,
++ 
++   decodedImage.set_timestamp_us(frameInfo->renderTimeMs *
++                                 rtc::kNumMicrosecsPerMillisec);
+++  decodedImage.bwe_stats_ = bwe_stats_;
++   _receiveCallback->FrameToRender(decodedImage, qp, *decode_time_ms,
++                                   frameInfo->content_type);
++ }
++@@ -257,6 +258,8 @@ int32_t VCMGenericDecoder::Decode(const VCMEncodedFrame& frame, Timestamp now) {
++   _callback->Map(frame.Timestamp(), &_frameInfos[_nextFrameInfoIdx]);
++ 
++   _nextFrameInfoIdx = (_nextFrameInfoIdx + 1) % kDecoderFrameMemoryLength;
+++  _callback->bwe_stats_ = frame.EncodedImage().bwe_stats_;
+++  _callback->bwe_stats_.frame_size_ = frame.size();
++   int32_t ret = decoder_->Decode(frame.EncodedImage(), frame.MissingFrame(),
++                                  frame.RenderTimeMs());
++ 
++diff --git a/modules/video_coding/generic_decoder.h b/modules/video_coding/generic_decoder.h
++index 4b4d83ecd5..04abf6ae98 100644
++--- a/modules/video_coding/generic_decoder.h
+++++ b/modules/video_coding/generic_decoder.h
++@@ -57,6 +57,7 @@ class VCMDecodedFrameCallback : public DecodedImageCallback {
++ 
++   void Map(uint32_t timestamp, VCMFrameInformation* frameInfo);
++   int32_t Pop(uint32_t timestamp);
+++  EncodedImage::BWEStats bwe_stats_;
++ 
++  private:
++   rtc::ThreadChecker construction_thread_;
++diff --git a/modules/video_coding/packet_buffer.cc b/modules/video_coding/packet_buffer.cc
++index 15c8f83e14..0d51110715 100644
++--- a/modules/video_coding/packet_buffer.cc
+++++ b/modules/video_coding/packet_buffer.cc
++@@ -102,6 +102,8 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
++     first_seq_num_ = seq_num;
++   }
++ 
+++  MOS_QueryPerformanceCounter(&packet->time_ticks);
+++
++   if (buffer_[index] != nullptr) {
++     // Duplicate packet, just delete the payload.
++     if (buffer_[index]->seq_num == packet->seq_num) {
++diff --git a/modules/video_coding/packet_buffer.h b/modules/video_coding/packet_buffer.h
++index c480e37239..d0ade12194 100644
++--- a/modules/video_coding/packet_buffer.h
+++++ b/modules/video_coding/packet_buffer.h
++@@ -70,6 +70,7 @@ class PacketBuffer {
++     RTPVideoHeader video_header;
++ 
++     RtpPacketInfo packet_info;
+++    uint64_t time_ticks;
++   };
++   struct InsertResult {
++     std::vector<std::unique_ptr<Packet>> packets;
++@@ -92,6 +93,30 @@ class PacketBuffer {
++   absl::optional<int64_t> LastReceivedPacketMs() const;
++   absl::optional<int64_t> LastReceivedKeyframePacketMs() const;
++ 
+++  int32_t MOS_QueryPerformanceCounter(uint64_t* pPerformanceCount) {
+++    struct timespec Res;
+++    struct timespec t;
+++    int32_t iRet;
+++
+++    if (pPerformanceCount == nullptr) {
+++      return false;
+++    }
+++    if ((iRet = clock_getres(CLOCK_MONOTONIC, &Res)) != 0) {
+++      return false;
+++    }
+++    if (Res.tv_sec != 0) {  // resolution (precision) can't be in seconds for
+++                            // current machine and OS
+++      return false;
+++    }
+++    if ((iRet = clock_gettime(CLOCK_MONOTONIC, &t)) != 0) {
+++      return false;
+++    }
+++    *pPerformanceCount =
+++        (uint64_t)((1000 * 1000 * 1000 * t.tv_sec + t.tv_nsec) / Res.tv_nsec);
+++
+++    return true;
+++  }
+++
++  private:
++   Clock* const clock_;
++ 
++diff --git a/rtc_base/time/BUILD.gn b/rtc_base/time/BUILD.gn
++index e13ccd35ee..444fac64f2 100644
++--- a/rtc_base/time/BUILD.gn
+++++ b/rtc_base/time/BUILD.gn
++@@ -16,6 +16,7 @@ rtc_library("timestamp_extrapolator") {
++   sources = [
++     "timestamp_extrapolator.cc",
++     "timestamp_extrapolator.h",
+++    "ptp_clock_sync.h",
++   ]
++   deps = [ "../synchronization:rw_lock_wrapper" ]
++ }
++diff --git a/rtc_base/time/ptp_clock_sync.h b/rtc_base/time/ptp_clock_sync.h
++new file mode 100644
++index 0000000000..45190f7813
++--- /dev/null
+++++ b/rtc_base/time/ptp_clock_sync.h
++@@ -0,0 +1,78 @@
+++// Copyright (C) <2021> Intel Corporation
+++//
+++// SPDX-License-Identifier: Apache-2.0
+++
+++#ifndef RTC_BASE_TIME_PTP_CLOCK_SYNC_H_
+++#define RTC_BASE_TIME_PTP_CLOCK_SYNC_H_
+++
+++#include <sys/time.h>
+++#include <cstdint>
+++#include "rtc_base/logging.h"
+++#define MICROSECONDS_FACTOR 1000000.0
+++#define OFFSET_FACTOR 200000
+++#define SERVER_FREQUENCY 0.09  // RTP/NTP timestamp runs at 90KHz clock
+++
+++// A Windows implementation for PTP using timestamp from RTP and local
+++// timestamp. We may need to implement something like QueryPerformanceFrequency
+++// for this to work on Linux platforms.
+++namespace webrtc {
+++class PTPClockSync {
+++ public:
+++  PTPClockSync()
+++      : m_server_point(0), m_server_freq(0), m_client_point(0), m_last_ts(0) {
+++    uint64_t freq;  // Performance counter frequency in a second.
+++    MOS_QueryPerformanceFrequency(&freq);
+++    m_client_freq = (double)freq / MICROSECONDS_FACTOR;
+++    m_server_freq = SERVER_FREQUENCY;
+++  }
+++  ~PTPClockSync() {}
+++
+++  void Sync(uint32_t ts, uint64_t tc) {
+++    if (GetDuration(ts, tc) < 0 ||
+++        (ts - m_last_ts) > OFFSET_FACTOR * m_server_freq) {
+++      UpdateSync(ts, tc);
+++    }
+++    m_last_ts = ts;
+++  }
+++
+++  double GetDuration(uint32_t ts, uint64_t tc) {
+++    int ds = (int)(ts - m_server_point);
+++    int dc = (int)(tc - m_client_point);
+++    return (double)dc / m_client_freq - (double)ds / m_server_freq;
+++  }
+++
+++  int32_t MOS_QueryPerformanceFrequency(uint64_t* pFrequency) {
+++    struct timespec Res;
+++    int32_t iRet;
+++
+++    if (pFrequency == nullptr) {
+++      return false;
+++    }
+++
+++    if ((iRet = clock_getres(CLOCK_MONOTONIC, &Res)) != 0) {
+++      return false;
+++    }
+++
+++    // resolution (precision) can't be in seconds for current machine and OS
+++    if (Res.tv_sec != 0) {
+++      return false;
+++    }
+++    *pFrequency = (uint64_t)((1000 * 1000 * 1000) / Res.tv_nsec);
+++
+++    return true;
+++  }
+++
+++ protected:
+++  uint32_t m_server_point;
+++  double m_server_freq;  // count per us
+++  uint64_t m_client_point;
+++  double m_client_freq;  // count per us
+++  uint32_t m_last_ts;
+++
+++  void UpdateSync(uint32_t ts, uint64_t tc) {
+++    m_client_point = tc;
+++    m_server_point = ts;
+++  }
+++};
+++}  // namespace webrtc
+++#endif
++\ No newline at end of file
++diff --git a/sdk/android/api/org/webrtc/VideoFrame.java b/sdk/android/api/org/webrtc/VideoFrame.java
++index a0a0d4eecb..01e73b77b6 100644
++--- a/sdk/android/api/org/webrtc/VideoFrame.java
+++++ b/sdk/android/api/org/webrtc/VideoFrame.java
++@@ -142,6 +142,24 @@ public class VideoFrame implements RefCounted {
++     this.timestampNs = timestampNs;
++   }
++ 
+++  // BWE stats
+++  public double startDuration;
+++  public double lastDuration;
+++  public int packetsLost;
+++  public int frameSize;
+++
+++  /**
+++   * Set BWE stats.
+++   */
+++  @CalledByNative
+++  public boolean setBweStats(double startDuration, double lastDuration, int packetsLost, int frameSize) {
+++    this.startDuration = startDuration;
+++    this.lastDuration = lastDuration;
+++    this.packetsLost = packetsLost;
+++    this.frameSize = frameSize;
+++    return true;
+++  }
+++
++   @CalledByNative
++   public Buffer getBuffer() {
++     return buffer;
++@@ -187,4 +205,5 @@ public class VideoFrame implements RefCounted {
++   public void release() {
++     buffer.release();
++   }
+++
++ }
++diff --git a/sdk/android/src/jni/video_frame.cc b/sdk/android/src/jni/video_frame.cc
++index d57fe8f9b7..ade49b7e85 100644
++--- a/sdk/android/src/jni/video_frame.cc
+++++ b/sdk/android/src/jni/video_frame.cc
++@@ -214,10 +214,17 @@ ScopedJavaLocalRef<jobject> NativeToJavaVideoFrame(JNIEnv* jni,
++     ScopedJavaLocalRef<jobject> j_video_frame_buffer(
++         jni, android_buffer->video_frame_buffer());
++     Java_Buffer_retain(jni, j_video_frame_buffer);
++-    return Java_VideoFrame_Constructor(
+++
+++    ScopedJavaLocalRef<jobject> jvc = Java_VideoFrame_Constructor(
++         jni, j_video_frame_buffer, static_cast<jint>(frame.rotation()),
++         static_cast<jlong>(frame.timestamp_us() *
++                            rtc::kNumNanosecsPerMicrosec));
+++    Java_VideoFrame_setBweStats(
+++        jni, jvc, static_cast<jdouble>(frame.bwe_stats_.start_duration_),
+++        static_cast<jdouble>(frame.bwe_stats_.last_duration_),
+++        static_cast<jint>(frame.bwe_stats_.packets_lost_),
+++        static_cast<jint>(frame.bwe_stats_.frame_size_));
+++    return jvc;
++   } else {
++     return Java_VideoFrame_Constructor(
++         jni, WrapI420Buffer(jni, buffer->ToI420()),
++diff --git a/video/rtp_video_stream_receiver.cc b/video/rtp_video_stream_receiver.cc
++index f2eb64acf3..970b73794f 100644
++--- a/video/rtp_video_stream_receiver.cc
+++++ b/video/rtp_video_stream_receiver.cc
++@@ -742,6 +742,10 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
++   std::vector<rtc::ArrayView<const uint8_t>> payloads;
++   RtpPacketInfos::vector_type packet_infos;
++ 
+++  // Add timing information required by sender-side BWE.
+++  uint64_t max_tc, min_tc;
+++  double start_duration = 0, last_duration = 0;
+++
++   bool frame_boundary = true;
++   for (auto& packet : result.packets) {
++     // PacketBuffer promisses frame boundaries are correctly set on each
++@@ -754,18 +758,24 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
++       max_recv_time = packet->packet_info.receive_time_ms();
++       payloads.clear();
++       packet_infos.clear();
+++      max_tc = min_tc = packet->time_ticks;
++     } else {
++       max_nack_count = std::max(max_nack_count, packet->times_nacked);
++       min_recv_time =
++           std::min(min_recv_time, packet->packet_info.receive_time_ms());
++       max_recv_time =
++           std::max(max_recv_time, packet->packet_info.receive_time_ms());
+++      max_tc = std::max(max_tc, packet->time_ticks);
+++      min_tc = std::min(min_tc, packet->time_ticks);
++     }
++     payloads.emplace_back(packet->video_payload);
++     packet_infos.push_back(packet->packet_info);
++ 
++     frame_boundary = packet->is_last_packet_in_frame();
++     if (packet->is_last_packet_in_frame()) {
+++      clock_sync_.Sync(packet->timestamp, min_tc);
+++      start_duration = clock_sync_.GetDuration(packet->timestamp, min_tc);
+++      last_duration = clock_sync_.GetDuration(packet->timestamp, max_tc);
++       auto depacketizer_it = payload_type_map_.find(first_packet->payload_type);
++       RTC_CHECK(depacketizer_it != payload_type_map_.end());
++ 
++@@ -777,24 +787,33 @@ void RtpVideoStreamReceiver::OnInsertedPacket(
++       }
++ 
++       const video_coding::PacketBuffer::Packet& last_packet = *packet;
++-      OnAssembledFrame(std::make_unique<video_coding::RtpFrameObject>(
++-          first_packet->seq_num,                    //
++-          last_packet.seq_num,                      //
++-          last_packet.marker_bit,                   //
++-          max_nack_count,                           //
++-          min_recv_time,                            //
++-          max_recv_time,                            //
++-          first_packet->timestamp,                  //
++-          first_packet->ntp_time_ms,                //
++-          last_packet.video_header.video_timing,    //
++-          first_packet->payload_type,               //
++-          first_packet->codec(),                    //
++-          last_packet.video_header.rotation,        //
++-          last_packet.video_header.content_type,    //
++-          first_packet->video_header,               //
++-          last_packet.video_header.color_space,     //
++-          RtpPacketInfos(std::move(packet_infos)),  //
++-          std::move(bitstream)));
+++      std::unique_ptr<video_coding::RtpFrameObject> frame =
+++          std::make_unique<video_coding::RtpFrameObject>(
+++              first_packet->seq_num,                    //
+++              last_packet.seq_num,                      //
+++              last_packet.marker_bit,                   //
+++              max_nack_count,                           //
+++              min_recv_time,                            //
+++              max_recv_time,                            //
+++              first_packet->timestamp,                  //
+++              first_packet->ntp_time_ms,                //
+++              last_packet.video_header.video_timing,    //
+++              first_packet->payload_type,               //
+++              first_packet->codec(),                    //
+++              last_packet.video_header.rotation,        //
+++              last_packet.video_header.content_type,    //
+++              first_packet->video_header,               //
+++              last_packet.video_header.color_space,     //
+++              RtpPacketInfos(std::move(packet_infos)),  //
+++              std::move(bitstream));
+++      StreamStatistician* ss =
+++          rtp_receive_statistics_->GetStatistician(config_.rtp.remote_ssrc);
+++      int32_t packets_lost = 0;
+++      if (ss != nullptr) {
+++        packets_lost = ss->GetStats().packets_lost;
+++        frame->SetBWETiming(start_duration, last_duration, packets_lost);
+++      }
+++      OnAssembledFrame(std::move(frame));
++     }
++   }
++   RTC_DCHECK(frame_boundary);
++diff --git a/video/rtp_video_stream_receiver.h b/video/rtp_video_stream_receiver.h
++index f4dc06dbec..3bd889cf4d 100644
++--- a/video/rtp_video_stream_receiver.h
+++++ b/video/rtp_video_stream_receiver.h
++@@ -48,6 +48,7 @@
++ #include "rtc_base/critical_section.h"
++ #include "rtc_base/numerics/sequence_number_util.h"
++ #include "rtc_base/synchronization/sequence_checker.h"
+++#include "rtc_base/time/ptp_clock_sync.h"
++ #include "rtc_base/thread_annotations.h"
++ #include "rtc_base/thread_checker.h"
++ #include "video/buffered_frame_decryptor.h"
++@@ -272,6 +273,7 @@ class RtpVideoStreamReceiver : public LossNotificationSender,
++   void OnAssembledFrame(std::unique_ptr<video_coding::RtpFrameObject> frame);
++ 
++   Clock* const clock_;
+++  PTPClockSync clock_sync_;
++   // Ownership of this object lies with VideoReceiveStream, which owns |this|.
++   const VideoReceiveStream::Config& config_;
++   PacketRouter* const packet_router_;
++-- 
++2.25.1
++
+-- 
+2.25.1
+
