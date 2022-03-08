@@ -168,7 +168,9 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             for (int i = 0; i < nPointCount; i++) {
                 strCmd.append("u ").append(pointArray[i]).append("\n");
             }
-            sendAndroidEventAsString(strCmd.toString());
+            if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
+                sendAndroidEventAsString(strCmd.toString());
+            }
             return true;
         } else {
             nPointCount = evt.getPointerCount();
@@ -191,7 +193,9 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 nRomoteY = Math.round((y * height) / v.getHeight());
                 strCmd.append("m ").append(pointId).append(" ").append(nRomoteX).append(" ").append(nRomoteY).append(" ").append(255).append("\n");
             }
-            sendAndroidEventAsString(strCmd.toString());
+            if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
+                sendAndroidEventAsString(strCmd.toString());
+            }
             return true;
         }
 
@@ -208,8 +212,9 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         } else {
             strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
         }
-
-        sendAndroidEventAsString(strCmd);
+        if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
+            sendAndroidEventAsString(strCmd);
+        }
         v.performClick();
         return true;
     }

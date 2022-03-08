@@ -664,25 +664,23 @@ public abstract class BaseController implements OnTouchListener {
                 new RelativeLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT));
-        // 监听物理鼠标事件
+        //Listen for physical mouse events.
         viewGroup.setOnGenericMotionListener((v, event) -> {
-            // 判断是否是鼠标事件
+            // Determine whether it is a mouse event
             if (event.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE) {
-                // 发送鼠标移动事件
-                sendMouseMotionF(event.getX(), event.getY(), 0, 0);
-                // 发送鼠标点击事件
-                if (event.getButtonState() == 0) {
-                    sendMouseKey(false, 1, event.getX(), event.getY());
-                    sendMouseKey(false, 3, event.getX(), event.getY());
-                } else {
-                    switch (event.getButtonState()) {
-                        case MotionEvent.BUTTON_PRIMARY:
-                            sendMouseKey(true, 1, event.getX(), event.getY());
-                            break;
-                        case MotionEvent.BUTTON_BACK:
-                            sendMouseKey(true, 3, event.getX(), event.getY());
-                            break;
-                    }
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_BUTTON_PRESS:
+                        // Send mouse button down event
+                        sendMouseKey(true, 1, event.getX(), event.getY());
+                        break;
+                    case MotionEvent.ACTION_BUTTON_RELEASE:
+                        // Send mouse button up event
+                        sendMouseKey(false, 1, event.getX(), event.getY());
+                        break;
+                    default:
+                        // Send mouse button move event
+                        sendMouseMotionF(event.getX(), event.getY(), 0, 0);
+                        break;
                 }
                 return true;
             }
@@ -912,10 +910,10 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     /**
-     * 发送鼠标按键事件
+     * Send mouse event
      *
-     * @param pressed true按下,false释放
-     * @param button  1左2中3右
+     * @param pressed true down,false up
+     * @param button  1 left 2 medium 3 right
      */
     public void sendMouseKey(boolean pressed, int button, float x, float y) {
         Map<String, Object> mapKey = new HashMap<>();
