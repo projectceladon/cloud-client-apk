@@ -99,6 +99,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private final String TAG = "PlayGameRtcActivity";
     private final boolean isFirst = false;
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+    private final int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
     private final long TIME_INTERVAL_TO_GET_LOCATION = 1000;
     private final long TIME_INTERVAL_BETWEEN_NETWORK_GPS = TIME_INTERVAL_TO_GET_LOCATION * 10;
     private final String fileTransferPath = Environment.getExternalStorageDirectory().getPath();
@@ -970,7 +971,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         for (int i = 0; i < numOfCameras; i++) {
             Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
             Camera.getCameraInfo(i, cameraInfo);
-            camOrientation[i] = Integer.toString(cameraInfo.orientation);
+            camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
             camFacing[i] = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) ? "front" : "back";
 
             Camera camera = Camera.open(i);
