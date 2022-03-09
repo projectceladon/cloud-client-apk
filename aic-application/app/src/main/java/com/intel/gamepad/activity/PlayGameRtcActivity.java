@@ -61,6 +61,7 @@ import com.intel.gamepad.utils.AudioHelper;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.LocationUtils;
 import com.intel.gamepad.utils.sink.BweStatsVideoSink;
+import com.intel.gamepad.utils.CameraEventsHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -119,6 +120,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private int screenWidth = viewWidth;
     private int screenHeight = viewHeight;
     private Handler handler = null;
+    private CameraEventsHandler mCameraEventsHandler = null;
     private boolean requesPermissionFromServer = false;
     private int satelliteCountCurrent = 0;
     private LocationListener mLocationListenerNetwork = null;
@@ -222,6 +224,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         filter.addAction("com.intel.gamepad.sendfiletoaic");
         filter.addAction("com.intel.gamepad.sendfiletoapp");
         dynamicReceiver = new DynamicReceiver();
+        mCameraEventsHandler = new CameraEventsHandler();
     }
 
 
@@ -775,15 +778,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
         switch (cameraRes) {
             case "1":
                 LogEx.d("Requested for 480p");
-                videoCapturer = AicVideoCapturer.create(640, 480);
+                videoCapturer = AicVideoCapturer.create(640, 480, mCameraEventsHandler);
                 break;
             case "2":
                 LogEx.d("Requested for 720p");
-                videoCapturer = AicVideoCapturer.create(1280, 720);
+                videoCapturer = AicVideoCapturer.create(1280, 720, mCameraEventsHandler);
                 break;
             case "4":
                 LogEx.d("Requested for 1080p");
-                videoCapturer = AicVideoCapturer.create(1920, 1080);
+                videoCapturer = AicVideoCapturer.create(1920, 1080, mCameraEventsHandler);
                 break;
         }
 

@@ -17,11 +17,12 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
     public static String cameraId;
     private int width, height, fps;
 
-    private AicVideoCapturer(String deviceName, boolean captureToTexture) {
-        super(deviceName, null, captureToTexture);
+    private AicVideoCapturer(String deviceName, CameraEventsHandler eventHandler,
+        boolean captureToTexture) {
+          super(deviceName, eventHandler, captureToTexture);
     }
 
-    public static AicVideoCapturer create(int width, int height) {
+    public static AicVideoCapturer create(int width, int height, CameraEventsHandler eventHandler) {
         String deviceName = getDeviceName(true);
         AicVideoCapturer capturer;
         String cameraLatencyDebugEnabled;
@@ -44,9 +45,9 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
         }
 
         if (cameraLatencyDebugEnabled != null && cameraLatencyDebugEnabled.equals("true")) {
-            capturer = new AicVideoCapturer(deviceName, false);
+            capturer = new AicVideoCapturer(deviceName, eventHandler, false);
         } else {
-            capturer = new AicVideoCapturer(deviceName, true);
+            capturer = new AicVideoCapturer(deviceName, eventHandler, true);
         }
         capturer.width = width;
         capturer.height = height;
