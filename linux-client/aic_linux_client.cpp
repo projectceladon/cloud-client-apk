@@ -285,6 +285,7 @@ int main(int argc, char* argv[]) {
 
   bool fullscreen = false;
   bool running = true;
+#if 0
   while (running) {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
@@ -315,6 +316,37 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+#else
+  SDL_Event e;
+  while (running) {
+    SDL_WaitEvent(&e);
+    switch (e.type) {
+      case SDL_QUIT:
+        running = false;
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        onMouseButton(e.button);
+        break;
+      case SDL_MOUSEMOTION:
+        onMouseMove(e.motion);
+        break;
+      case SDL_KEYDOWN: {
+          if (e.key.keysym.sym == SDLK_F11) {
+            uint32_t flags = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+            SDL_SetWindowFullscreen(win, flags);
+            fullscreen = !fullscreen;
+          }
+        }
+        break;
+      case SDL_WINDOWEVENT:
+        break;
+      default:
+        //std::cout << "Unhandled SDL event " << e.type << std::endl;
+        break;
+    }
+  }
+#endif
 
   pc->Stop(server_id, nullptr, nullptr);
   pc->RemoveObserver(ob);

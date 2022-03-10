@@ -1,4 +1,28 @@
-### How to build prebuilt binaries:
+### Install needed software
+
+please use Ubuntu 20.04
+
+sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libglew-dev libsdl2-dev libsdl2-image-dev libglm-dev libfreetype6-dev libx11-dev libxext-dev libxtst-dev libxrender-dev libxmu-dev libxmuu-dev
+
+
+
+### How to build aic linux client:
+
+1. mkdir build
+2. cd build
+3. cmake ..
+4. make
+
+
+### How to Run:
+
+1. cd build
+2. export LD_LIBRARY_PATH=../lib
+3. ./aic_linux_client -u http://10.239.93.57:8095 -s s0 -c c0 -r 1280x720 -v h265
+
+
+
+### How to build prebuilt binaries if you need them:
 
 ## SDL
 1. tar -zxvf SDL2-2.0.20.tar.gz
@@ -22,20 +46,3 @@
 5. PKG_CONFIG_PATH=/opt/intel/mediasdk/lib/pkgconfig/ ./configure --prefix=./dist --target-os=linux --arch=x86_64 --disable-postproc --disable-devices --disable-vdpau --disable-cuda --disable-cuvid --disable-videotoolbox --disable-audiotoolbox --disable-sdl2 --disable-nvenc --disable-lzma --enable-shared --extra-cflags=-fPIC --enable-gpl --enable-libdrm
 6. make -j8
 7. make install
-
-
-
-### How to build aic linux client:
-
-1. mkdir build
-2. cd build
-3. cmake ..
-4. make
-
-
-
-### How to Run:
-
-1. cd build
-2. export LD_LIBRARY_PATH=../lib
-3. ./aic_linux_client -u http://10.239.93.57:8095 -s s0 -c c0 -r 1280x720 -v h265
