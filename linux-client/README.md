@@ -18,7 +18,7 @@ sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libgle
 
 1. cd build
 2. export LD_LIBRARY_PATH=../lib
-3. ./aic_linux_client -u http://10.239.93.57:8095 -s s0 -c c0 -r 1280x720 -v h265
+3. ./aic_linux_client -u http://10.239.93.57:8095 -s s0 -c c0 -r 1280x720 -v h265 -w 640x360 -d hw
 
 
 

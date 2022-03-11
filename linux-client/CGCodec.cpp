@@ -175,10 +175,8 @@ bool CGVideoDecoder::can_decode() const { return decoder_ready; }
 
 int CGVideoDecoder::init(FrameResolution resolution,
                          uint32_t codec_type,
-                         bool *sw_codec,
                          const char *device_name,
                          int extra_hw_frames) {
-  std::cout << __func__ << " E" << std::endl;
   std::lock_guard<std::recursive_mutex> decode_push_lock(push_lock);
   std::lock_guard<std::recursive_mutex> decode_pull_lock(pull_lock);
   decoder_ready = false;
@@ -218,12 +216,12 @@ int CGVideoDecoder::init(FrameResolution resolution,
     if (m_hw_accel_ctx->is_hw_accel_valid()) {
       std::cout << "Use device " << device_name << " to accelerate decoding!" << std::endl;
     } else {
-      std::cout << "System doesn't support VAAPI(Video Acceleration API). SW Decoding is used."
+      std::cout << "System doesn't support VAAPI(Video Acceleration API). Please use SW Decoding."
                 << std::endl;
-      if (sw_codec) {
-        *sw_codec = true;
-      }
+      return -1;
     }
+  } else {
+    std::cout << "Use SW decoding!" << std::endl;
   }
 
   AVPacket *pkt = av_packet_alloc();
@@ -310,7 +308,6 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf,
     destroy();
     if (init((FrameResolution)this->resolution,
              this->codec_type,
-	     nullptr,
              this->device_name, 0) < 0) {
       std::cout << "re-init failed. "
                 << device_name << " decoding"

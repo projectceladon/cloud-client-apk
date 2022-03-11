@@ -2,12 +2,10 @@
 
 VideoRenderer::VideoRenderer(SDL_Window* w, int width, int height, Uint32 format)
  : win_(w), width_(width), height_(height), format_(format) {
-  std::cout << __func__ << ":" << std::endl;
   init();
 }
 
 VideoRenderer::~VideoRenderer() {
-  std::cout << __func__ << ":" << std::endl;
   if (renderer_) {
     SDL_DestroyTexture(texture_);
     SDL_DestroyRenderer(renderer_);
@@ -15,7 +13,6 @@ VideoRenderer::~VideoRenderer() {
 }
 
 void VideoRenderer::init() {
-  std::cout << __func__ << ":" << std::endl;
   renderer_ = SDL_CreateRenderer(win_, -1, 0);
   if (!renderer_) {
     std::cout << "Failed to create renderer" << std::endl;

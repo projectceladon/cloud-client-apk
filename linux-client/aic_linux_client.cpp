@@ -20,12 +20,10 @@ using namespace owt::p2p;
 class AudioPlayer : public owt::base::AudioPlayerInterface {
 public:
   AudioPlayer() {
-    std::cout << __func__ << ":" << std::endl;
     init();
   }
 
   virtual ~AudioPlayer() {
-    std::cout << __func__ << ":" << std::endl;
   }
 
   void OnData(const void *audio_data, int bits_per_sample,
@@ -62,24 +60,25 @@ private:
 };
 
 static const struct option long_option[] = {
-  {"url",         required_argument, NULL, 'u'},
-  {"server-id",   required_argument, NULL, 's'},
   {"client-id",   required_argument, NULL, 'c'},
+  {"device",      required_argument, NULL, 'd'},
   {"resolution",  required_argument, NULL, 'r'},
+  {"server-id",   required_argument, NULL, 's'},
+  {"url",         required_argument, NULL, 'u'},
   {"video-codec", required_argument, NULL, 'v'},
+  {"window-size", required_argument, NULL, 'w'},
   {"help",        no_argument,       NULL, 'h'},
   {NULL,          0,                 NULL,  0 }
 };
 
 void help() {
-  std::cout << "--url/-u:         Url of signaling server, for example: "
-            << "http://192.168.17.109:8096" << std::endl;
-  std::cout << "--server-id/-s:   Server id" << std::endl;
-  std::cout << "--client-id/-c:   Client id" << std::endl;
-  std::cout << "--resolution/-r:  Aic resolution, for example: 1280x720"
-            << std::endl;
-  std::cout << "--video-codec/-v: Video codec, for example: h264"
-            << std::endl;
+  std::cout << "--client-id/-c <client_id>: Client id" << std::endl;
+  std::cout << "--device/-d <sw/hw>: Software decoding or hardware decoding, default: hw" << std::endl;
+  std::cout << "--resolution/-r <aic_resolution>: Aic resolution, default: 1280x720" << std::endl;
+  std::cout << "--server-id/-s <server_id>: Server id" << std::endl;
+  std::cout << "--url/-u <url>: Url of signaling server, for example: http://192.168.17.109:8095" << std::endl;
+  std::cout << "--video-codec/-v <h264/h265>: Video codec, default: h264" << std::endl;
+  std::cout << "--window-size/-w <window_size>: Window size, default: 352x288" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -87,26 +86,34 @@ int main(int argc, char* argv[]) {
   std::string signaling_server_url;
   std::string server_id;
   std::string client_id;
-  std::string resolution;
-  std::string video_codec;
+  std::string resolution = "1280x720";
+  std::string video_codec = "h264";
+  std::string device = "hw";
+  std::string window_size = "352x288";
 
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "u:s:c:r:v:h", long_option, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:h", long_option, NULL)) != -1) {
     switch (opt) {
-      case 'u':
-        signaling_server_url = optarg;
-        break;
-      case 's':
-        server_id = optarg;
-        break;
       case 'c':
         client_id = optarg;
+        break;
+      case 'd':
+        device = optarg;
         break;
       case 'r':
         resolution = optarg;
         break;
+      case 's':
+        server_id = optarg;
+        break;
+      case 'u':
+        signaling_server_url = optarg;
+        break;
       case 'v':
         video_codec = optarg;
+        break;
+      case 'w':
+        window_size = optarg;
         break;
       case 'h':
         help();
@@ -120,9 +127,7 @@ int main(int argc, char* argv[]) {
 
   if (signaling_server_url.empty() ||
       server_id.empty() ||
-      client_id.empty() ||
-      resolution.empty() ||
-      video_codec.empty()) {
+      client_id.empty()) {
      std::cout << "Input parameters are not correct!" << std::endl;
      help();
      exit(0);
@@ -153,17 +158,36 @@ int main(int argc, char* argv[]) {
   int width = atoi(resolution.substr(0, pos).c_str());
   int height = atoi(resolution.substr(pos + 1).c_str());
 
+  // parse window_size
+  pos = window_size.find("x");
+  if (pos == std::string::npos) {
+    std::cout << "window size is not correct!" << std::endl;
+    exit(0);
+  }
+
+  int window_width = atoi(window_size.substr(0, pos).c_str());
+  int window_height = atoi(window_size.substr(pos + 1).c_str());
+
+  bool is_sw_decoding;
+  if (device == "hw") {
+    is_sw_decoding = false;
+  } else if (device == "sw") {
+    is_sw_decoding = true;
+  } else {
+    std::cout << "Device parameter is not correct!" << std::endl;
+    exit(0);
+  }
+
   SDL_Init(SDL_INIT_VIDEO);
   atexit(SDL_Quit);
 
   std::string title = ip + "    android-" + server_id + "    " + video_codec;
-  auto win = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_RESIZABLE);
+  auto win = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, SDL_WINDOW_RESIZABLE);
   if (!win) {
     std::cout << "Failed to create SDL window!" << std::endl;
   }
 
   std::shared_ptr<CGVideoDecoder> decoder = std::make_shared<CGVideoDecoder>();
-  const char *device_name = "vaapi";
 
   FrameResolution frame_resolution = FrameResolution::k480p;
   if (height == 600) {
@@ -179,19 +203,15 @@ int main(int argc, char* argv[]) {
     codec_type = (uint32_t)VideoCodecType::kH265;
   }
 
-  bool sw_codec = false;
-  if (decoder->init(frame_resolution, codec_type, &sw_codec, device_name, 0) < 0) {
-    std::cout << "VideoDecoder init failed. " << device_name << " decoding" << std::endl;
+  if (decoder->init(frame_resolution, codec_type, is_sw_decoding ? nullptr : "vaapi", 0) < 0) {
+    std::cout << "VideoDecoder init failed. " << std::endl;
     exit(0);
   } else {
-    std::cout << "VideoDecoder init done. Device: "
-              << device_name
-              << ", is sw codec: " << sw_codec
-              << std::endl;
+    std::cout << "VideoDecoder init done." << std::endl;
   }
 
   std::shared_ptr<VideoRenderer> renderer =
-    std::make_shared<VideoRenderer>(win, width, height, sw_codec ? SDL_PIXELFORMAT_IYUV : SDL_PIXELFORMAT_NV12);
+    std::make_shared<VideoRenderer>(win, width, height, is_sw_decoding ? SDL_PIXELFORMAT_IYUV : SDL_PIXELFORMAT_NV12);
 
   const int frame_size = width * height * 3 / 2;
   std::vector<uint8_t> buffer = std::vector<uint8_t>(frame_size);
