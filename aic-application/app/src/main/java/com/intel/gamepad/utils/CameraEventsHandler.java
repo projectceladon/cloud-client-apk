@@ -5,6 +5,8 @@ import com.commonlibrary.utils.LogEx;
 import org.webrtc.CameraVideoCapturer;
 
 public class CameraEventsHandler implements CameraVideoCapturer.CameraEventsHandler {
+    public static boolean isCameraSessionClosed = true;
+    public static final Object cameraLock = new Object();
 
     // Camera error handler - invoked when camera can not be opened
     // or any camera exception happens on camera thread.
@@ -29,6 +31,7 @@ public class CameraEventsHandler implements CameraVideoCapturer.CameraEventsHand
     @Override
     public void onCameraOpening(String cameraName) {
         LogEx.d("CameraEventsHandler.onCameraOpening: cameraName = " + cameraName);
+        isCameraSessionClosed = false;
     }
 
     // Callback invoked when first camera frame is available after camera is opened.
@@ -41,5 +44,9 @@ public class CameraEventsHandler implements CameraVideoCapturer.CameraEventsHand
     @Override
     public void onCameraClosed() {
         LogEx.d("CameraEventsHandler.onCameraClosed()");
+        synchronized (cameraLock) {
+            isCameraSessionClosed = true;
+            cameraLock.notify();
+        }
     }
 }

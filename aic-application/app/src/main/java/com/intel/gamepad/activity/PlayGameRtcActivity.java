@@ -772,6 +772,18 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private void publishLocalVideo() {
         LogEx.d("publishing localVideoStream.");
+
+        synchronized (CameraEventsHandler.cameraLock) {
+            while (!CameraEventsHandler.isCameraSessionClosed) {
+                try {
+                    CameraEventsHandler.cameraLock.wait();
+                } catch (InterruptedException e) {
+                    LogEx.e("Error in wait()");
+                    e.printStackTrace();
+                }
+            }
+        }
+
         videoPublication = null;
 
         // Set resolution based on the user request.
