@@ -1,0 +1,64 @@
+From 3abaeeae25dc90ef9debade9babd3e04526055ca Mon Sep 17 00:00:00 2001
+From: "Liu, Kai1" <kai1.liu@intel.com>
+Date: Tue, 15 Mar 2022 11:12:37 +0800
+Subject: [PATCH] Add
+ talk/owt/patches/0026-Set-ContentHint-kDetailed-as-default-value.patch
+
+Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
+---
+ scripts/prepare_dev.py                        |  1 +
+ ...ntentHint-kDetailed-as-default-value.patch | 30 +++++++++++++++++++
+ 2 files changed, 31 insertions(+)
+ create mode 100644 talk/owt/patches/0026-Set-ContentHint-kDetailed-as-default-value.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index ae9342d..6df831e 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -53,6 +53,7 @@ patchList = [
+     ('0023-Add-atrace-point-that-is-after-decoding.patch', WEBRTC_PATH),
+     ('0024-Alpha-transparent-is-triggered-by-the-change-of-buff.patch', WEBRTC_PATH),
+     ('0025-Enable-TCAE-in-webrtc.patch', WEBRTC_PATH),
++    ('0026-Set-ContentHint-kDetailed-as-default-value.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0026-Set-ContentHint-kDetailed-as-default-value.patch b/talk/owt/patches/0026-Set-ContentHint-kDetailed-as-default-value.patch
+new file mode 100644
+index 0000000..5eee16c
+--- /dev/null
++++ b/talk/owt/patches/0026-Set-ContentHint-kDetailed-as-default-value.patch
+@@ -0,0 +1,30 @@
++From b105adb6df1a0b2dce099e43408cbe579c5e0b08 Mon Sep 17 00:00:00 2001
++From: "Liu, Kai1" <kai1.liu@intel.com>
++Date: Tue, 15 Mar 2022 10:20:03 +0800
++Subject: [PATCH] Set ContentHint::kDetailed as default value
++
++ContentHint::kDetailed can keep camera video resolution
++unchanged to fix camera vhal decoding and displaying
++delay issue.
++
++Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
++---
++ pc/video_track.cc | 2 +-
++ 1 file changed, 1 insertion(+), 1 deletion(-)
++
++diff --git a/pc/video_track.cc b/pc/video_track.cc
++index 55356e7046..e3b2710e49 100644
++--- a/pc/video_track.cc
+++++ b/pc/video_track.cc
++@@ -26,7 +26,7 @@ VideoTrack::VideoTrack(const std::string& label,
++     : MediaStreamTrack<VideoTrackInterface>(label),
++       worker_thread_(worker_thread),
++       video_source_(video_source),
++-      content_hint_(ContentHint::kNone) {
+++      content_hint_(ContentHint::kDetailed) {
++   video_source_->RegisterObserver(this);
++ }
++ 
++-- 
++2.17.1
++
+-- 
+2.17.1
+
