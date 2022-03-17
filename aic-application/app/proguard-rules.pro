@@ -97,3 +97,7 @@
 -keep class com.google.gson.** { *; }
 #JavaBean
 -keep class com.intel.gamepad.bean.**{ *; }
+
+#protobuf
+-keep class com.google.protobuf.** {*;}
+-keep class E2ELatency.** {*;}

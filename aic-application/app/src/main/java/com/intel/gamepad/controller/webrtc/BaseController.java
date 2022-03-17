@@ -90,6 +90,7 @@ public abstract class BaseController implements OnTouchListener {
     private int nCountInput;
     private boolean send_block_success_ = false;
     private boolean send_block_failed_ = false;
+    protected boolean mE2eEnabled = false;
 
     public BaseController(PlayGameRtcActivity act) {
         this.context = act;
@@ -164,6 +165,11 @@ public abstract class BaseController implements OnTouchListener {
             btnBack.setVisibility(View.GONE);
         }
 
+    }
+
+
+    public void setE2eEnabled(boolean enabled) {
+        mE2eEnabled = enabled;
     }
 
     public void sendFile(String fileName) {
@@ -352,6 +358,11 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
+    protected void initSwitchE2E(CheckBox chkE2E) {
+        if (chkE2E == null) return;
+        chkE2E.setVisibility(View.VISIBLE);
+        chkE2E.setOnClickListener(v -> devSwitch.switchE2E(chkE2E.isChecked()));
+    }
 
     /**
      * 发送alpha开启事件
@@ -948,7 +959,7 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
-    public void sendAndroidEventAsString(String strCommand) {
+    public void sendAndroidEventAsString(String strCommand, long inputTimeStamp) {
         strCommand = strCommand + "c\n";
         MotionEventBean meb = new MotionEventBean();
         meb.setType("control");
@@ -960,6 +971,9 @@ public abstract class BaseController implements OnTouchListener {
         if (parameters != null) {
             parameters.setData(strCommand);
             parameters.settID(0);
+            if (inputTimeStamp != -1) {
+                parameters.setE2ELatency(inputTimeStamp);
+            }
             String jsonString = new Gson().toJson(meb, MotionEventBean.class);
             //LogEx.d(jsonString);
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {

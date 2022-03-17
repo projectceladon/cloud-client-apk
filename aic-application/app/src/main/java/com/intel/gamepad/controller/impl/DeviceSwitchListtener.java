@@ -14,4 +14,6 @@ public interface DeviceSwitchListtener {
     void switchAlpha(CheckBox btnDevice, boolean state);
 
     void switchAlphaOrientation(boolean portrait);
+
+    void switchE2E(boolean on);
 }

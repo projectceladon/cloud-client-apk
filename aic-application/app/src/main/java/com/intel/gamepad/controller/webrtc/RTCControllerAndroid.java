@@ -20,6 +20,8 @@ import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.utils.PopupUtil;
 
+import org.webrtc.JniCommon;
+
 import java.util.Locale;
 
 /**
@@ -42,6 +44,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     private CheckBox chkAlpha;
     private PopupWindow popupNavigator;
     private PopupWindow popupOrientation;
+    private CheckBox chkE2E;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -113,6 +116,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         initMenuButton(vgRoot.findViewById(R.id.btnMenu));
         chkAlpha = vgRoot.findViewById(R.id.chkAlpha);
         initSwitchAlpha(chkAlpha);
+        chkE2E = vgRoot.findViewById(R.id.chkE2e);
+        initSwitchE2E(chkE2E);
 
         // 这个控件用于接收物理手柄的事件
         View viewTouch = vgRoot.findViewById(R.id.viewMouse);
@@ -154,7 +159,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 strCmd.append("u ").append(pointArray[i]).append("\n");
             }
             if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
-                sendAndroidEventAsString(strCmd.toString());
+                sendAndroidEventAsString(strCmd.toString(), -1);
             }
             return true;
         } else {
@@ -179,7 +184,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 strCmd.append("m ").append(pointId).append(" ").append(nRomoteX).append(" ").append(nRomoteY).append(" ").append(255).append("\n");
             }
             if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
-                sendAndroidEventAsString(strCmd.toString());
+                sendAndroidEventAsString(strCmd.toString(), -1);
             }
             return true;
         }
@@ -198,7 +203,11 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
         }
         if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
-            sendAndroidEventAsString(strCmd);
+            if (strCmd.startsWith("d")) {
+                sendAndroidEventAsString(strCmd, mE2eEnabled ? JniCommon.nativeGetTimeStampNs(): -1);
+            } else {
+                sendAndroidEventAsString(strCmd, -1);
+            }
         }
         v.performClick();
         return true;

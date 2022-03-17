@@ -54,6 +54,7 @@ import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.controller.webrtc.BaseController;
+import com.intel.gamepad.controller.webrtc.LatencyManager;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.AicVideoCapturer;
@@ -63,6 +64,7 @@ import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.ImageManager;
 import com.intel.gamepad.utils.LocationUtils;
 import com.intel.gamepad.utils.sink.BweStatsVideoSink;
+import org.webrtc.Logging;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -137,6 +139,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private ProgressBar loading;
     private boolean isStreamAdded = false;
     private boolean isOnPause = false;
+    private boolean mE2eEnabled = false;
+    private LatencyManager mLatencyManager;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -273,6 +277,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
         ImageManager.getInstance().clear();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
+        if (mLatencyManager != null) {
+            mLatencyManager.onStreamExit();
+        }
     }
 
     @Override
@@ -1214,6 +1221,33 @@ public class PlayGameRtcActivity extends AppCompatActivity
         } else {
             chkAlpha.setChecked(IPUtils.loadAlphaChannel());
             Toast.makeText(PlayGameRtcActivity.this, "Stream is not added. Do not send video alpha command.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void switchE2E(boolean on) {
+        Log.d(TAG, "switchE2E " + on + ", mE2eEnabled" + mE2eEnabled);
+        if (on) {
+            if (!mE2eEnabled) {
+                mE2eEnabled = true;
+                controller.setE2eEnabled(true);
+                // enable other stuff
+                if (mLatencyManager == null) {
+                    mLatencyManager = new LatencyManager(PlayGameRtcActivity.this.getApplicationContext(), fullRenderer);
+                }
+                mLatencyManager.setEnable(true);
+
+            }
+        } else {
+            if (mE2eEnabled) {
+                mE2eEnabled = false;
+                controller.setE2eEnabled(false);
+                //disable other stuff
+                if (mLatencyManager != null) {
+                    mLatencyManager.setEnable(false);
+                }
+            }
+
         }
     }
 

@@ -1,5 +1,5 @@
 apply plugin: 'com.android.application'
-
+apply plugin: 'com.google.protobuf'
 
 android {
     signingConfigs {
@@ -50,7 +50,11 @@ android {
     sourceSets {
         main {
             jniLibs.srcDirs = ['libs']
+            proto {
+                srcDirs = ['src/main/proto']
+            }
         }
+
     }
     compileSdkVersion = 29
     repositories {
@@ -65,6 +69,27 @@ android {
             }
     }
 }
+protobuf {
+    //Configure the protoc compiler
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.2.0'
+    }
+    generateProtoTasks {
+        all().each { task ->
+            task.builtins {
+                remove java
+            }
+            task.builtins {
+                java {}
+                // Add cpp output without any option.
+                // DO NOT omit the braces if you want this builtin to be added.
+            }
+        }
+    }
+    //generated java class file directory
+    generatedFilesBaseDir = "$projectDir/src/generated"
+}
+
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -124,4 +149,9 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.8.0'
     annotationProcessor 'androidx.annotation:annotation:1.0.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.8.0'
+
+    // proto
+    implementation 'com.google.protobuf:protobuf-java:3.2.0'
+    implementation 'com.google.protobuf:protoc:3.2.0'
+    implementation 'com.google.protobuf:protobuf-java-util:3.2.0'
 }

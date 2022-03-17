@@ -75,4 +75,5 @@
     <string name="orientation">Orientation</string>
     <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
+    <string name="for_e2e">For E2E</string>
 </resources>

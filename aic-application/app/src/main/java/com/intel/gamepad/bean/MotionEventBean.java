@@ -93,6 +93,7 @@ public class MotionEventBean {
             private String data;
             private String file_name;
             private int tID = 0;
+            private long E2ELatency = 0;
 
             public static ParametersBean objectFromData(String str) {
 
@@ -177,6 +178,14 @@ public class MotionEventBean {
 
             public void settID(int tID) {
                 this.tID = tID;
+            }
+
+            public long getE2ELatency() {
+                return E2ELatency;
+            }
+
+            public void setE2ELatency(long time) {
+                this.E2ELatency = time;
             }
         }
     }

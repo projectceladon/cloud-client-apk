@@ -1,0 +1,726 @@
+From 4eb6328611f9d52bb834f1143ab491d496b45dd5 Mon Sep 17 00:00:00 2001
+From: "Jiang, Xia1" <xia1.jiang@intel.com>
+Date: Mon, 21 Mar 2022 18:03:39 +0800
+Subject: [PATCH] Add talk/owt/patches/0028-enable-e2e-latency-telemotry.patch
+
+Signed-off-by: Jiang, Xia1 <xia1.jiang@intel.com>
+---
+ scripts/prepare_dev.py                        |   1 +
+ .../0028-enable-e2e-latency-telemotry.patch   | 693 ++++++++++++++++++
+ 2 files changed, 694 insertions(+)
+ create mode 100644 talk/owt/patches/0028-enable-e2e-latency-telemotry.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index a998218..364cbb0 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -54,6 +54,7 @@ patchList = [
+     ('0025-Enable-TCAE-in-webrtc.patch', WEBRTC_PATH),
+     ('0026-Set-ContentHint-kDetailed-as-default-value.patch', WEBRTC_PATH),
+     ('0027-Dynamic-switch-the-orientation-of-the-background-of-.patch', WEBRTC_PATH),
++    ('0028-enable-e2e-latency-telemotry.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0028-enable-e2e-latency-telemotry.patch b/talk/owt/patches/0028-enable-e2e-latency-telemotry.patch
+new file mode 100644
+index 0000000..e02418a
+--- /dev/null
++++ b/talk/owt/patches/0028-enable-e2e-latency-telemotry.patch
+@@ -0,0 +1,693 @@
++From efb523b44af178e9a26b0fa7d4e073a9cffd4605 Mon Sep 17 00:00:00 2001
++From: "Jiang, Xia1" <xia1.jiang@intel.com>
++Date: Thu, 17 Mar 2022 19:00:36 +0800
++Subject: [PATCH] enable e2e latency telemotry
++
++Signed-off-by: Jiang, Xia1 <xia1.jiang@intel.com>
++---
++ api/video/video_frame.cc                      |  11 +-
++ api/video/video_frame.h                       |   6 +
++ sdk/android/BUILD.gn                          |   2 +
++ sdk/android/api/org/webrtc/EglRenderer.java   |  31 +++++-
++ .../api/org/webrtc/SurfaceViewRenderer.java   |   4 +
++ sdk/android/api/org/webrtc/VideoFrame.java    |  11 ++
++ .../java/org/webrtc/AndroidVideoDecoder.java  | 105 +++++++++++++++---
++ .../src/java/org/webrtc/JniCommon.java        |   2 +-
++ .../src/java/org/webrtc/LatencyLogger.java    |  52 +++++++++
++ .../java/org/webrtc/LatencyNativeMessage.java |  93 ++++++++++++++++
++ sdk/android/src/jni/jni_common.cc             |   8 ++
++ sdk/android/src/jni/video_frame.cc            |   7 +-
++ 12 files changed, 313 insertions(+), 19 deletions(-)
++ create mode 100644 sdk/android/src/java/org/webrtc/LatencyLogger.java
++ create mode 100644 sdk/android/src/java/org/webrtc/LatencyNativeMessage.java
++
++diff --git a/api/video/video_frame.cc b/api/video/video_frame.cc
++index d97e3aa82a..9f796392a8 100644
++--- a/api/video/video_frame.cc
+++++ b/api/video/video_frame.cc
++@@ -163,9 +163,11 @@ VideoFrame::Builder::~Builder() = default;
++ 
++ VideoFrame VideoFrame::Builder::build() {
++   RTC_CHECK(video_frame_buffer_ != nullptr);
++-  return VideoFrame(id_, video_frame_buffer_, timestamp_us_, timestamp_rtp_,
+++  VideoFrame frame(id_, video_frame_buffer_, timestamp_us_, timestamp_rtp_,
++                     ntp_time_ms_, rotation_, color_space_, update_rect_,
++                     packet_infos_);
+++  frame.set_timestamp_frame(timestamp_frame_);
+++  return frame;
++ }
++ 
++ VideoFrame::Builder& VideoFrame::Builder::set_video_frame_buffer(
++@@ -186,6 +188,13 @@ VideoFrame::Builder& VideoFrame::Builder::set_timestamp_us(
++   return *this;
++ }
++ 
+++VideoFrame::Builder& VideoFrame::Builder::set_timestamp_frame(
+++    int64_t timestamp_frame) {
+++  timestamp_frame_ = timestamp_frame;
+++  return *this;
+++}
+++
+++
++ VideoFrame::Builder& VideoFrame::Builder::set_timestamp_rtp(
++     uint32_t timestamp_rtp) {
++   timestamp_rtp_ = timestamp_rtp;
++diff --git a/api/video/video_frame.h b/api/video/video_frame.h
++index c825e25a79..426a0ba695 100644
++--- a/api/video/video_frame.h
+++++ b/api/video/video_frame.h
++@@ -90,6 +90,7 @@ class RTC_EXPORT VideoFrame {
++         const rtc::scoped_refptr<VideoFrameBuffer>& buffer);
++     Builder& set_timestamp_ms(int64_t timestamp_ms);
++     Builder& set_timestamp_us(int64_t timestamp_us);
+++    Builder& set_timestamp_frame(int64_t timestamp_frame);
++     Builder& set_timestamp_rtp(uint32_t timestamp_rtp);
++     Builder& set_ntp_time_ms(int64_t ntp_time_ms);
++     Builder& set_rotation(VideoRotation rotation);
++@@ -103,6 +104,7 @@ class RTC_EXPORT VideoFrame {
++     uint16_t id_ = 0;
++     rtc::scoped_refptr<webrtc::VideoFrameBuffer> video_frame_buffer_;
++     int64_t timestamp_us_ = 0;
+++    int64_t timestamp_frame_ = 0;
++     uint32_t timestamp_rtp_ = 0;
++     int64_t ntp_time_ms_ = 0;
++     VideoRotation rotation_ = kVideoRotation_0;
++@@ -168,6 +170,9 @@ class RTC_EXPORT VideoFrame {
++   // Get capture ntp time in milliseconds.
++   int64_t ntp_time_ms() const { return ntp_time_ms_; }
++ 
+++  int64_t timestamp_frame() const { return timestamp_frame_; }
+++  void set_timestamp_frame(int64_t timestamp_frame) { timestamp_frame_ = timestamp_frame; }
+++
++   // Naming convention for Coordination of Video Orientation. Please see
++   // http://www.etsi.org/deliver/etsi_ts/126100_126199/126114/12.07.00_60/ts_126114v120700p.pdf
++   //
++@@ -256,6 +261,7 @@ class RTC_EXPORT VideoFrame {
++   uint32_t timestamp_rtp_;
++   int64_t ntp_time_ms_;
++   int64_t timestamp_us_;
+++  int64_t timestamp_frame_;  // used to identify a frame
++   VideoRotation rotation_;
++   absl::optional<ColorSpace> color_space_;
++   // Updated since the last frame area. If present it means that the bounding
++diff --git a/sdk/android/BUILD.gn b/sdk/android/BUILD.gn
++index c1660e488e..901b3a5605 100644
++--- a/sdk/android/BUILD.gn
+++++ b/sdk/android/BUILD.gn
++@@ -244,6 +244,8 @@ if (is_android) {
++       "src/java/org/webrtc/VideoEncoderWrapper.java",
++       "src/java/org/webrtc/WrappedNativeI420Buffer.java",
++       "src/java/org/webrtc/GlDrawerBg.java",
+++      "src/java/org/webrtc/LatencyLogger.java",
+++      "src/java/org/webrtc/LatencyNativeMessage.java",
++     ]
++ 
++     deps = [
++diff --git a/sdk/android/api/org/webrtc/EglRenderer.java b/sdk/android/api/org/webrtc/EglRenderer.java
++index 9004e7c1da..824fd59c80 100644
++--- a/sdk/android/api/org/webrtc/EglRenderer.java
+++++ b/sdk/android/api/org/webrtc/EglRenderer.java
++@@ -139,6 +139,7 @@ public class EglRenderer implements VideoSink {
++   // Pending frame to render. Serves as a queue with size 1. Synchronized on |frameLock|.
++   private final Object frameLock = new Object();
++   @Nullable private VideoFrame pendingFrame;
+++  private long pendingReceiveTimeNs;
++ 
++   // These variables are synchronized on |layoutLock|.
++   private final Object layoutLock = new Object();
++@@ -168,6 +169,8 @@ public class EglRenderer implements VideoSink {
++   private final GlTextureFrameBuffer bitmapTextureFramebuffer =
++       new GlTextureFrameBuffer(GLES20.GL_RGBA);
++ 
+++  private RenderCallback mRenderCallback;
+++
++   private final Runnable logStatisticsRunnable = new Runnable() {
++     @Override
++     public void run() {
++@@ -505,6 +508,9 @@ public class EglRenderer implements VideoSink {
++       ++framesReceived;
++     }
++     final boolean dropOldFrame;
+++    long dropReceivedTime = 0;
+++    long dropFrameStamp = 0;
+++
++     synchronized (handlerLock) {
++       if (renderThreadHandler == null) {
++         logD("Dropping frame - Not initialized or already released.");
++@@ -514,8 +520,11 @@ public class EglRenderer implements VideoSink {
++         dropOldFrame = (pendingFrame != null);
++         if (dropOldFrame) {
++           pendingFrame.release();
+++          dropFrameStamp = pendingFrame.getTimestampFrame();
+++          dropReceivedTime = pendingReceiveTimeNs;
++         }
++         pendingFrame = frame;
+++        pendingReceiveTimeNs = JniCommon.nativeGetTimeStampNs();
++         pendingFrame.retain();
++         renderThreadHandler.post(this ::renderFrameOnRenderThread);
++       }
++@@ -524,6 +533,9 @@ public class EglRenderer implements VideoSink {
++       synchronized (statisticsLock) {
++         ++framesDropped;
++       }
+++    if (mRenderCallback != null && dropFrameStamp != -1) {
+++        mRenderCallback.onFrameDroped(dropFrameStamp, dropReceivedTime);
+++      }
++     }
++   }
++ 
++@@ -595,11 +607,13 @@ public class EglRenderer implements VideoSink {
++   private void renderFrameOnRenderThread() {
++     // Fetch and render |pendingFrame|.
++     final VideoFrame frame;
+++    long receiveTime;
++     synchronized (frameLock) {
++       if (pendingFrame == null) {
++         return;
++       }
++       frame = pendingFrame;
+++      receiveTime = pendingReceiveTimeNs;
++       pendingFrame = null;
++     }
++     if (eglBase == null || !eglBase.hasSurface()) {
++@@ -675,8 +689,12 @@ public class EglRenderer implements VideoSink {
++           renderTimeNs += (currentTimeNs - startTimeNs);
++           renderSwapBufferTimeNs += (currentTimeNs - swapBuffersStartTimeNs);
++         }
++-      }
++ 
+++        if (mRenderCallback != null && frame.getTimestampFrame() != -1) {
+++          Logging.d(TAG, "renderFrameOnRenderThread" + frame.getTimestampFrame()  + "-" + frame.getTimestampNs());
+++          mRenderCallback.onFrameDrawed(frame.getTimestampFrame(), receiveTime, startTimeNs, currentTimeNs, shouldRenderFrame);
+++        }
+++      }
++       notifyCallbacks(frame, shouldRenderFrame);
++     } catch (GlUtil.GlOutOfMemoryException e) {
++       logE("Error while drawing frame", e);
++@@ -771,6 +789,17 @@ public class EglRenderer implements VideoSink {
++     }
++   }
++ 
+++  public interface RenderCallback {
+++    void onFrameDroped(long timestampNs, long receiveTime);
+++    void onFrameDrawed(long timestampNs, long receiveTime, long drawStartTime, long drawEndTime, boolean draw);
+++  }
+++
+++
+++
+++  public void registerRenderCallback(RenderCallback callback) {
+++     mRenderCallback = callback;
+++  }
+++
++   private void logE(String string, Throwable e) {
++     Logging.e(TAG, name + string, e);
++   }
++diff --git a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
++index b41d2e3f03..cffdbcca35 100644
++--- a/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
+++++ b/sdk/android/api/org/webrtc/SurfaceViewRenderer.java
++@@ -317,4 +317,8 @@ public class SurfaceViewRenderer extends SurfaceView
++   private void logD(String string) {
++     Logging.d(TAG, resourceName + ": " + string);
++   }
+++
+++  public void registerRenderCallback(EglRenderer.RenderCallback callback) {
+++    eglRenderer.registerRenderCallback(callback);
+++  }
++ }
++diff --git a/sdk/android/api/org/webrtc/VideoFrame.java b/sdk/android/api/org/webrtc/VideoFrame.java
++index 01e73b77b6..4796e02dfb 100644
++--- a/sdk/android/api/org/webrtc/VideoFrame.java
+++++ b/sdk/android/api/org/webrtc/VideoFrame.java
++@@ -123,6 +123,7 @@ public class VideoFrame implements RefCounted {
++   private final Buffer buffer;
++   private final int rotation;
++   private final long timestampNs;
+++  private long timestampFrame;
++ 
++   /**
++    * Constructs a new VideoFrame backed by the given {@code buffer}.
++@@ -181,6 +182,16 @@ public class VideoFrame implements RefCounted {
++     return timestampNs;
++   }
++ 
+++  @CalledByNative
+++  public long getTimestampFrame() {
+++    return timestampFrame;
+++  }
+++
+++  @CalledByNative
+++  public void setTimestampFrame(long timestamp) {
+++    timestampFrame = timestamp;
+++  }
+++
++   public int getRotatedWidth() {
++     if (rotation % 180 == 0) {
++       return buffer.getWidth();
++diff --git a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
++index b797e2521e..8fe323f780 100644
++--- a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+++++ b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
++@@ -22,7 +22,7 @@ import java.util.concurrent.BlockingDeque;
++ import java.util.concurrent.LinkedBlockingDeque;
++ import java.util.concurrent.TimeUnit;
++ import org.webrtc.ThreadUtils.ThreadChecker;
++-
+++import java.util.Arrays;
++ /**
++  * Android hardware video decoder.
++  */
++@@ -54,6 +54,10 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   // MediaCodec.
++   private static final int DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US = 100000;
++ 
+++  // guids same as the server
+++  private static final byte[] guids = new byte[] {(byte) 0xef, (byte) 0xc8, (byte) 0xe7, (byte) 0xb0, 0x26,
+++          0x26, 0x47, (byte) 0xfd, (byte) 0x9d, (byte) 0xa3, 0x49, 0x4f, 0x60, (byte) 0xb8, 0x5b, (byte) 0xf0};
+++
++   private final MediaCodecWrapperFactory mediaCodecWrapperFactory;
++   private final String codecName;
++   private final VideoCodecMimeType codecType;
++@@ -61,14 +65,17 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   private static class FrameInfo {
++     final long decodeStartTimeMs;
++     final int rotation;
+++    final ByteBuffer latencyBuffer;
++ 
++-    FrameInfo(long decodeStartTimeMs, int rotation) {
+++    FrameInfo(long decodeStartTimeMs, int rotation, ByteBuffer latencyBuffer) {
++       this.decodeStartTimeMs = decodeStartTimeMs;
++       this.rotation = rotation;
+++      this.latencyBuffer = latencyBuffer;
++     }
++   }
++ 
++   private final BlockingDeque<FrameInfo> frameInfos;
+++  //private Map<FrameInfo, ByteBuffer> delayMsgs = new HashMap<>;
++   private int colorFormat;
++ 
++   // Output thread runs a loop which polls MediaCodec for decoded output buffers.  It reformats
++@@ -110,10 +117,12 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   private static class DecodedTextureMetadata {
++     final long presentationTimestampUs;
++     final Integer decodeTimeMs;
+++    final ByteBuffer latencyBuffer;
++ 
++-    DecodedTextureMetadata(long presentationTimestampUs, Integer decodeTimeMs) {
+++    DecodedTextureMetadata(long presentationTimestampUs, Integer decodeTimeMs, ByteBuffer buffer) {
++       this.presentationTimestampUs = presentationTimestampUs;
++       this.decodeTimeMs = decodeTimeMs;
+++      this.latencyBuffer = buffer;
++     }
++   }
++ 
++@@ -204,6 +213,40 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     return VideoCodecStatus.OK;
++   }
++ 
+++  private ByteBuffer getLatencyMsg(ByteBuffer byteBuffer, int pos) {
+++    int capacity = byteBuffer.remaining();
+++    if (capacity < 24) {
+++      return null;
+++    }
+++    if (byteBuffer.get() != 0 || byteBuffer.get() != 0 || byteBuffer.get() != 0 || byteBuffer.get() != 1) {
+++      return null;
+++    }
+++
+++    if ((byteBuffer.get() & 0x1f) == 0x06) {
+++      if (byteBuffer.get() == 0x05) {
+++        int size = byteBuffer.get() & 0xff;
+++        if (size > capacity - 8 || size < 17) {
+++          return null;
+++        }
+++
+++        for (int i = 0; i < 16; i++)  {  // 15 for guid
+++          if (byteBuffer.get() != guids[i]) {
+++            return null;
+++          }
+++        }
+++        ByteBuffer res = ByteBuffer.allocate(size -16);
+++        byteBuffer.position(pos + 23);
+++        byteBuffer.limit(pos + 23 +size -16);
+++        res.put(byteBuffer);
+++        res.flip();
+++        return res;
+++      }
+++    } else {
+++      return null;
+++    }
+++    return null;
+++  }
+++
++   @Override
++   public VideoCodecStatus decode(EncodedImage frame, DecodeInfo info) {
++     decoderThreadChecker.checkIsOnValidThread();
++@@ -278,9 +321,20 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++       Logging.e(TAG, "decode() - HW buffer too small");
++       return VideoCodecStatus.ERROR;
++     }
++-    buffer.put(frame.buffer);
++ 
++-    frameInfos.offer(new FrameInfo(SystemClock.elapsedRealtime(), frame.rotation));
+++    int limit = frame.buffer.limit();
+++    int pos = frame.buffer.position();
+++    ByteBuffer lateBuffer = getLatencyMsg(frame.buffer, pos);
+++    frame.buffer.limit(limit);
+++    frame.buffer.position(pos);
+++    buffer.put( frame.buffer);
+++    if (lateBuffer != null) {
+++      Logging.d(TAG, "get sei data " + lateBuffer.capacity() + Arrays.toString(lateBuffer.array()));
+++      frameInfos.offer(new FrameInfo(SystemClock.elapsedRealtime(), frame.rotation, lateBuffer));
+++    } else {
+++      frameInfos.offer(new FrameInfo(SystemClock.elapsedRealtime(), frame.rotation, null));
+++    }
+++
++     try {
++       codec.queueInputBuffer(index, 0 /* offset */, size,
++           TimeUnit.NANOSECONDS.toMicros(frame.captureTimeNs), 0 /* flags */);
++@@ -408,18 +462,18 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++       hasDecodedFirstFrame = true;
++ 
++       if (surfaceTextureHelper != null) {
++-        deliverTextureFrame(result, info, rotation, decodeTimeMs);
+++        deliverTextureFrame(result, info, rotation, decodeTimeMs, frameInfo.latencyBuffer);
++       } else {
++-        deliverByteFrame(result, info, rotation, decodeTimeMs);
+++        deliverByteFrame(result, info, rotation, decodeTimeMs, frameInfo.latencyBuffer);
++       }
++ 
++-    } catch (IllegalStateException e) {
+++    } catch (IllegalArgumentException | IllegalStateException e) {
++       Logging.e(TAG, "deliverDecodedFrame failed", e);
++     }
++   }
++ 
++   private void deliverTextureFrame(final int index, final MediaCodec.BufferInfo info,
++-      final int rotation, final Integer decodeTimeMs) {
+++      final int rotation, final Integer decodeTimeMs, ByteBuffer buffer) {
++     // Load dimensions from shared memory under the dimension lock.
++     final int width;
++     final int height;
++@@ -435,7 +489,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++       }
++       surfaceTextureHelper.setTextureSize(width, height);
++       surfaceTextureHelper.setFrameRotation(rotation);
++-      renderedTextureMetadata = new DecodedTextureMetadata(info.presentationTimeUs, decodeTimeMs);
+++      renderedTextureMetadata = new DecodedTextureMetadata(info.presentationTimeUs, decodeTimeMs, buffer);
++       codec.releaseOutputBuffer(index, /* render= */ true);
++     }
++   }
++@@ -445,6 +499,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     final VideoFrame newFrame;
++     final Integer decodeTimeMs;
++     final long timestampNs;
+++    final ByteBuffer latencyBuffer;
++     synchronized (renderedTextureMetadataLock) {
++       if (renderedTextureMetadata == null) {
++         throw new IllegalStateException(
++@@ -452,16 +507,26 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++       }
++       timestampNs = renderedTextureMetadata.presentationTimestampUs * 1000;
++       decodeTimeMs = renderedTextureMetadata.decodeTimeMs;
+++      latencyBuffer = renderedTextureMetadata.latencyBuffer;
++       renderedTextureMetadata = null;
++     }
++-    // Change timestamp of frame.
++-    final VideoFrame frameWithModifiedTimeStamp =
+++    if (latencyBuffer != null) {
+++      Logging.e(TAG, "onFrame log latency");
+++      LatencyLogger.getInstance().logLatencyMsg(timestampNs, decodeTimeMs, latencyBuffer);
+++      final VideoFrame frameWithModifiedTimeStamp =
++         new VideoFrame(frame.getBuffer(), frame.getRotation(), timestampNs);
++-    callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
+++      frameWithModifiedTimeStamp.setTimestampFrame(timestampNs);
+++      callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
+++    } else {
+++      final VideoFrame frameWithModifiedTimeStamp =
+++        new VideoFrame(frame.getBuffer(), frame.getRotation(), timestampNs);
+++      frameWithModifiedTimeStamp.setTimestampFrame(-1);
+++      callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
+++    }
++   }
++ 
++   private void deliverByteFrame(
++-      int result, MediaCodec.BufferInfo info, int rotation, Integer decodeTimeMs) {
+++      int result, MediaCodec.BufferInfo info, int rotation, Integer decodeTimeMs, ByteBuffer delayBuffer) {
++     // Load dimensions from shared memory under the dimension lock.
++     int width;
++     int height;
++@@ -503,7 +568,17 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     codec.releaseOutputBuffer(result, /* render= */ false);
++ 
++     long presentationTimeNs = info.presentationTimeUs * 1000;
++-    VideoFrame frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);
+++
+++    VideoFrame frame;
+++    if(delayBuffer != null) {
+++      LatencyLogger.getInstance().logLatencyMsg(presentationTimeNs, decodeTimeMs, delayBuffer);
+++      frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);
+++      frame.setTimestampFrame(presentationTimeNs);
+++      Logging.e(TAG, "deliverByteFrame log latency");
+++    } else {
+++      frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);
+++      frame.setTimestampFrame(-1);
+++    }
++ 
++     // Note that qp is parsed on the C++ side.
++     callback.onDecodedFrame(frame, decodeTimeMs, null /* qp */);
++diff --git a/sdk/android/src/java/org/webrtc/JniCommon.java b/sdk/android/src/java/org/webrtc/JniCommon.java
++index e1b2e513d7..995cac5417 100644
++--- a/sdk/android/src/java/org/webrtc/JniCommon.java
+++++ b/sdk/android/src/java/org/webrtc/JniCommon.java
++@@ -17,7 +17,7 @@ public class JniCommon {
++   /** Functions to increment/decrement an rtc::RefCountInterface pointer. */
++   public static native void nativeAddRef(long refCountedPointer);
++   public static native void nativeReleaseRef(long refCountedPointer);
++-
++   public static native ByteBuffer nativeAllocateByteBuffer(int size);
++   public static native void nativeFreeByteBuffer(ByteBuffer buffer);
+++  public static native long nativeGetTimeStampNs();
++ }
++diff --git a/sdk/android/src/java/org/webrtc/LatencyLogger.java b/sdk/android/src/java/org/webrtc/LatencyLogger.java
++new file mode 100644
++index 0000000000..667df8d845
++--- /dev/null
+++++ b/sdk/android/src/java/org/webrtc/LatencyLogger.java
++@@ -0,0 +1,52 @@
+++package org.webrtc;
+++
+++import java.nio.ByteBuffer;
+++import java.util.Map;
+++import java.util.concurrent.ConcurrentHashMap;
+++
+++public class LatencyLogger {
+++    private static final String TAG = "LatencyLogger";
+++    private static class LatencyLoggerInstance {
+++        private static final LatencyLogger instance = new LatencyLogger();
+++    }
+++    private ConcurrentHashMap<Long, LatencyNativeMessage> msgMap =
+++            new ConcurrentHashMap<Long, LatencyNativeMessage>();
+++
+++    private LatencyLogger() {
+++
+++    }
+++
+++    public static LatencyLogger getInstance() {
+++        return LatencyLoggerInstance.instance;
+++    }
+++
+++    public void logLatencyMsg(long frameStamp, long decodeTime, ByteBuffer buffer) {
+++        Logging.d(TAG, "logLatencyMsg " + frameStamp  + ", decodeTime " + decodeTime);
+++        LatencyNativeMessage message = LatencyNativeMessage.obtain(frameStamp, decodeTime);
+++        message.setDelayBuffer(buffer);
+++        msgMap.put(frameStamp, message);
+++	Logging.d(TAG, "logLatencyMsg " + msgMap.size());
+++    }
+++
+++    public LatencyNativeMessage getMessage(long frameStamp) {
+++       LatencyNativeMessage msg = msgMap.get(frameStamp);
+++       return msg;
+++    }
+++
+++    public void removeMessage(long frameStamp) {
+++        if (msgMap.containsKey(frameStamp)) {
+++            LatencyNativeMessage msg = msgMap.remove(frameStamp);
+++            msg.recycle();
+++            Logging.d(TAG, "removeMessage frame" + frameStamp + msgMap.size());
+++        } else {
+++            Logging.d(TAG, "removeMessage no such frame" + frameStamp);
+++        }
+++    }
+++
+++    public void clear() {
+++        for(Map.Entry<Long, LatencyNativeMessage> entry: msgMap.entrySet()) {
+++            entry.getValue().recycle();
+++        }
+++        msgMap.clear();
+++    }
+++}
++diff --git a/sdk/android/src/java/org/webrtc/LatencyNativeMessage.java b/sdk/android/src/java/org/webrtc/LatencyNativeMessage.java
++new file mode 100644
++index 0000000000..60ddfe9b78
++--- /dev/null
+++++ b/sdk/android/src/java/org/webrtc/LatencyNativeMessage.java
++@@ -0,0 +1,93 @@
+++package org.webrtc;
+++
+++import java.nio.ByteBuffer;
+++
+++public class LatencyNativeMessage {
+++    private static final String TAG = "LatencyMessage";
+++    public static final Object sPoolSync = new Object();
+++    private static LatencyNativeMessage sPool;
+++    private static int sPoolSize = 0;
+++    private static final int MAX_POOL_SIZE = 10;  // let the max be 10, to make sure, usually should have only one;
+++
+++    private LatencyNativeMessage next;
+++    private long frameTimeStamp;
+++    private long decodeTime;
+++    private ByteBuffer delayBuffer;
+++    public LatencyNativeMessage() {
+++        delayBuffer = ByteBuffer.allocate(255);  // max length is 255
+++    }
+++
+++    public static LatencyNativeMessage obtain() {
+++        synchronized (sPoolSync) {
+++            if (sPool != null) {
+++                LatencyNativeMessage m = sPool;
+++                sPool = m.next;
+++                m.next = null;
+++                sPoolSize--;
+++                Logging.d(TAG, "obtain sPoolSize" + sPoolSize);
+++                return m;
+++            }
+++        }
+++       Logging.d(TAG, "obtain new create");
+++        return new LatencyNativeMessage();
+++    }
+++
+++    public static LatencyNativeMessage obtain(long frameTimeStamp, long decodeTime) {
+++        LatencyNativeMessage msg = obtain();
+++        msg.frameTimeStamp = frameTimeStamp;
+++        msg.decodeTime = decodeTime;
+++        msg.delayBuffer.clear();
+++        return msg;
+++    }
+++
+++    public long getFrameTimeStamp() {
+++        return frameTimeStamp;
+++    }
+++
+++    public long getDecodeTime() {
+++        return decodeTime;
+++    }
+++
+++    // get the latencyMsg bytebuffer;
+++    public byte[] geLatencyBuffer() {
+++        byte[] bytes = new byte[delayBuffer.remaining()];
+++        delayBuffer.get(bytes);
+++        return bytes;
+++    }
+++
+++    public void setFrameTimeStamp(long frameTimeStamp){
+++        this.frameTimeStamp = frameTimeStamp;
+++    }
+++
+++    public void setDecodeTime(long decodeTime) {
+++        this.decodeTime = decodeTime;
+++    }
+++
+++    // copy from the ther buffer, wait for read
+++    public void setDelayBuffer(ByteBuffer buffer) {
+++        delayBuffer.clear();
+++        delayBuffer.put(buffer);
+++        delayBuffer.flip();
+++    }
+++
+++    public String toString() {
+++        StringBuilder sb = new StringBuilder("");
+++        sb.append("frameTimeStamp = " + frameTimeStamp + ", decodeTime= " + decodeTime)
+++                .append("delayBuffer = ").append(delayBuffer.position()).append("-").append(delayBuffer.limit());
+++        return sb.toString();
+++    }
+++
+++    public void recycle() {
+++        frameTimeStamp = 0;
+++        decodeTime = 0;
+++        delayBuffer.clear();
+++        synchronized (sPoolSync) {
+++            if (sPoolSize < MAX_POOL_SIZE) {
+++                next = sPool;
+++                sPool = this;
+++                sPoolSize++;
+++                Logging.d(TAG, "recycle sPoolSize" + sPoolSize);
+++            }
+++        }
+++    }
+++}
++diff --git a/sdk/android/src/jni/jni_common.cc b/sdk/android/src/jni/jni_common.cc
++index 3764f8deeb..ceb69b70de 100644
++--- a/sdk/android/src/jni/jni_common.cc
+++++ b/sdk/android/src/jni/jni_common.cc
++@@ -11,6 +11,7 @@
++ #include "rtc_base/ref_count.h"
++ #include "sdk/android/generated_base_jni/JniCommon_jni.h"
++ #include "sdk/android/src/jni/jni_helpers.h"
+++#include <chrono>
++ 
++ namespace webrtc {
++ namespace jni {
++@@ -41,5 +42,12 @@ static void JNI_JniCommon_FreeByteBuffer(
++   ::operator delete(data);
++ }
++ 
+++static jlong JNI_JniCommon_GetTimeStampNs(
+++    JNIEnv* jni) {
+++  long long timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+++  //long long timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+++  return timestamp;
+++}
+++
++ }  // namespace jni
++ }  // namespace webrtc
++diff --git a/sdk/android/src/jni/video_frame.cc b/sdk/android/src/jni/video_frame.cc
++index ade49b7e85..9e7e538adb 100644
++--- a/sdk/android/src/jni/video_frame.cc
+++++ b/sdk/android/src/jni/video_frame.cc
++@@ -194,6 +194,7 @@ VideoFrame JavaToNativeFrame(JNIEnv* jni,
++       Java_VideoFrame_getBuffer(jni, j_video_frame);
++   int rotation = Java_VideoFrame_getRotation(jni, j_video_frame);
++   int64_t timestamp_ns = Java_VideoFrame_getTimestampNs(jni, j_video_frame);
+++  int64_t timestamp_frame = Java_VideoFrame_getTimestampFrame(jni, j_video_frame);
++   rtc::scoped_refptr<AndroidVideoBuffer> buffer =
++       AndroidVideoBuffer::Create(jni, j_video_frame_buffer);
++   return VideoFrame::Builder()
++@@ -201,6 +202,7 @@ VideoFrame JavaToNativeFrame(JNIEnv* jni,
++       .set_timestamp_rtp(timestamp_rtp)
++       .set_timestamp_ms(timestamp_ns / rtc::kNumNanosecsPerMillisec)
++       .set_rotation(static_cast<VideoRotation>(rotation))
+++      .set_timestamp_frame(timestamp_frame)
++       .build();
++ }
++ 
++@@ -224,13 +226,16 @@ ScopedJavaLocalRef<jobject> NativeToJavaVideoFrame(JNIEnv* jni,
++         static_cast<jdouble>(frame.bwe_stats_.last_duration_),
++         static_cast<jint>(frame.bwe_stats_.packets_lost_),
++         static_cast<jint>(frame.bwe_stats_.frame_size_));
+++    Java_VideoFrame_setTimestampFrame(jni, jvc, static_cast<jlong>(frame.timestamp_frame()));
++     return jvc;
++   } else {
++-    return Java_VideoFrame_Constructor(
+++    ScopedJavaLocalRef<jobject> jvc = Java_VideoFrame_Constructor(
++         jni, WrapI420Buffer(jni, buffer->ToI420()),
++         static_cast<jint>(frame.rotation()),
++         static_cast<jlong>(frame.timestamp_us() *
++                            rtc::kNumNanosecsPerMicrosec));
+++    Java_VideoFrame_setTimestampFrame(jni, jvc, static_cast<jlong>(frame.timestamp_frame()));
+++    return jvc;
++   }
++ }
++ 
++-- 
++2.25.1
++
+-- 
+2.25.1
+
