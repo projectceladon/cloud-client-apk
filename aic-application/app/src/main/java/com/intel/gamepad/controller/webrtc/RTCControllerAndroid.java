@@ -1,9 +1,7 @@
 package com.intel.gamepad.controller.webrtc;
 
-import android.content.Context;
-import android.graphics.Color;
-import android.graphics.Point;
-import android.graphics.drawable.ColorDrawable;
+import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.os.Handler;
 import android.os.Trace;
 import android.util.Log;
@@ -13,16 +11,14 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.CheckBox;
-import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 
-import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.LogEx;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
+import com.intel.gamepad.utils.PopupUtil;
 
 import java.util.Locale;
 
@@ -44,13 +40,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     private float rightAxisX = 0f;
     private float rightAxisY = 0f;
     private CheckBox chkAlpha;
-    private static final int FULL_SCREEN_FLAG =
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                    | View.SYSTEM_UI_FLAG_FULLSCREEN;
-    private PopupWindow mPop;
+    private PopupWindow popupNavigator;
+    private PopupWindow popupOrientation;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -134,13 +125,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
 
     @Override
     public void switchAlpha(boolean status) {
-        super.switchAlpha(status);
         chkAlpha.setChecked(status);
-        if (status) {
-            chkAlpha.setText(R.string.alpha_enabled);
-        } else {
-            chkAlpha.setText(R.string.alpha_disabled);
-        }
     }
 
     /**
@@ -348,7 +333,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                     keyMapCode = JOY_KEY_CODE_MAP_L_TWO;
                     break;
                 default:
-                    Log.e(TAG, "Bluetooth Event : " + event.toString());
+                    Log.e(TAG, "Bluetooth Event : " + event);
                     break;
             }
             int indexSlot = getDeviceSlotIndex(event.getDeviceId());
@@ -414,26 +399,16 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
 
     @Override
     public void showPopupWindow(View parent) {
+        if (popupNavigator != null) {
+            popupNavigator.dismiss();
+        }
         View popView = getView().inflate(getContext(), R.layout.popup_window, null);
         popView.setAlpha(0.8f);
-        WindowManager windowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        int xPos = DensityUtils.dp2px(284f);
-        if (mPop == null) {
-            mPop = new PopupWindow(popView,
-                    xPos, LinearLayout.LayoutParams.WRAP_CONTENT);
-        }
-        mPop.setFocusable(false);
-        mPop.showAsDropDown(parent, 0, 0);
-        mPop.setOutsideTouchable(false);
-        mPop.setTouchable(true);
-        mPop.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        mPop.getContentView().setSystemUiVisibility(FULL_SCREEN_FLAG);
-        mPop.update();
-
+        popupNavigator = PopupUtil.createPopup(parent, popView, -1);
         popView.findViewById(R.id.back).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_BACK"));
         popView.findViewById(R.id.home).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_HOME"));
         popView.findViewById(R.id.app_switch).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_APP_SWITCH"));
-        popView.findViewById(R.id.close).setOnClickListener(v -> mPop.dismiss());
+        popView.findViewById(R.id.close).setOnClickListener(v -> popupNavigator.dismiss());
         popView.setOnTouchListener(new View.OnTouchListener() {
             int orgX, orgY;
             int offsetX, offsetY;
@@ -449,7 +424,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                         popView.setAlpha(0.2f);
                         offsetX = (int) event.getRawX() - orgX;
                         offsetY = (int) event.getRawY() - orgY;
-                        mPop.update(offsetX, offsetY, -1, -1, true);
+                        popupNavigator.update(offsetX, offsetY, -1, -1, true);
                         break;
                     case MotionEvent.ACTION_UP:
                         popView.setAlpha(0.8f);
@@ -459,6 +434,63 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 return true;
             }
         });
+    }
+
+    @Override
+    public void showPopupOrientation(View parent, boolean open) {
+        if (open) {
+            View popView = getView().inflate(getContext(), R.layout.popup_orientation_window, null);
+            popView.setAlpha(0.8f);
+            popupOrientation = PopupUtil.createPopup(parent, popView, -1);
+            CheckBox chkLandscape = popView.findViewById(R.id.chk_landscape);
+            CheckBox chkPortrait = popView.findViewById(R.id.chk_portrait);
+            popView.findViewById(R.id.close).setOnClickListener(v -> {
+                if (popupOrientation != null) {
+                    popupOrientation.dismiss();
+                }
+            });
+            if (((Activity) context).getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+                chkLandscape.setChecked(false);
+                chkPortrait.setChecked(true);
+                chkPortrait.setClickable(false);
+            } else {
+                chkLandscape.setChecked(true);
+                chkPortrait.setChecked(false);
+                chkLandscape.setClickable(false);
+            }
+            chkLandscape.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                updateLastTouchEvent();
+                if (isChecked) {
+                    chkPortrait.setChecked(false);
+                    chkPortrait.setClickable(true);
+                    devSwitch.switchAlphaOrientation(false);
+                } else {
+                    chkPortrait.setChecked(true);
+                    chkPortrait.setClickable(false);
+                    devSwitch.switchAlphaOrientation(true);
+                }
+            });
+            chkPortrait.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    chkLandscape.setChecked(false);
+                    chkLandscape.setClickable(true);
+                } else {
+                    chkLandscape.setChecked(true);
+                    chkLandscape.setClickable(false);
+                }
+            });
+        } else {
+            if (popupOrientation != null) {
+                popupOrientation.dismiss();
+            }
+        }
+    }
+
+    @Override
+    public void hide() {
+        if (popupOrientation != null) {
+            popupOrientation.dismiss();
+        }
     }
 
     private void clickMenu(String cmd) {

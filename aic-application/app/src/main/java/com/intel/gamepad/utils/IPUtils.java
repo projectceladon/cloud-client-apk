@@ -15,6 +15,11 @@ public class IPUtils {
     public static final String DEFAULT_TOKENID = "c0";
     public static final boolean DEFAULT_ALPHA_CHANNEL = true;
     public static final boolean DEFAULT_FOR_TEST = false;
+    public static final boolean DEFAULT_PORTRAIT = false;
+
+    public static void savePortrait(boolean portrait) {
+        FastSharedPreferences.get("ip_file").edit().putBoolean("portrait", portrait).commit();
+    }
 
     public static void savetest(boolean test) {
         FastSharedPreferences.get("ip_file").edit().putBoolean("fortest", test).commit();
@@ -73,6 +78,11 @@ public class IPUtils {
     public static boolean loadTest() {
         return FastSharedPreferences.get("ip_file").getBoolean("fortest", DEFAULT_FOR_TEST);
     }
+
+    public static boolean loadPortrait() {
+        return FastSharedPreferences.get("ip_file").getBoolean("portrait", DEFAULT_PORTRAIT);
+    }
+
 
     public static List<String> getIp(String str) {
         ArrayList<String> ipInfo = new ArrayList<>();

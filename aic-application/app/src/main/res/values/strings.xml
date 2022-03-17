@@ -69,8 +69,11 @@
     <string name="back_button">Back Button</string>
     <string name="alpha_enabled">Alpha Enabled</string>
     <string name="alpha_disabled">Alpha Disabled</string>
-    <string name="for_alpha">For Alpha</string>
+    <string name="for_alpha">Alpha</string>
     <string name="alpha_configuring">Alpha Configuring</string>
-    <string name="for_test">for test</string>
+    <string name="virtual_navigation">Virtual Navigation</string>
     <string name="move">move</string>
+    <string name="orientation">Orientation</string>
+    <string name="portrait">Portrait</string>
+    <string name="landscape">Landscape</string>
 </resources>

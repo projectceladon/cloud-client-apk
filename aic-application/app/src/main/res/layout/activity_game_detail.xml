@@ -60,11 +60,27 @@
                     android:showDividers="middle"
                     tools:ignore="UselessParent">
 
-                    <CheckBox
-                        android:id="@+id/chkTest"
+                    <RelativeLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/for_test" />
+                        android:layout_height="wrap_content">
+
+                        <CheckBox
+                            android:id="@+id/chkTest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/virtual_navigation" />
+
+                        <TextView
+                            android:id="@+id/orient"
+                            style="@style/text_16_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentRight="true"
+                            android:background="@color/colorPrimary"
+                            android:padding="5dp"
+                            android:text="@string/orientation"
+                            android:textColor="@color/white" />
+                    </RelativeLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"

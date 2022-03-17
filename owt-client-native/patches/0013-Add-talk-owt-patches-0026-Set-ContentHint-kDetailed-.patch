@@ -1,4 +1,4 @@
-From 3abaeeae25dc90ef9debade9babd3e04526055ca Mon Sep 17 00:00:00 2001
+From eee1fa82c32796e0171a2b4cc8798a1f9a04b58a Mon Sep 17 00:00:00 2001
 From: "Liu, Kai1" <kai1.liu@intel.com>
 Date: Tue, 15 Mar 2022 11:12:37 +0800
 Subject: [PATCH] Add
@@ -12,12 +12,12 @@ Signed-off-by: Liu, Kai1 <kai1.liu@intel.com>
  create mode 100644 talk/owt/patches/0026-Set-ContentHint-kDetailed-as-default-value.patch
 
 diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
-index ae9342d..6df831e 100644
+index 452a366..ea8e834 100644
 --- a/scripts/prepare_dev.py
 +++ b/scripts/prepare_dev.py
-@@ -53,6 +53,7 @@ patchList = [
+@@ -52,6 +52,7 @@ patchList = [
+     ('0022-Implemented-the-new-transparent-composition-feature.patch', WEBRTC_PATH),
      ('0023-Add-atrace-point-that-is-after-decoding.patch', WEBRTC_PATH),
-     ('0024-Alpha-transparent-is-triggered-by-the-change-of-buff.patch', WEBRTC_PATH),
      ('0025-Enable-TCAE-in-webrtc.patch', WEBRTC_PATH),
 +    ('0026-Set-ContentHint-kDetailed-as-default-value.patch', WEBRTC_PATH),
  ]
@@ -60,5 +60,5 @@ index 0000000..5eee16c
 +2.17.1
 +
 -- 
-2.17.1
+2.25.1
 

@@ -1,14 +1,14 @@
 package com.intel.gamepad.activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -58,15 +58,16 @@ import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.AicVideoCapturer;
 import com.intel.gamepad.utils.AudioHelper;
+import com.intel.gamepad.utils.CameraEventsHandler;
 import com.intel.gamepad.utils.IPUtils;
+import com.intel.gamepad.utils.ImageManager;
 import com.intel.gamepad.utils.LocationUtils;
 import com.intel.gamepad.utils.sink.BweStatsVideoSink;
-import com.intel.gamepad.utils.CameraEventsHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.webrtc.GlDrawerBg;
+import org.webrtc.GlUtil;
 import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceViewRenderer;
 
@@ -75,13 +76,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import owt.base.ActionCallback;
 import owt.base.LocalStream;
@@ -96,11 +97,11 @@ public class PlayGameRtcActivity extends AppCompatActivity
         implements InputManager.InputDeviceListener,
         DeviceSwitchListtener,
         SensorEventListener {
+    public static AtomicBoolean alpha = new AtomicBoolean(false);
     private static String cameraRes;
     private final String TAG = "PlayGameRtcActivity";
     private final boolean isFirst = false;
     private final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
-    private final int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
     private final long TIME_INTERVAL_TO_GET_LOCATION = 1000;
     private final long TIME_INTERVAL_BETWEEN_NETWORK_GPS = TIME_INTERVAL_TO_GET_LOCATION * 10;
     private final String fileTransferPath = Environment.getExternalStorageDirectory().getPath();
@@ -145,31 +146,41 @@ public class PlayGameRtcActivity extends AppCompatActivity
         act.startActivity(intent);
     }
 
+    @SuppressLint("SourceLockedOrientationActivity")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (IPUtils.loadPortrait()) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
         initUIFeature();
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_play_game_rtc);
         loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
 
-        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.bg_alpha, null);
-        GlDrawerBg bg = DecorateBg(bitmap);
-        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, bg, new RendererCommon.RendererEvents() {
-            @Override
-            public void onFirstFrameRendered() {
+        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(),
+                false,
+                ImageManager.getInstance().getBitmapById(
+                        IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha,
+                        getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ?
+                                90 : 0),
+                new RendererCommon.RendererEvents() {
+                    @Override
+                    public void onFirstFrameRendered() {
 
-            }
+                    }
 
-            @Override
-            public void onFrameResolutionChanged(int i, int i1, int i2) {
-                if (loading != null) {
-                    loading.setVisibility(View.GONE);
-                }
-                if (fullRenderer.getVisibility() != View.VISIBLE)
-                    fullRenderer.setVisibility(View.VISIBLE);
-            }
-        });
+                    @Override
+                    public void onFrameResolutionChanged(int width, int height, int rotation) {
+                        if (loading != null) {
+                            loading.setVisibility(View.GONE);
+                        }
+                        if (fullRenderer.getVisibility() != View.VISIBLE)
+                            fullRenderer.setVisibility(View.VISIBLE);
+                    }
+                });
         fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
         fullRenderer.setEnableHardwareScaler(true);
         fullRenderer.setZOrderMediaOverlay(true);
@@ -227,22 +238,6 @@ public class PlayGameRtcActivity extends AppCompatActivity
         mCameraEventsHandler = new CameraEventsHandler();
     }
 
-
-    private GlDrawerBg DecorateBg(Bitmap bitmap) {
-        byte[] buffer = new byte[bitmap.getWidth() * bitmap.getHeight() * 3];
-        for (int y = 0; y < bitmap.getHeight(); y++)
-            for (int x = 0; x < bitmap.getWidth(); x++) {
-                int pixel = bitmap.getPixel(x, y);
-                buffer[(y * bitmap.getWidth() + x) * 3] = (byte) ((pixel >> 16) & 0xFF);
-                buffer[(y * bitmap.getWidth() + x) * 3 + 1] = (byte) ((pixel >> 8) & 0xFF);
-                buffer[(y * bitmap.getWidth() + x) * 3 + 2] = (byte) ((pixel) & 0xFF);
-            }
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bitmap.getWidth() * bitmap.getHeight() * 3);
-        byteBuffer.put(buffer).position(0);
-
-        return new GlDrawerBg(bitmap.getWidth(), bitmap.getHeight(), byteBuffer);
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -275,6 +270,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     protected void onDestroy() {
         super.onDestroy();
         disableLocation();
+        ImageManager.getInstance().clear();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
     }
@@ -469,14 +465,18 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     LogEx.d("video-alpha-success");
                                     runOnUiThread(() -> {
                                         controller.switchAlpha(IPUtils.loadAlphaChannel());
-                                        //GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
+                                        GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
                                         fullRenderer.requestLayout();
+                                        alpha.set(false);
                                     });
                                     break;
                                 case "video-alpha-failed":
                                     LogEx.d("video-alpha-failed");
-                                    IPUtils.savealphachannel(!IPUtils.loadAlphaChannel());
-                                    runOnUiThread(() -> controller.switchAlpha(IPUtils.loadAlphaChannel()));
+                                    runOnUiThread(() -> {
+                                        IPUtils.savealphachannel(!IPUtils.loadAlphaChannel());
+                                        controller.switchAlpha(IPUtils.loadAlphaChannel());
+                                        alpha.set(false);
+                                    });
                                     break;
                             }
                         }
@@ -887,6 +887,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private void updateControllerStatus() {
         if ((System.currentTimeMillis() - BaseController.lastTouchMillis) > 10000) {
             controller.getView().setAlpha(0f);
+            controller.hide();
         } else {
             controller.getView().setAlpha(1f);
         }
@@ -986,6 +987,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         for (int i = 0; i < numOfCameras; i++) {
             Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
             Camera.getCameraInfo(i, cameraInfo);
+            int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
             camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
             camFacing[i] = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) ? "front" : "back";
 
@@ -1185,9 +1187,28 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     @Override
+    public void switchAlphaOrientation(boolean portrait) {
+        if (portrait) {
+            fullRenderer.setDrawerBg(ImageManager.getInstance().getBitmapById(
+                    R.mipmap.bg_alpha_portrait,
+                    getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ?
+                            90 : 0));
+        } else {
+            fullRenderer.setDrawerBg(ImageManager.getInstance().getBitmapById(
+                    R.mipmap.bg_alpha,
+                    getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ?
+                            90 : 0));
+        }
+    }
+
+    @Override
     public void switchAlpha(CheckBox chkAlpha, boolean state) {
+        if (alpha.get()) {
+            LogEx.e("alpha is switching");
+            return;
+        }
         if (isStreamAdded) {
-            chkAlpha.setText(R.string.alpha_configuring);
+            alpha.set(true);
             IPUtils.savealphachannel(state);
             controller.sendAlphaEvent(IPUtils.loadAlphaChannel() ? 1 : 0);
         } else {

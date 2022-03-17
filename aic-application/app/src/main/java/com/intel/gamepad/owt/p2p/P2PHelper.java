@@ -7,7 +7,6 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
 
-import com.intel.gamepad.R;
 import com.intel.gamepad.app.MyApp;
 
 import org.webrtc.EglBase;
@@ -15,7 +14,6 @@ import org.webrtc.PeerConnection;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,6 +56,7 @@ public class P2PHelper {
 
     public static void closeP2PClient() {
         getInst().client.stop(peerId);
+        getInst().client.removeAllowedRemotePeer(peerId);
         getInst().client.disconnect();
     }
 

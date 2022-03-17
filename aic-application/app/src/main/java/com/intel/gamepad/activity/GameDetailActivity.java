@@ -3,9 +3,13 @@ package com.intel.gamepad.activity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 
+import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
 import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
@@ -15,12 +19,14 @@ import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.IPUtils;
+import com.intel.gamepad.utils.PopupUtil;
 
 import java.util.List;
 
 public class GameDetailActivity extends BaseActvitiy {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
+    private PopupWindow popupOrient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +40,7 @@ public class GameDetailActivity extends BaseActvitiy {
         EditText etPeerID = findViewById(R.id.etPeerID);
         EditText etClientID = findViewById(R.id.etClientID);
         CheckBox chkTest = findViewById(R.id.chkTest);
+        TextView orient = findViewById(R.id.orient);
 
         etServerIP.setText(IPUtils.loadIP());
         P2PHelper.serverIP = IPUtils.loadIP();
@@ -133,6 +140,54 @@ public class GameDetailActivity extends BaseActvitiy {
         chkTest.setChecked(IPUtils.loadTest());
         chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
 
+
+        orient.setOnClickListener(v -> {
+            if (popupOrient != null) {
+                popupOrient.dismiss();
+                popupOrient = null;
+            } else {
+                showPopupOrientation(orient);
+            }
+        });
+
+    }
+
+    public void showPopupOrientation(View parent) {
+        View popView = View.inflate(this, R.layout.popup_orientation_window, null);
+        popupOrient = PopupUtil.createPopup(parent, popView, DensityUtils.dp2px(150f));
+        CheckBox chkLandscape = popView.findViewById(R.id.chk_landscape);
+        CheckBox chkPortrait = popView.findViewById(R.id.chk_portrait);
+        popView.findViewById(R.id.close).setVisibility(View.GONE);
+
+        if (IPUtils.loadPortrait()) {
+            chkLandscape.setChecked(false);
+            chkPortrait.setChecked(true);
+            chkPortrait.setClickable(false);
+        } else {
+            chkLandscape.setChecked(true);
+            chkPortrait.setChecked(false);
+            chkLandscape.setClickable(false);
+        }
+        chkLandscape.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                IPUtils.savePortrait(false);
+                chkPortrait.setChecked(false);
+                chkPortrait.setClickable(true);
+            } else {
+                IPUtils.savePortrait(true);
+                chkPortrait.setChecked(true);
+                chkPortrait.setClickable(false);
+            }
+        });
+        chkPortrait.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                chkLandscape.setChecked(false);
+                chkLandscape.setClickable(true);
+            } else {
+                chkLandscape.setChecked(true);
+                chkLandscape.setClickable(false);
+            }
+        });
     }
 
     @Override

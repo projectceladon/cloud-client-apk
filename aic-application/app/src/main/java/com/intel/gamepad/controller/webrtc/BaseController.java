@@ -73,7 +73,7 @@ public abstract class BaseController implements OnTouchListener {
     public static long lastTouchMillis = 0L;
     public static AtomicBoolean manuallyPressBackButton = new AtomicBoolean(false);
     //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
-    private final Context context;
+    protected final Context context;
     private final ViewGroup layoutCtrlBox;
     private final Object sendFileLock = new Object();
     protected int marginWidth;
@@ -92,7 +92,7 @@ public abstract class BaseController implements OnTouchListener {
     private boolean send_block_failed_ = false;
 
     public BaseController(PlayGameRtcActivity act) {
-        this.context = act.getApplicationContext();
+        this.context = act;
         this.layoutCtrlBox = act.findViewById(R.id.layoutController);
         BaseController.lastTouchMillis = System.currentTimeMillis();
         sendMouseRelative(false);
@@ -121,6 +121,14 @@ public abstract class BaseController implements OnTouchListener {
     public abstract String getDescription();
 
     public abstract View getView();
+
+    protected abstract void showPopupWindow(View parent);
+
+    public abstract void showPopupOrientation(View parent, boolean open);
+
+    public abstract void switchAlpha(boolean status);
+
+    public abstract void hide();
 
     public Context getContext() {
         return this.context;
@@ -155,10 +163,6 @@ public abstract class BaseController implements OnTouchListener {
         } else {
             btnBack.setVisibility(View.GONE);
         }
-
-    }
-
-    public void showPopupWindow(View parent) {
 
     }
 
@@ -337,14 +341,15 @@ public abstract class BaseController implements OnTouchListener {
         btnDevice.setOnClickListener(v -> devSwitch.switchGamePad());
     }
 
-    protected void initSwitchAlpha(CheckBox chkAlpha) {
+    protected void initSwitchAlpha(final CheckBox chkAlpha) {
         if (chkAlpha == null) return;
         chkAlpha.setVisibility(View.VISIBLE);
         IPUtils.savealphachannel(false);
-        chkAlpha.setOnClickListener(v -> devSwitch.switchAlpha(chkAlpha, !IPUtils.loadAlphaChannel()));
-    }
-
-    public void switchAlpha(boolean status) {
+        chkAlpha.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            updateLastTouchEvent();
+            BaseController.this.showPopupOrientation(chkAlpha, isChecked);
+            devSwitch.switchAlpha(chkAlpha, !IPUtils.loadAlphaChannel());
+        });
     }
 
 
@@ -407,48 +412,42 @@ public abstract class BaseController implements OnTouchListener {
      */
     protected void emulateWASDKeys(int action, int part) {
         boolean onKeyLeft, onKeyRight, onKeyUp, onKeyDown;
-        onKeyUp = onKeyRight = onKeyDown = onKeyLeft = false;
+        onKeyUp = false;
+        onKeyRight = false;
+        onKeyDown = false;
+        onKeyLeft = false;
         boolean isPress = false;
         // 根据方向盘的分区号判断需要响应的方向键
         switch (part) {
             case 0:
-                onKeyUp = onKeyRight = onKeyDown = onKeyLeft = false;
                 break;
             case 12:
             case 1:
                 onKeyUp = true;
-                onKeyRight = onKeyDown = onKeyLeft = false;
                 break;
             case 3:
             case 4:
                 onKeyRight = true;
-                onKeyUp = onKeyDown = onKeyLeft = false;
                 break;
             case 6:
             case 7:
                 onKeyDown = true;
-                onKeyUp = onKeyRight = onKeyLeft = false;
                 break;
             case 9:
             case 10:
                 onKeyLeft = true;
-                onKeyUp = onKeyRight = onKeyDown = false;
                 break;
             case 2:
                 onKeyUp = onKeyRight = true;
-                onKeyDown = onKeyLeft = false;
                 break;
             case 5:
                 onKeyRight = onKeyDown = true;
-                onKeyUp = onKeyLeft = false;
                 break;
             case 8:
                 onKeyDown = onKeyLeft = true;
-                onKeyUp = onKeyRight = false;
                 break;
             case 11:
                 onKeyLeft = onKeyUp = true;
-                onKeyRight = onKeyDown = false;
                 break;
         }
         // 根据action判断是按键是按下还是抬起
@@ -470,7 +469,6 @@ public abstract class BaseController implements OnTouchListener {
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_CANCEL:
-                isPress = false;
                 break;
         }
         // 根据具体方向设置键的按下和抬起状态
@@ -499,44 +497,35 @@ public abstract class BaseController implements OnTouchListener {
         // 根据方向盘的分区号判断需要响应的方向键
         switch (part) {
             case 0:
-                myKeyUp = myKeyRight = myKeyDown = myKeyLeft = false;
                 break;
             case 12:
             case 1:
                 myKeyUp = true;
-                myKeyRight = myKeyDown = myKeyLeft = false;
                 break;
             case 3:
             case 4:
                 myKeyRight = true;
-                myKeyUp = myKeyDown = myKeyLeft = false;
                 break;
             case 6:
             case 7:
                 myKeyDown = true;
-                myKeyUp = myKeyRight = myKeyLeft = false;
                 break;
             case 9:
             case 10:
                 myKeyLeft = true;
-                myKeyUp = myKeyRight = myKeyDown = false;
                 break;
             // hybrid keys
             case 2:
                 myKeyUp = myKeyRight = true;
-                myKeyDown = myKeyLeft = false;
                 break;
             case 5:
                 myKeyRight = myKeyDown = true;
-                myKeyUp = myKeyLeft = false;
                 break;
             case 8:
                 myKeyDown = myKeyLeft = true;
-                myKeyUp = myKeyRight = false;
                 break;
             case 11:
                 myKeyLeft = myKeyUp = true;
-                myKeyRight = myKeyDown = false;
                 break;
         }
         // 根据action判断是按键是按下还是抬起
@@ -557,7 +546,6 @@ public abstract class BaseController implements OnTouchListener {
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
-                isPress = false;
                 break;
         }
         if (myKeyUp) {
@@ -582,44 +570,35 @@ public abstract class BaseController implements OnTouchListener {
         // 根据方向盘的分区号判断需要响应的方向键
         switch (part) {
             case 0:
-                myKeyUp = myKeyRight = myKeyDown = myKeyLeft = false;
                 break;
             case 12:
             case 1:
                 myKeyUp = true;
-                myKeyRight = myKeyDown = myKeyLeft = false;
                 break;
             case 3:
             case 4:
                 myKeyRight = true;
-                myKeyUp = myKeyDown = myKeyLeft = false;
                 break;
             case 6:
             case 7:
                 myKeyDown = true;
-                myKeyUp = myKeyRight = myKeyLeft = false;
                 break;
             case 9:
             case 10:
                 myKeyLeft = true;
-                myKeyUp = myKeyRight = myKeyDown = false;
                 break;
             // hybrid keys
             case 2:
                 myKeyUp = myKeyRight = true;
-                myKeyDown = myKeyLeft = false;
                 break;
             case 5:
                 myKeyRight = myKeyDown = true;
-                myKeyUp = myKeyLeft = false;
                 break;
             case 8:
                 myKeyDown = myKeyLeft = true;
-                myKeyUp = myKeyRight = false;
                 break;
             case 11:
                 myKeyLeft = myKeyUp = true;
-                myKeyRight = myKeyDown = false;
                 break;
         }
         // 根据action判断是按键是按下还是抬起
@@ -640,7 +619,6 @@ public abstract class BaseController implements OnTouchListener {
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
-                isPress = false;
                 break;
         }
         if (myKeyUp) {
@@ -660,10 +638,7 @@ public abstract class BaseController implements OnTouchListener {
 
     protected void addControllerView(ViewGroup viewGroup) {
         this.layoutCtrlBox.removeAllViews();
-        this.layoutCtrlBox.addView(viewGroup,
-                new RelativeLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT));
+        this.layoutCtrlBox.addView(viewGroup, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         //Listen for physical mouse events.
         viewGroup.setOnGenericMotionListener((v, event) -> {
             // Determine whether it is a mouse event
@@ -727,15 +702,13 @@ public abstract class BaseController implements OnTouchListener {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
                 sendJoyKeyEvent(true, keyCode);
-                if (v != null)
-                    v.setBackgroundResource(R.drawable.bg_oval_btn_press_true);
+                if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_true);
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_CANCEL:
                 sendJoyKeyEvent(false, keyCode);
-                if (v != null)
-                    v.setBackgroundResource(R.drawable.bg_oval_btn_press_false);
+                if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_false);
                 break;
         }
         return true;
@@ -760,15 +733,13 @@ public abstract class BaseController implements OnTouchListener {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
                 sendKeyEvent(true, keyCode);
-                if (v != null)
-                    v.setBackgroundResource(R.drawable.bg_rect_btn_press_true);
+                if (v != null) v.setBackgroundResource(R.drawable.bg_rect_btn_press_true);
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_CANCEL:
                 sendKeyEvent(false, keyCode);
-                if (v != null)
-                    v.setBackgroundResource(R.drawable.bg_rect_btn_press_false);
+                if (v != null) v.setBackgroundResource(R.drawable.bg_rect_btn_press_false);
                 break;
         }
         return true;
@@ -779,15 +750,13 @@ public abstract class BaseController implements OnTouchListener {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
                 sendKeyEvent(true, keyCode);
-                if (v != null)
-                    v.setBackgroundResource(R.drawable.bg_oval_btn_press_true);
+                if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_true);
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_CANCEL:
                 sendKeyEvent(false, keyCode);
-                if (v != null)
-                    v.setBackgroundResource(R.drawable.bg_oval_btn_press_false);
+                if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_false);
                 break;
         }
         return true;
@@ -1120,10 +1089,8 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public void sendLeftAxisMotion(float x, float y) {
-        if ((x - 0.2) > 0)
-            x = (float) ((x - 0.2) / (1 - 0.2));
-        if ((y - 0.2) > 0)
-            y = (float) ((y - 0.2) / (1 - 0.2));
+        if ((x - 0.2) > 0) x = (float) ((x - 0.2) / (1 - 0.2));
+        if ((y - 0.2) > 0) y = (float) ((y - 0.2) / (1 - 0.2));
         Map<String, Object> mapKey = new HashMap<>();
         Map<String, Object> mapData = new HashMap<>();
         Map<String, Object> mapParams = new HashMap<>();
@@ -1144,10 +1111,8 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public void sendRightAxisMotion(float x, float y) {
-        if ((x - 0.2) > 0)
-            x = (float) ((x - 0.2) / (1 - 0.2));
-        if ((y - 0.2) > 0)
-            y = (float) ((y - 0.2) / (1 - 0.2));
+        if ((x - 0.2) > 0) x = (float) ((x - 0.2) / (1 - 0.2));
+        if ((y - 0.2) > 0) y = (float) ((y - 0.2) / (1 - 0.2));
         Map<String, Object> mapKey = new HashMap<>();
         Map<String, Object> mapData = new HashMap<>();
         Map<String, Object> mapParams = new HashMap<>();

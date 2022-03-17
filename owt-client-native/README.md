@@ -29,9 +29,9 @@ Download owt-client-native source code:
     $ git am -3 ../patches/0008-Add-and-update-talk-owt-patches-0021-Fix-display-is-.patch
     $ git am -3 ../patches/0009-Add-talk-owt-patches-0022-Implemented-the-new-transp.patch
     $ git am -3 ../patches/0010-Add-talk-owt-patches-0023-Add-atrace-point-that-is-a.patch
-    $ git am -3 ../patches/0011-Alpha-transparent-is-triggered-by-the-change-of-buff.patch
     $ git am -3 ../patches/0012-Add-talk-owt-patches-0025-Enable-TCAE-in-webrtc.patc.patch
     $ git am -3 ../patches/0013-Add-talk-owt-patches-0026-Set-ContentHint-kDetailed-.patch
+    $ git am -3 ../patches/0014-Add-talk-owt-patches-0027-Dynamic-switch-the-orienta.patch
 5. Patch the third_party project: $ gclient sync
 
 Compile:

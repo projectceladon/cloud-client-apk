@@ -63,13 +63,16 @@
     <string name="s0">s0</string>
     <string name="client_id">Client ID</string>
     <string name="c0">c0</string>
-    <string name="splash">Splash</string>
+    <string name="splash">Splash</string>activity_game_detail.xml
     <string name="title">标题</string>
     <string name="back_button">回退按钮</string>
     <string name="alpha_enabled">Alpha Enabled</string>
     <string name="alpha_disabled">Alpha Disabled</string>
-    <string name="for_alpha">For Alpha</string>
+    <string name="for_alpha">Alpha</string>
     <string name="alpha_configuring">Alpha Configuring</string>
-    <string name="for_test">for test</string>
+    <string name="virtual_navigation">Virtual Navigation</string>
     <string name="move">move</string>
+    <string name="orientation">Orientation</string>
+    <string name="portrait">Portrait</string>
+    <string name="landscape">Landscape</string>
 </resources>
