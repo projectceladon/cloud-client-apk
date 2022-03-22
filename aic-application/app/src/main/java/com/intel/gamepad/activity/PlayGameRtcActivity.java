@@ -189,7 +189,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         fullRenderer.setEnableHardwareScaler(true);
         fullRenderer.setZOrderMediaOverlay(true);
         bweStatsVideoSink = new BweStatsVideoSink();
-        bweStatsVideoSink.setBweStatsEvent((frameDelay, frameSize, packetsLost) -> {
+        bweStatsVideoSink.setBweStatsEvent((frameDelay, frameSize, packetsLost) -> executor.execute(() -> {
             Map<String, Object> mapKey = new HashMap<>();
             Map<String, Object> mapData = new HashMap<>();
             Map<String, Object> mapParams = new HashMap<>();
@@ -215,7 +215,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     LogEx.e("setBweStatsEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
                 }
             });
-        });
+        }));
         executor.execute(() -> {
             if (remoteStream != null && !remoteStreamEnded) {
                 remoteStream.attach(bweStatsVideoSink);
