@@ -18,11 +18,11 @@ public class BweStatsVideoSink implements VideoSink {
 
     private void UpdateBweStats(VideoFrame frame) {
         synchronized (layoutLock) {
-            double delay = frame.lastDuration - frame.startDuration;
+            double delay = frame.bweStats.lastDuration - frame.bweStats.startDuration;
             int iDelay = (int) Math.round(delay);
             if (iDelay > 0) {
                 if (bweStatsEvents != null) {
-                    bweStatsEvents.onBweStats(iDelay, frame.frameSize, frame.packetsLost);
+                    bweStatsEvents.onBweStats(iDelay,frame.bweStats.frameSize,frame.bweStats.packetsLost);
                 }
             }
         }

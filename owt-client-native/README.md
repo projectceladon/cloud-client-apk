@@ -32,6 +32,8 @@ Download owt-client-native source code:
     $ git am -3 ../patches/0012-Add-talk-owt-patches-0025-Enable-TCAE-in-webrtc.patc.patch
     $ git am -3 ../patches/0013-Add-talk-owt-patches-0026-Set-ContentHint-kDetailed-.patch
     $ git am -3 ../patches/0014-Add-talk-owt-patches-0027-Dynamic-switch-the-orienta.patch
+    $ git am -3 ../patches/0015-Add-talk-owt-patches-0028-enable-e2e-latency-telemet.patch
+    $ git am -3 ../patches/0016-Add-talk-owt-patches-0029-JNI-pass-a-tcae-object-to-.patch
 5. Patch the third_party project: $ gclient sync
 
 Compile:

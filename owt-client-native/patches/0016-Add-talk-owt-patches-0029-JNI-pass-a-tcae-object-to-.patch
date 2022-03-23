@@ -1,0 +1,120 @@
+From 5d46da1edce8cc939bbb9d281e77a451c98c210d Mon Sep 17 00:00:00 2001
+From: shipeigx <peigangx.shi@intel.com>
+Date: Wed, 23 Mar 2022 16:24:13 +0800
+Subject: [PATCH] Add
+ talk/owt/patches/0029-JNI-pass-a-tcae-object-to-java-layer.patch
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ scripts/prepare_dev.py                        |  1 +
+ ...JNI-pass-a-tcae-object-to-java-layer.patch | 86 +++++++++++++++++++
+ 2 files changed, 87 insertions(+)
+ create mode 100644 talk/owt/patches/0029-JNI-pass-a-tcae-object-to-java-layer.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index 364cbb0..bc06e9a 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -55,6 +55,7 @@ patchList = [
+     ('0026-Set-ContentHint-kDetailed-as-default-value.patch', WEBRTC_PATH),
+     ('0027-Dynamic-switch-the-orientation-of-the-background-of-.patch', WEBRTC_PATH),
+     ('0028-enable-e2e-latency-telemotry.patch', WEBRTC_PATH),
++    ('0029-JNI-pass-a-tcae-object-to-java-layer.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0029-JNI-pass-a-tcae-object-to-java-layer.patch b/talk/owt/patches/0029-JNI-pass-a-tcae-object-to-java-layer.patch
+new file mode 100644
+index 0000000..bae55e4
+--- /dev/null
++++ b/talk/owt/patches/0029-JNI-pass-a-tcae-object-to-java-layer.patch
+@@ -0,0 +1,86 @@
++From f316cd4c660a0589151a67aede90fd0dd82c2c77 Mon Sep 17 00:00:00 2001
++From: shipeigx <peigangx.shi@intel.com>
++Date: Wed, 23 Mar 2022 16:17:51 +0800
++Subject: [PATCH] JNI pass a tcae object to java layer
++
++Signed-off-by: shipeigx <peigangx.shi@intel.com>
++---
++ sdk/android/api/org/webrtc/VideoFrame.java | 29 +++++++++++++++-------
++ sdk/android/src/jni/video_frame.cc         |  6 +++--
++ 2 files changed, 24 insertions(+), 11 deletions(-)
++
++diff --git a/sdk/android/api/org/webrtc/VideoFrame.java b/sdk/android/api/org/webrtc/VideoFrame.java
++index 4796e02dfb..44b751aa93 100644
++--- a/sdk/android/api/org/webrtc/VideoFrame.java
+++++ b/sdk/android/api/org/webrtc/VideoFrame.java
++@@ -120,6 +120,23 @@ public class VideoFrame implements RefCounted {
++     Matrix getTransformMatrix();
++   }
++ 
+++  public static class BweStats {
+++    public double startDuration;
+++    public double lastDuration;
+++    public int packetsLost;
+++    public int frameSize;
+++
+++    @CalledByNative("BweStats")
+++    static BweStats createBweStats(double startDuration, double lastDuration, int packetsLost, int frameSize) {
+++      BweStats bweStats = new BweStats();
+++      bweStats.startDuration = startDuration;
+++      bweStats.lastDuration = lastDuration;
+++      bweStats.packetsLost = packetsLost;
+++      bweStats.frameSize = frameSize;
+++      return bweStats;
+++    }
+++  }
+++
++   private final Buffer buffer;
++   private final int rotation;
++   private final long timestampNs;
++@@ -144,20 +161,14 @@ public class VideoFrame implements RefCounted {
++   }
++ 
++   // BWE stats
++-  public double startDuration;
++-  public double lastDuration;
++-  public int packetsLost;
++-  public int frameSize;
+++  public BweStats bweStats;
++ 
++   /**
++    * Set BWE stats.
++    */
++   @CalledByNative
++-  public boolean setBweStats(double startDuration, double lastDuration, int packetsLost, int frameSize) {
++-    this.startDuration = startDuration;
++-    this.lastDuration = lastDuration;
++-    this.packetsLost = packetsLost;
++-    this.frameSize = frameSize;
+++  public boolean setBweStats(BweStats bweStats) {
+++    this.bweStats = bweStats;
++     return true;
++   }
++ 
++diff --git a/sdk/android/src/jni/video_frame.cc b/sdk/android/src/jni/video_frame.cc
++index 9e7e538adb..46f887acc7 100644
++--- a/sdk/android/src/jni/video_frame.cc
+++++ b/sdk/android/src/jni/video_frame.cc
++@@ -221,11 +221,13 @@ ScopedJavaLocalRef<jobject> NativeToJavaVideoFrame(JNIEnv* jni,
++         jni, j_video_frame_buffer, static_cast<jint>(frame.rotation()),
++         static_cast<jlong>(frame.timestamp_us() *
++                            rtc::kNumNanosecsPerMicrosec));
++-    Java_VideoFrame_setBweStats(
++-        jni, jvc, static_cast<jdouble>(frame.bwe_stats_.start_duration_),
+++    ScopedJavaLocalRef<jobject> jbwe = Java_BweStats_createBweStats(
+++        jni,static_cast<jdouble>(frame.bwe_stats_.start_duration_),
++         static_cast<jdouble>(frame.bwe_stats_.last_duration_),
++         static_cast<jint>(frame.bwe_stats_.packets_lost_),
++         static_cast<jint>(frame.bwe_stats_.frame_size_));
+++    Java_VideoFrame_setBweStats(
+++        jni, jvc, jbwe);
++     Java_VideoFrame_setTimestampFrame(jni, jvc, static_cast<jlong>(frame.timestamp_frame()));
++     return jvc;
++   } else {
++-- 
++2.25.1
++
+-- 
+2.25.1
+
