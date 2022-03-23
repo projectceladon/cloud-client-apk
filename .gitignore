@@ -3,3 +3,5 @@
 *.settings/
 *.classpath
 *.vscode/
+/aic-application/app/debug/*
+/aic-application/app/release/*

@@ -1,7 +1,10 @@
 package com.intel.gamepad.app;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -32,15 +35,21 @@ public class MyApp extends UtilsApplication {
         pId = System.currentTimeMillis() + "";
         context = getApplicationContext();
 
+        try {
+            PackageManager pm = context.getPackageManager();
+            PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
+            Log.i("AIC-APPLICATION", "versionName = " + pi.versionName);
+        } catch (Exception e) {
+            Log.e("VersionInfo", "Exception", e);
+        }
+
         initOkGo();
         initLiveEvent();
         FastSharedPreferences.init(context);
     }
 
     private void initLiveEvent() {
-        LiveEventBus.config()
-                .supportBroadcast(this)
-                .lifecycleObserverAlwaysActive(false);
+        LiveEventBus.config().supportBroadcast(this).lifecycleObserverAlwaysActive(false);
     }
 
     private void initOkGo() {

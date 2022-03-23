@@ -16,7 +16,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
-        versionName "1.0"
+        versionName "0.01"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
         renderscriptTargetApi 18
@@ -65,7 +65,7 @@ android {
     android.applicationVariants.all {
         variant ->
             variant.outputs.all {
-                outputFileName = "AIC-${buildType.name}.apk"
+                outputFileName = "AIC-${buildType.name}-v${defaultConfig.versionName}.apk"
             }
     }
 }
