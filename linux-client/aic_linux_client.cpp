@@ -67,6 +67,8 @@ static const struct option long_option[] = {
   {"url",         required_argument, NULL, 'u'},
   {"video-codec", required_argument, NULL, 'v'},
   {"window-size", required_argument, NULL, 'w'},
+  {"window-x",    required_argument, NULL, 'x'},
+  {"window-y",    required_argument, NULL, 'y'},
   {"help",        no_argument,       NULL, 'h'},
   {NULL,          0,                 NULL,  0 }
 };
@@ -79,6 +81,8 @@ void help() {
   std::cout << "--url/-u <url>: Url of signaling server, for example: http://192.168.17.109:8095" << std::endl;
   std::cout << "--video-codec/-v <h264/h265>: Video codec, default: h264" << std::endl;
   std::cout << "--window-size/-w <window_size>: Window size, default: 352x288" << std::endl;
+  std::cout << "--window-x/-x <window_x>: Window postion x, default: in the center" << std::endl;
+  std::cout << "--window-y/-y <window_y>: Window postion y, default: in the center" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -90,9 +94,11 @@ int main(int argc, char* argv[]) {
   std::string video_codec = "h264";
   std::string device = "hw";
   std::string window_size = "352x288";
+  int window_x = SDL_WINDOWPOS_UNDEFINED;
+  int window_y = SDL_WINDOWPOS_UNDEFINED;
 
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:h", long_option, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h", long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
         client_id = optarg;
@@ -114,6 +120,12 @@ int main(int argc, char* argv[]) {
         break;
       case 'w':
         window_size = optarg;
+        break;
+      case 'x':
+        window_x = atoi(optarg);
+        break;
+      case 'y':
+        window_y = atoi(optarg);
         break;
       case 'h':
         help();
@@ -182,7 +194,7 @@ int main(int argc, char* argv[]) {
   atexit(SDL_Quit);
 
   std::string title = ip + "    android-" + server_id + "    " + video_codec;
-  auto win = SDL_CreateWindow(title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, SDL_WINDOW_RESIZABLE);
+  auto win = SDL_CreateWindow(title.c_str(), window_x, window_y, window_width, window_height, SDL_WINDOW_RESIZABLE);
   if (!win) {
     std::cout << "Failed to create SDL window!" << std::endl;
   }
