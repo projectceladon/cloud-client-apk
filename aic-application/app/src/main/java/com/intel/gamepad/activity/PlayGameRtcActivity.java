@@ -137,6 +137,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private File requestFile = null;
     private FileOutputStream fileOutputStream = null;
     private ProgressBar loading;
+    private boolean isScreenOrientationPortrait = false;
     private boolean isStreamAdded = false;
     private boolean isOnPause = false;
     private boolean mE2eEnabled = false;
@@ -155,8 +156,10 @@ public class PlayGameRtcActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         if (IPUtils.loadPortrait()) {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            isScreenOrientationPortrait = true;
         } else {
             setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            isScreenOrientationPortrait = false;
         }
         initUIFeature();
         super.onCreate(savedInstanceState);
@@ -988,14 +991,24 @@ public class PlayGameRtcActivity extends AppCompatActivity
         String[] camOrientation = new String[numOfCameras];
         String[] camFacing = new String[numOfCameras];
         String[] maxCameraRes = new String[numOfCameras];
+        // Camera sensor orientation would be zero always for landscape mode.
+        int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
 
-        LogEx.d("Num of cameras available in the HW = " + numOfCameras);
+        LogEx.d("Number of cameras available in the HW = " + numOfCameras);
 
         for (int i = 0; i < numOfCameras; i++) {
             Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
             Camera.getCameraInfo(i, cameraInfo);
-            int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
-            camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
+
+            // Update the camera sensor orientation based on screen orientation.
+            if (isScreenOrientationPortrait) {
+                camOrientation[i] = Integer.toString(cameraInfo.orientation);
+                LogEx.d("set PORTRAIT orientation for camera Id " + i);
+            } else {
+                camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
+                LogEx.d("Set LANDSCAPE orientation for camera Id " + i);
+            }
+
             camFacing[i] = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) ? "front" : "back";
 
             Camera camera = Camera.open(i);
