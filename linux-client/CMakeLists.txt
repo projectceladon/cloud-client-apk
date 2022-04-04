@@ -20,6 +20,7 @@ include_directories(${SDL2_INCLUDE_DIRS})
 include_directories(
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/include/ffmpeg/include
+  /usr/include/libdrm
 )
 
 link_directories(${CMAKE_SOURCE_DIR}/lib)
@@ -30,6 +31,8 @@ add_executable(aic_linux_client
   EncodedVideoDispatcher.cpp
   CGCodec.cpp
   VideoRender.cpp
+  VideoDecoder.cpp
+  VideoDirectRender.cpp
 )
 
 set_target_properties(aic_linux_client PROPERTIES COMPILE_DEFINITIONS "WEBRTC_LINUX;WEBRTC_POSIX;USE_X11=1;")
@@ -47,4 +50,11 @@ target_link_libraries(aic_linux_client
   avformat
   swscale
   swresample
+  X11
+  va-x11
+  va-drm
+  va
+  drm
+  EGL
+  GL
 )

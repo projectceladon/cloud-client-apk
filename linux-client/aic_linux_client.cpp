@@ -1,7 +1,13 @@
 #include <string>
+#include <list>
 #include <iostream>
+#include <mutex>
+#include <condition_variable>
 #include <unistd.h>
+#define USE_SDL 1
+#ifdef USE_SDL
 #include <SDL2/SDL.h>
+#endif
 #include <getopt.h>
 #include <signal.h>
 
@@ -14,28 +20,10 @@
 #include "CGCodec.h"
 #include "VideoRender.h"
 #include "EncodedVideoDispatcher.h"
+#include "VideoDirectRender.h"
+#include "VideoDecoder.h"
 
 using namespace owt::p2p;
-
-class AudioPlayer : public owt::base::AudioPlayerInterface {
-public:
-  AudioPlayer() {
-    init();
-  }
-
-  virtual ~AudioPlayer() {
-  }
-
-  void OnData(const void *audio_data, int bits_per_sample,
-              int sample_rate, size_t number_of_channels,
-              size_t number_of_frames) override {
-    //std::cout << __func__ << ":" << " bits:" << bits_per_sample << ",sample rate:" << sample_rate <<
-    //    ",channels:" << number_of_channels << ",frames:" << number_of_frames << std::endl;
-  }
-
-private:
-  void init() {}
-};
 
 class PcObserver : public owt::p2p::P2PClientObserver {
 public:
@@ -48,15 +36,10 @@ public:
   }
 
   virtual void OnStreamAdded(std::shared_ptr<owt::base::RemoteStream> stream) override {
-    stream->AttachAudioPlayer(mAudioPlayer);
   }
 
   void OnServerDisconnected() {
-    std::cout << __func__ << ":" << std::endl;
   }
-
-private:
-  AudioPlayer mAudioPlayer;
 };
 
 static const struct option long_option[] = {
@@ -160,16 +143,6 @@ int main(int argc, char* argv[]) {
   }
   std::string ip = str.substr(pos + 1);
 
-  // parse resolution
-  pos = resolution.find("x");
-  if (pos == std::string::npos) {
-    std::cout << "Resolution is not correct!" << std::endl;
-    exit(0);
-  }
-
-  int width = atoi(resolution.substr(0, pos).c_str());
-  int height = atoi(resolution.substr(pos + 1).c_str());
-
   // parse window_size
   pos = window_size.find("x");
   if (pos == std::string::npos) {
@@ -180,6 +153,24 @@ int main(int argc, char* argv[]) {
   int window_width = atoi(window_size.substr(0, pos).c_str());
   int window_height = atoi(window_size.substr(pos + 1).c_str());
 
+  // codec type
+  uint32_t codec_type = (uint32_t)VideoCodecType::kH264;
+  if (video_codec == "h265") {
+    codec_type = (uint32_t)VideoCodecType::kH265;
+  }
+
+#ifdef USE_SDL
+  // parse resolution
+  pos = resolution.find("x");
+  if (pos == std::string::npos) {
+    std::cout << "Resolution is not correct!" << std::endl;
+    exit(0);
+  }
+
+  int width = atoi(resolution.substr(0, pos).c_str());
+  int height = atoi(resolution.substr(pos + 1).c_str());
+
+  // sw/hw decoding
   bool is_sw_decoding;
   if (device == "hw") {
     is_sw_decoding = false;
@@ -190,17 +181,7 @@ int main(int argc, char* argv[]) {
     exit(0);
   }
 
-  SDL_Init(SDL_INIT_VIDEO);
-  atexit(SDL_Quit);
-
-  std::string title = ip + "    android-" + server_id + "    " + video_codec;
-  auto win = SDL_CreateWindow(title.c_str(), window_x, window_y, window_width, window_height, SDL_WINDOW_RESIZABLE);
-  if (!win) {
-    std::cout << "Failed to create SDL window!" << std::endl;
-  }
-
-  std::shared_ptr<CGVideoDecoder> decoder = std::make_shared<CGVideoDecoder>();
-
+  // resolution
   FrameResolution frame_resolution = FrameResolution::k480p;
   if (height == 600) {
     frame_resolution = FrameResolution::k600p;
@@ -210,11 +191,8 @@ int main(int argc, char* argv[]) {
     frame_resolution = FrameResolution::k1080p;
   }
 
-  uint32_t codec_type = (uint32_t)VideoCodecType::kH264;
-  if (video_codec == "h265") {
-    codec_type = (uint32_t)VideoCodecType::kH265;
-  }
-
+  //decoder
+  std::shared_ptr<CGVideoDecoder> decoder = std::make_shared<CGVideoDecoder>();
   if (decoder->init(frame_resolution, codec_type, is_sw_decoding ? nullptr : "vaapi", 0) < 0) {
     std::cout << "VideoDecoder init failed. " << std::endl;
     exit(0);
@@ -222,12 +200,21 @@ int main(int argc, char* argv[]) {
     std::cout << "VideoDecoder init done." << std::endl;
   }
 
+  //render
+  SDL_Init(SDL_INIT_VIDEO);
+  atexit(SDL_Quit);
+
+  std::string title = ip + "    android-" + server_id + "    " + video_codec;
+  auto win = SDL_CreateWindow(title.c_str(), window_x, window_y, window_width, window_height, SDL_WINDOW_RESIZABLE);
+  if (!win) {
+    std::cout << "Failed to create SDL window!" << std::endl;
+  }
   std::shared_ptr<VideoRenderer> renderer =
     std::make_shared<VideoRenderer>(win, width, height, is_sw_decoding ? SDL_PIXELFORMAT_IYUV : SDL_PIXELFORMAT_NV12);
 
+  //decoding and rendering
   const int frame_size = width * height * 3 / 2;
   std::vector<uint8_t> buffer = std::vector<uint8_t>(frame_size);
-
   int out_size = 0;
   auto callback = [&](std::unique_ptr<VideoEncodedFrame> frame) {
     decoder->decode(frame->buffer, (int)frame->length, &buffer[0], &out_size);
@@ -240,6 +227,36 @@ int main(int argc, char* argv[]) {
       renderer->RenderFrame(&buffer[0], out_size);
     }
   };
+#else
+  std::shared_ptr<VideoDirectRender> renderer = std::make_shared<VideoDirectRender>();
+  renderer->initRender(window_width, window_height);
+
+  std::shared_ptr<VideoDecoder> decoder = std::make_shared<VideoDecoder>(renderer);
+  decoder->initDecoder(codec_type);
+
+  std::list<AVPacket*> pkt_list;
+  std::mutex mutex;
+  std::condition_variable cond;
+
+  auto callback = [&](std::unique_ptr<VideoEncodedFrame> frame) {
+    if (frame->length > 0) {
+      AVPacket *pkt = av_packet_alloc();
+      uint8_t* data = new uint8_t[frame->length];
+      memcpy(data, frame->buffer, frame->length);
+      pkt->data = data;
+      pkt->size = frame->length;
+
+      std::unique_lock<std::mutex> locker(mutex);
+      if (pkt_list.size() > 10) {
+        delete [] data;
+        av_packet_free(&pkt);
+        return;
+      }
+      pkt_list.push_back(pkt);
+      cond.notify_one();
+    }
+  };
+#endif
 
   GlobalConfiguration::SetEncodedVideoFrameEnabled(true);
   std::unique_ptr<owt::base::VideoDecoderInterface> mEncodedVideoDispatcher = std::make_unique<EncodedVideoDispatcher>(callback);
@@ -281,6 +298,7 @@ int main(int argc, char* argv[]) {
   pc->Connect(signaling_server_url, client_id, nullptr, nullptr);
   pc->Send(server_id, "start", nullptr, nullptr);
 
+#ifdef USE_SDL
   auto sendCtrl = [&](const char* event, const char* param) {
     char msg[256];
 
@@ -317,38 +335,7 @@ int main(int argc, char* argv[]) {
 
   bool fullscreen = false;
   bool running = true;
-#if 0
-  while (running) {
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-      switch (e.type) {
-        case SDL_QUIT:
-          running = false;
-          break;
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-          onMouseButton(e.button);
-          break;
-        case SDL_MOUSEMOTION:
-          onMouseMove(e.motion);
-          break;
-        case SDL_KEYDOWN: {
-            if (e.key.keysym.sym == SDLK_F11) {
-              uint32_t flags = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-              SDL_SetWindowFullscreen(win, flags);
-              fullscreen = !fullscreen;
-            }
-          }
-          break;
-        case SDL_WINDOWEVENT:
-          break;
-        default:
-          std::cout << "Unhandled SDL event " << e.type << std::endl;
-          break;
-      }
-    }
-  }
-#else
+
   SDL_Event e;
   while (running) {
     SDL_WaitEvent(&e);
@@ -378,12 +365,35 @@ int main(int argc, char* argv[]) {
         break;
     }
   }
+#else
+  AVPacket* pkt = nullptr;
+  while(1) {
+    if (renderer->handleWindowEvents() < 0)
+      break;
+
+    {
+      std::unique_lock<std::mutex> locker(mutex);
+      while (pkt_list.size() <= 0) {
+        cond.wait(locker);
+      }
+      pkt = pkt_list.front();
+      pkt_list.pop_front();
+    }
+
+    if (pkt != nullptr) {
+      decoder->decode(pkt);
+      delete [] pkt->data;
+      av_packet_free(&pkt);
+    }
+  }
 #endif
 
   pc->Stop(server_id, nullptr, nullptr);
   pc->RemoveObserver(ob);
   pc->Disconnect(nullptr, nullptr);
+#ifdef USE_SDL
   SDL_DestroyWindow(win);
   SDL_Quit();
+#endif
   return 0;
 }
