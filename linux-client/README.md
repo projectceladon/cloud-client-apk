@@ -2,7 +2,7 @@
 
 please use Ubuntu 20.04
 
-sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libglew-dev libsdl2-dev libsdl2-image-dev libglm-dev libfreetype6-dev libx11-dev libxext-dev libxtst-dev libxrender-dev libxmu-dev libxmuu-dev
+sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libglew-dev libsdl2-dev libsdl2-image-dev libglm-dev libfreetype6-dev libx11-dev libxext-dev libxtst-dev libxrender-dev libxmu-dev libxmuu-dev libsdl2-ttf-dev
 
 
 
@@ -13,12 +13,15 @@ sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libgle
 3. cmake ..
 4. make
 
-
 ### How to Run:
 
 1. cd build
 2. export LD_LIBRARY_PATH=../lib
-3. ./aic_linux_client -u http://10.239.93.57:8095 -s s0 -c c0 -r 1280x720 -v h265 -w 640x360 -d hw
+3. copy ../SourceSansPro-Regular.ttf .
+4. ulimit -Sn 4096
+5. ./aic_linux_client -u http://10.239.93.57:8095 -s s0 -c c0 -r 1280x720 -v h265 -w 640x360 -d hw
+   for more than one stream, run
+   ./aic_linux_client -u http://10.239.93.57:8095 -s s0-4 -c c0-4 -r 1280x720 -v h264 -d sw
 
 
 
@@ -35,7 +38,8 @@ sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libgle
 ## Owt game streaming sdk
 1. git clone https://github.com/intel-innersource/libraries.communications.webrtc.owt-sdk-game-streaming.git
 2. prepare source code according to README.md in owt game streaming sdk.
-3. python scripts/build_linux.py --gn_gen --sdk --ssl_root openssl_dir --output_path dist --fake_audio --scheme release --arch x64
+3. apply owt-patches/0001-decoded-frame-to-render-on-linux.patch to src
+4. python scripts/build_linux.py --gn_gen --sdk --ssl_root openssl_dir --output_path dist --fake_audio --scheme release --arch x64
 
 
 ## ffmpeg

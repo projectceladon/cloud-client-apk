@@ -17,6 +17,11 @@ add_definitions(-DUSE_CLANG=0)
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
+INCLUDE(FindPkgConfig)
+PKG_SEARCH_MODULE(SDL2TTF REQUIRED SDL2_ttf>=2.0.0)
+include_directories(${SDL2TTF_INCLUDE_DIRS})
+
+INCLUDE(FindPkgConfig)
 include_directories(
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/include/ffmpeg/include
@@ -27,8 +32,10 @@ link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 add_executable(aic_linux_client
   aic_linux_client.cpp
+  GameSession.cpp
   owt_signalingchannel.cpp
   EncodedVideoDispatcher.cpp
+  VideoDecoderDispatcher.cpp
   CGCodec.cpp
   VideoRender.cpp
   VideoDecoder.cpp
@@ -38,6 +45,7 @@ add_executable(aic_linux_client
 set_target_properties(aic_linux_client PROPERTIES COMPILE_DEFINITIONS "WEBRTC_LINUX;WEBRTC_POSIX;USE_X11=1;")
 target_link_libraries(aic_linux_client
   ${SDL2_LIBRARIES}
+  ${SDL2TTF_LIBRARIES}
   boost_system
   sioclient
   owt-release

@@ -111,10 +111,8 @@ class OWT_EXPORT Stream {
   /// Attach the stream to an audio player that receives PCM data besides sending to
   /// audio output device.
 #endif
-#if defined(WEBRTC_WIN)
   /// Attach the stream to a Linux VA renderer.
   virtual void AttachVideoRenderer(VideoRendererInterface& renderer);
-#endif
 
 #if defined(WEBRTC_WIN)
   /// Attach the stream to a renderer to receive frames from decoder.

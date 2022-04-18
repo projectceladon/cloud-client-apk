@@ -51,13 +51,6 @@ class OWT_EXPORT P2PClientObserver {
   virtual void OnMessageReceived(const std::string& remote_user_id,
                                  const std::string message) {}
   /**
-   @brief This function will be invoked when received data from a remote user.
-   @param remote_user_id Remote user’s ID
-   @param message Message received
-   */
-  virtual void OnMessageReceived2(const std::string& remote_user_id,
-                                  const std::string message) {}
-  /**
    @brief This function will be invoked when received binary from a remote user.
    @param remote_user_id Remote user's ID
    @param data Data binary received
@@ -230,10 +223,6 @@ class OWT_EXPORT P2PClient final : protected P2PSignalingSenderInterface,
             const std::vector<uint8_t>& data,
             std::function<void()> on_success,
             std::function<void(std::unique_ptr<Exception>)> on_failure);
-  void Send2(const std::string& target_id,
-            const std::string& message,
-            std::function<void()> on_success,
-            std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
    @brief Get the connection statistics with target client.
    @param target_id Remote user's ID.
@@ -271,8 +260,6 @@ class OWT_EXPORT P2PClient final : protected P2PSignalingSenderInterface,
   // Currently, data is string.
   virtual void OnMessageReceived(const std::string& remote_id,
                                  const std::string& message);
-  virtual void OnMessageReceived2(const std::string& remote_id,
-                                  const std::string& message);
   virtual void OnBinaryReceived(const std::string& remote_id,
                         const std::vector<uint8_t>& binary);
   // Triggered when a new stream is added.

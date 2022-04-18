@@ -422,6 +422,28 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
         return -1;
       }
       *out_size = buf_size;
+
+      // untransfer, cause we can get it correctly
+      /*if (!nv12buffer_.empty()) {
+        // nv12toi420
+        int step = m_decode_ctx->resolution.first * m_decode_ctx->resolution.second;
+        memcpy(&nv12buffer_[0], out_buf, step * 3 / 2);
+        for(int i = 0,j = 0; i < step / 4; i++,j += 2)
+        {
+           memcpy(out_buf + step + i, &nv12buffer_[0] + step + j, 1);//u
+           memcpy(out_buf + step + step / 4 +i, &nv12buffer_[0]+ step + j + 1,1);// v
+        }
+
+        // i420tonv12
+        memcpy(&nv12buffer_[0], out_buf, step * 3 / 2);//y
+        for(int i = 0,j = 0;i<step/4;i++,j+=2)
+        {
+          memcpy(&nv12buffer_[0]+step+j,out_buf+step+i,1);//u
+          memcpy(&nv12buffer_[0]+step+j+1,out_buf+step+i+step/4,1);//v
+        }
+        memcpy(out_buf, &nv12buffer_[0], step * 3 / 2);
+      }*/
+
 #endif
     }
   }
@@ -477,22 +499,24 @@ int CGVideoDecoder::flush_decoder() {
 }
 
 int CGVideoDecoder::destroy() {
+  std::cout << "CGVideoDecoder destroy·" << std::endl;
   std::lock_guard<std::recursive_mutex> decode_push_lock(push_lock);
   std::lock_guard<std::recursive_mutex> decode_pull_lock(pull_lock);
-  decoder_ready = false;
-  av_parser_close(m_decode_ctx->parser);
-  avcodec_free_context(&m_decode_ctx->avcodec_ctx);
-  av_packet_free(&m_decode_ctx->packet);
 
-  if (!m_decode_ctx->decoded_frames.empty()) {
-    std::lock_guard<std::mutex> lock(m_decode_ctx->mutex_);
-    for (auto frame : m_decode_ctx->decoded_frames) {
-      av_frame_free(&frame);
+  if (decoder_ready) {
+    av_parser_close(m_decode_ctx->parser);
+    avcodec_free_context(&m_decode_ctx->avcodec_ctx);
+    av_packet_free(&m_decode_ctx->packet);
+    if (!m_decode_ctx->decoded_frames.empty()) {
+      std::lock_guard<std::mutex> lock(m_decode_ctx->mutex_);
+      for (auto frame : m_decode_ctx->decoded_frames) {
+        av_frame_free(&frame);
+      }
+      m_decode_ctx->decoded_frames.clear();
     }
-    m_decode_ctx->decoded_frames.clear();
   }
+  decoder_ready = false;
   m_hw_accel_ctx.reset();
   m_decode_ctx.reset();
-
   return 0;
 }

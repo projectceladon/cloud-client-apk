@@ -11,6 +11,10 @@ bool EncodedVideoDispatcher::OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> f
   return true;
 }
 
+uint8_t* EncodedVideoDispatcher::getDecodedFrame() {
+  return nullptr;
+}
+
 int EncodedVideoDispatcher::Write(int vhal_sock, const uint8_t* data, size_t size) {
   return 0;
 }

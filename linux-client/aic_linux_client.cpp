@@ -7,40 +7,45 @@
 #define USE_SDL 1
 #ifdef USE_SDL
 #include <SDL2/SDL.h>
+#include "GameSession.h"
+#include <SDL2/SDL_ttf.h>
+#include "VideoDecoderDispatcher.h"
+#else
+#include "owt/base/stream.h"
+#include "owt/p2p/p2pclient.h"
+#include "owt_signalingchannel.h"
+#include "EncodedVideoDispatcher.h"
+#include "VideoRender.h"
+#include "VideoDirectRender.h"
+#include "VideoDecoder.h"
+#include "PcObserver.h"
 #endif
 #include <getopt.h>
 #include <signal.h>
-
-#include "owt/base/stream.h"
 #include "owt/base/videorendererinterface.h"
-#include "owt/base/audioplayerinterface.h"
-#include "owt/p2p/p2pclient.h"
-#include "owt_signalingchannel.h"
-
-#include "CGCodec.h"
-#include "VideoRender.h"
-#include "EncodedVideoDispatcher.h"
-#include "VideoDirectRender.h"
-#include "VideoDecoder.h"
 
 using namespace owt::p2p;
 
-class PcObserver : public owt::p2p::P2PClientObserver {
-public:
-  PcObserver() {}
-  virtual ~PcObserver() {}
+#ifdef USE_SDL
+#define AIC_REFRESH_EVENT  (SDL_USEREVENT + 1)
 
-  void OnMessageReceived(const std::string& remote_user_id,
-                         const std::string message) {
-    std::cout << __func__ << ":from" << remote_user_id << ", msg:" << message << std::endl;
-  }
+#define AIC_BREAK_EVENT  (SDL_USEREVENT + 2)
 
-  virtual void OnStreamAdded(std::shared_ptr<owt::base::RemoteStream> stream) override {
-  }
-
-  void OnServerDisconnected() {
-  }
-};
+int exit_thread = 0;
+int video_fps_thread(void* opaque) {
+	while (!exit_thread) {
+		SDL_Event event;
+		event.type = AIC_REFRESH_EVENT;
+		SDL_PushEvent(&event);
+		SDL_Delay(33);  // 30fps
+	}
+	exit_thread = 0;
+	SDL_Event event;
+	event.type = AIC_BREAK_EVENT;
+	SDL_PushEvent(&event);
+	return 0;
+}
+#endif
 
 static const struct option long_option[] = {
   {"client-id",   required_argument, NULL, 'c'},
@@ -56,11 +61,55 @@ static const struct option long_option[] = {
   {NULL,          0,                 NULL,  0 }
 };
 
+void resolveIds(std::string& ids, std::vector<std::string>& vector_ids) {
+  std::string sep_comma(",");
+  std::string sep_semi("-");
+  ids += sep_comma;
+  int size = ids.size();
+  std::string::size_type pos;
+  std::string s;
+  std::string::size_type pos_semi;
+  int begin;
+  int end;
+  std::string s_id;
+  for (int i = 0; i < size; i++)
+  {
+    pos = ids.find(sep_comma, i);
+    if (pos < size)
+    {
+      s = ids.substr(i, pos -i);
+      if (s[0] == 's' || s[0] == 'c') {
+        pos_semi = s.find(sep_semi);
+        if (pos_semi != -1) {
+          begin = atoi(s.substr(1, pos_semi).c_str());
+          end = atoi(s.substr(pos_semi + 1, s.length() - pos_semi -1).c_str());
+          for (int j = begin; j <= end; j++) {
+            s_id = s.substr(0, 1) + std::to_string(j);
+            vector_ids.push_back(s_id);
+          }
+        } else {
+          vector_ids.push_back(s);
+        }
+      }
+      i = pos;
+    }
+  }
+}
+
+int ceilSqrt(int num) {
+  int n = sqrt(num);
+  if (n * n == num) {
+    return n;
+  } else {
+    return n+1;
+  }
+}
+
 void help() {
-  std::cout << "--client-id/-c <client_id>: Client id" << std::endl;
+  std::cout << "--client-id/-c <client_id>: Client id, ie c0-3,c4,c6-9" << std::endl;
   std::cout << "--device/-d <sw/hw>: Software decoding or hardware decoding, default: hw" << std::endl;
   std::cout << "--resolution/-r <aic_resolution>: Aic resolution, default: 1280x720" << std::endl;
-  std::cout << "--server-id/-s <server_id>: Server id" << std::endl;
+  std::cout << "--server-id/-s <server_id>: Server id, ie s0-3,s4,s6-9" << std::endl;
   std::cout << "--url/-u <url>: Url of signaling server, for example: http://192.168.17.109:8095" << std::endl;
   std::cout << "--video-codec/-v <h264/h265>: Video codec, default: h264" << std::endl;
   std::cout << "--window-size/-w <window_size>: Window size, default: 352x288" << std::endl;
@@ -71,8 +120,8 @@ void help() {
 int main(int argc, char* argv[]) {
   signal(SIGPIPE, SIG_IGN);
   std::string signaling_server_url;
-  std::string server_id;
-  std::string client_id;
+  std::string server_ids;
+  std::string client_ids;
   std::string resolution = "1280x720";
   std::string video_codec = "h264";
   std::string device = "hw";
@@ -84,7 +133,7 @@ int main(int argc, char* argv[]) {
   while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h", long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
-        client_id = optarg;
+        client_ids = optarg;
         break;
       case 'd':
         device = optarg;
@@ -93,7 +142,7 @@ int main(int argc, char* argv[]) {
         resolution = optarg;
         break;
       case 's':
-        server_id = optarg;
+        server_ids = optarg;
         break;
       case 'u':
         signaling_server_url = optarg;
@@ -120,20 +169,48 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  /***************p2p***********/
   if (signaling_server_url.empty() ||
-      server_id.empty() ||
-      client_id.empty()) {
+      server_ids.empty() ||
+      client_ids.empty()) {
      std::cout << "Input parameters are not correct!" << std::endl;
      help();
      exit(0);
   }
 
+  std::vector<std::string> vector_servers;
+  std::vector<std::string> vector_clients;
+  resolveIds(server_ids, vector_servers);
+  resolveIds(client_ids, vector_clients);
+  int index = 0;
+  for (auto id : vector_servers) {
+    std::cout << index << ":" << id << " ";
+    index++;
+  }
+  std::cout <<std::endl;
+  index = 0;
+  for (auto id : vector_clients) {
+    std::cout << index << ":" << id << " ";
+    index++;
+  }
+  std::cout <<std::endl;
+
+  int lines = vector_servers.size();
+  if (lines > 36) {
+    std::cout << "max support line is 36" << std::endl;
+    exit(0);
+  }
+  if (lines != vector_clients.size()) {
+    std::cout << "client an server not match" << std::endl;
+    exit(0);
+  }
   // parse signaling_server_url
   std::string::size_type pos = signaling_server_url.rfind(":");
   if (pos == std::string::npos) {
     std::cout << "Signaling server url is not correct!" << std::endl;
     exit(0);
   }
+
   std::string str = signaling_server_url.substr(0, pos);
   std::string port = signaling_server_url.substr(pos + 1);
   pos = str.rfind("/");
@@ -144,14 +221,18 @@ int main(int argc, char* argv[]) {
   std::string ip = str.substr(pos + 1);
 
   // parse window_size
-  pos = window_size.find("x");
-  if (pos == std::string::npos) {
-    std::cout << "window size is not correct!" << std::endl;
-    exit(0);
-  }
+  int window_width;
+  int window_height;
+  if (lines == 1) {
+    pos = window_size.find("x");
+    if (pos == std::string::npos) {
+      std::cout << "window size is not correct!" << std::endl;
+      exit(0);
+    }
 
-  int window_width = atoi(window_size.substr(0, pos).c_str());
-  int window_height = atoi(window_size.substr(pos + 1).c_str());
+    window_width = atoi(window_size.substr(0, pos).c_str());
+    window_height = atoi(window_size.substr(pos + 1).c_str());
+  }
 
   // codec type
   uint32_t codec_type = (uint32_t)VideoCodecType::kH264;
@@ -160,17 +241,43 @@ int main(int argc, char* argv[]) {
   }
 
 #ifdef USE_SDL
-  // parse resolution
-  pos = resolution.find("x");
-  if (pos == std::string::npos) {
-    std::cout << "Resolution is not correct!" << std::endl;
+  // parse window_size
+  SDL_Init(SDL_INIT_VIDEO);
+  if (lines > 1 && TTF_Init() == -1){
+    std::cout << "ttf init error" << TTF_GetError() << std::endl;
     exit(0);
   }
+  atexit(SDL_Quit);
 
-  int width = atoi(resolution.substr(0, pos).c_str());
-  int height = atoi(resolution.substr(pos + 1).c_str());
+  SDL_Window* win;
+  if (lines > 1) {
+    std::string title = "multi-stream player";
+    win = SDL_CreateWindow(title.c_str(), 0, 0, 0, 0, SDL_WINDOW_MAXIMIZED);
+  } else {
+    std::string title = ip + "    android-" + vector_servers[0] + "    " + video_codec;
+    win = SDL_CreateWindow(title.c_str(), window_x, window_y, window_width, window_height, SDL_WINDOW_RESIZABLE);
+  }
 
-  // sw/hw decoding
+  if (!win) {
+    std::cout << "Failed to create SDL window!" << std::endl;
+    exit(0);
+  }
+  SDL_Renderer* sdlRenderer = SDL_CreateRenderer(win, -1, 0);
+  SDL_Event ev;
+  SDL_PollEvent(&ev);
+  SDL_GL_GetDrawableSize(win, &window_width, &window_height);
+  std::cout << "window details: [" << window_width << ", " << window_height << "]" << std::endl;
+
+  TTF_Font* font = nullptr;
+  if (lines > 1) {
+    font = TTF_OpenFont("SourceSansPro-Regular.ttf", 30);
+    if (font == NULL)
+	  {
+			std::cout << "font open failure " << SDL_GetError() << std::endl;
+			exit(0);
+	  }
+  }
+
   bool is_sw_decoding;
   if (device == "hw") {
     is_sw_decoding = false;
@@ -180,8 +287,15 @@ int main(int argc, char* argv[]) {
     std::cout << "Device parameter is not correct!" << std::endl;
     exit(0);
   }
-
-  // resolution
+  /***************decoder***********/
+  // parse resolution
+  pos = resolution.find("x");
+  if (pos == std::string::npos) {
+    std::cout << "Resolution is not correct!" << std::endl;
+    exit(0);
+  }
+  int width = atoi(resolution.substr(0, pos).c_str());
+  int height = atoi(resolution.substr(pos + 1).c_str());
   FrameResolution frame_resolution = FrameResolution::k480p;
   if (height == 600) {
     frame_resolution = FrameResolution::k600p;
@@ -191,42 +305,127 @@ int main(int argc, char* argv[]) {
     frame_resolution = FrameResolution::k1080p;
   }
 
-  //decoder
-  std::shared_ptr<CGVideoDecoder> decoder = std::make_shared<CGVideoDecoder>();
-  if (decoder->init(frame_resolution, codec_type, is_sw_decoding ? nullptr : "vaapi", 0) < 0) {
-    std::cout << "VideoDecoder init failed. " << std::endl;
-    exit(0);
-  } else {
-    std::cout << "VideoDecoder init done." << std::endl;
+  CGCodecSettings codecSettings;
+  codecSettings.resolution = frame_resolution;
+  codecSettings.codec_type = codec_type;
+  codecSettings.device_name = is_sw_decoding ? nullptr : "vaapi";
+  codecSettings.frame_size =  width * height * 3 / 2;
+
+  //owt::base::Logging::LogToConsole(owt::base::LoggingSeverity::kInfo);
+  GlobalConfiguration::SetEncodedVideoFrameEnabled(true);
+  std::unique_ptr<owt::base::VideoDecoderInterface> mVideoDecoderDispatcher = std::make_unique<VideoDecoderDispatcher>(codecSettings);
+  GlobalConfiguration::SetCustomizedVideoDecoderEnabled(std::move(mVideoDecoderDispatcher));
+
+  /***************render 2***********/
+  std::vector<std::shared_ptr<GameSession>> game_sessions_;
+  int sp_num = ceilSqrt(lines);
+  int row;
+  int colomn;
+  int margin = lines > 1 ? 10 : 0;
+  int cell_width = window_width / sp_num;
+  int cell_height = window_height / sp_num;
+  int cell_with_margin = cell_width - margin;
+  int cell_height_margin = cell_height - margin;
+  int** game_matrix;
+  game_matrix = new int* [sp_num];
+  for (int i = 0; i < sp_num; i++)
+    game_matrix[i] = new int[sp_num];
+
+  for (int i = 0; i < lines; i++) {
+    GameP2PParams p2pParams;
+    p2pParams.signaling_server_url = signaling_server_url;
+    p2pParams.server_id = vector_servers[i];
+    p2pParams.client_id = vector_clients[i];
+    p2pParams.server_ip = ip;
+    p2pParams.video_codec = video_codec;
+
+    row = i / sp_num;
+    colomn = i % sp_num;
+    RenderParams render_params;
+    render_params.left = colomn * cell_width;
+    render_params.top = row * cell_height;
+    render_params.width = cell_with_margin;
+    render_params.height = cell_height_margin;
+    render_params.video_width = width;
+    render_params.video_height = height;
+    render_params.format = is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12;
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(p2pParams, sdlRenderer, render_params, font);
+    game_sessions_.push_back(game_session);
+    game_matrix[row][colomn] = i;
+  }
+  for (auto session : game_sessions_) {
+    session -> startSession();
   }
 
-  //render
-  SDL_Init(SDL_INIT_VIDEO);
-  atexit(SDL_Quit);
-
-  std::string title = ip + "    android-" + server_id + "    " + video_codec;
-  auto win = SDL_CreateWindow(title.c_str(), window_x, window_y, window_width, window_height, SDL_WINDOW_RESIZABLE);
-  if (!win) {
-    std::cout << "Failed to create SDL window!" << std::endl;
-  }
-  std::shared_ptr<VideoRenderer> renderer =
-    std::make_shared<VideoRenderer>(win, width, height, is_sw_decoding ? SDL_PIXELFORMAT_IYUV : SDL_PIXELFORMAT_NV12);
-
-  //decoding and rendering
-  const int frame_size = width * height * 3 / 2;
-  std::vector<uint8_t> buffer = std::vector<uint8_t>(frame_size);
-  int out_size = 0;
-  auto callback = [&](std::unique_ptr<VideoEncodedFrame> frame) {
-    decoder->decode(frame->buffer, (int)frame->length, &buffer[0], &out_size);
-    if (out_size > 0) {
-      if (out_size != frame_size) {
-        std::cout << "Frame size should not be correct! out size: "
-                  << out_size << ", frame size: "
-                  << frame_size << std::endl;
-      }
-      renderer->RenderFrame(&buffer[0], out_size);
+   SDL_Thread* video_tick_tid = SDL_CreateThread(video_fps_thread, NULL, NULL);
+  auto onMouseMove = [&](SDL_MouseMotionEvent& e) {
+    if (e.state == 1) {
+      int row = (e.y + margin) / cell_height;
+      int colomn = (e.x + margin) / cell_width;
+      int index = game_matrix[row][colomn];
+      game_sessions_[index] -> dispatchEvent(e);
     }
   };
+
+  auto onMouseButton = [&](SDL_MouseButtonEvent& e) {
+    int row = (e.y + margin) / cell_height;
+    int colomn = (e.x + margin) / cell_width;
+    int index = game_matrix[row][colomn];
+    game_sessions_[index] -> dispatchEvent(e);
+  };
+
+  bool fullscreen = false;
+  bool running = true;
+  SDL_Event e;
+  while (running) {
+    SDL_WaitEvent(&e);
+    switch (e.type) {
+      case  AIC_REFRESH_EVENT:
+        for (auto session : game_sessions_) {
+          session -> renderFrame();
+        }
+			  SDL_RenderClear(sdlRenderer);
+        for (auto session : game_sessions_) {
+          session -> copyFrame();
+        }
+			  SDL_RenderPresent(sdlRenderer);
+		    break;
+      case SDL_QUIT:
+        exit_thread = 1;
+        running = false;
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        onMouseButton(e.button);
+        break;
+      case SDL_MOUSEMOTION:
+        onMouseMove(e.motion);
+        break;
+      case SDL_KEYDOWN: {
+          if (e.key.keysym.sym == SDLK_F11) {
+            uint32_t flags = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+            SDL_SetWindowFullscreen(win, flags);
+            fullscreen = !fullscreen;
+          }
+        }
+        break;
+      case SDL_WINDOWEVENT:
+        break;
+      /*case AIC_BREAK_EVENT:
+        break;*/
+      default:
+        //std::cout << "Unhandled SDL event " << e.type << std::endl;
+        break;
+    }
+  }
+  SDL_DestroyRenderer(sdlRenderer);
+  SDL_DestroyWindow(win);
+  if (font != nullptr) {
+    std::cout << "close font" << endl;
+    TTF_CloseFont(font);
+    TTF_Quit();
+  }
+  SDL_Quit();
 #else
   std::shared_ptr<VideoDirectRender> renderer = std::make_shared<VideoDirectRender>();
   renderer->initRender(window_width, window_height);
@@ -256,7 +455,6 @@ int main(int argc, char* argv[]) {
       cond.notify_one();
     }
   };
-#endif
 
   GlobalConfiguration::SetEncodedVideoFrameEnabled(true);
   std::unique_ptr<owt::base::VideoDecoderInterface> mEncodedVideoDispatcher = std::make_unique<EncodedVideoDispatcher>(callback);
@@ -294,78 +492,10 @@ int main(int argc, char* argv[]) {
 
   PcObserver ob;
   pc->AddObserver(ob);
-  pc->AddAllowedRemoteId(server_id);
-  pc->Connect(signaling_server_url, client_id, nullptr, nullptr);
-  pc->Send(server_id, "start", nullptr, nullptr);
+  pc->AddAllowedRemoteId(vector_servers[0]);
+  pc->Connect(signaling_server_url, vector_clients[0], nullptr, nullptr);
+  pc->Send(vector_servers[0], "start", nullptr, nullptr);
 
-#ifdef USE_SDL
-  auto sendCtrl = [&](const char* event, const char* param) {
-    char msg[256];
-
-    snprintf(msg, 256, "{\"type\": \"control\", \"data\": { \"event\": \"%s\", \"parameters\": %s }}", event, param);
-    //std::cout << "sendCtl: " <<  msg << std::endl;
-    pc->Send(server_id, msg, nullptr, nullptr);
-  };
-
-  auto onMouseMove = [&](SDL_MouseMotionEvent& e) {
-    if (e.state == 1) {
-      char param[64];
-      int w, h;
-      SDL_GetWindowSize(win, &w, &h);
-
-      int x = e.x * 32767 / w;
-      int y = e.y * 32767 / h;
-      snprintf(param, 64, "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }", x, y, e.xrel, e.yrel);
-      sendCtrl("mousemove", param);
-    }
-  };
-
-  auto onMouseButton = [&](SDL_MouseButtonEvent& e) {
-    char param[64];
-    const char* et = (e.type == SDL_MOUSEBUTTONDOWN) ? "mousedown" : "mouseup";
-    int w, h;
-
-    SDL_GetWindowSize(win, &w, &h);
-
-    int x = e.x * 32767 / w;
-    int y = e.y * 32767 / h;
-    snprintf(param, 64, "{\"which\": %d, \"x\": %d, \"y\": %d }", e.which, x, y);
-    sendCtrl(et, param);
-  };
-
-  bool fullscreen = false;
-  bool running = true;
-
-  SDL_Event e;
-  while (running) {
-    SDL_WaitEvent(&e);
-    switch (e.type) {
-      case SDL_QUIT:
-        running = false;
-        break;
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        onMouseButton(e.button);
-        break;
-      case SDL_MOUSEMOTION:
-        onMouseMove(e.motion);
-        break;
-      case SDL_KEYDOWN: {
-          if (e.key.keysym.sym == SDLK_F11) {
-            uint32_t flags = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-            SDL_SetWindowFullscreen(win, flags);
-            fullscreen = !fullscreen;
-          }
-        }
-        break;
-      case SDL_WINDOWEVENT:
-        break;
-      default:
-        //std::cout << "Unhandled SDL event " << e.type << std::endl;
-        break;
-    }
-  }
-#else
   AVPacket* pkt = nullptr;
   while(1) {
     if (renderer->handleWindowEvents() < 0)
@@ -386,14 +516,9 @@ int main(int argc, char* argv[]) {
       av_packet_free(&pkt);
     }
   }
-#endif
-
-  pc->Stop(server_id, nullptr, nullptr);
+  pc->Stop(vector_servers[0], nullptr, nullptr);
   pc->RemoveObserver(ob);
   pc->Disconnect(nullptr, nullptr);
-#ifdef USE_SDL
-  SDL_DestroyWindow(win);
-  SDL_Quit();
 #endif
   return 0;
 }

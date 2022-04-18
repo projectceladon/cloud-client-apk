@@ -19,6 +19,8 @@ public:
 
   bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) override;
 
+  uint8_t* getDecodedFrame() override;
+
   bool Release() override {
     return true;
   }

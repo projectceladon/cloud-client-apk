@@ -47,6 +47,13 @@ class VideoDecoderInterface {
    @return true if successful or false if failed
    */
   virtual bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) = 0;
+
+  /**
+   @brief This function receives the decoded frame for the further rendering
+   @return Video decoded frame
+   */
+  virtual uint8_t* getDecodedFrame() = 0;
+
   /**
    @brief This function generates the customized decoder for each peer connection
    */

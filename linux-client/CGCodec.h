@@ -17,6 +17,14 @@ extern "C" {
 
 #include "Common.h"
 
+struct CGCodecSettings {
+  FrameResolution resolution;
+  uint32_t codec_type;
+  const char *device_name;
+  int frame_size;
+};
+
+
 using namespace std;
 
 class CGVideoFrame {
@@ -131,6 +139,7 @@ private:
   uint32_t codec_type;
   FrameResolution resolution;
   const char *device_name;
+  //std::vector<uint8_t> nv12buffer_; no, need to transfer, cause webrtc won't change
 };
 
 #endif  // CG_CODEC_H
