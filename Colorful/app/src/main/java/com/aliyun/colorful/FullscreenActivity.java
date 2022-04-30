@@ -2,17 +2,22 @@ package com.aliyun.colorful;
 
 import android.annotation.SuppressLint;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.os.Trace;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -37,8 +42,24 @@ public class FullscreenActivity extends AppCompatActivity {
      * and a change of the status and navigation bar.
      */
     private static final int UI_ANIMATION_DELAY = 300;
-    private final Handler mHideHandler = new Handler();
+
+    private final Handler mHideHandler = new Handler() {
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            switch (msg.what){
+                case 1:
+                    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+                    Date date = new Date(System.currentTimeMillis());
+                    mRealTimeView.setText(formatter.format(date));
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected value: " + msg.what);
+            }
+        }
+    };
+
     private View mContentView;
+    private TextView mRealTimeView;
     private int mCounter = 0;
     private int mBackGoundColor = 0;
     private int nCountInput;
@@ -94,6 +115,24 @@ public class FullscreenActivity extends AppCompatActivity {
     };
     private int mTouchCounter = 0;
 
+    private void Startthread() {
+        new Thread(){
+            @Override
+            public void run() {
+                do {
+                    try {
+                        Thread.sleep(100);
+                        Message message = new Message();
+                        message.what = 1;
+                        mHideHandler.sendMessage(message);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } while(true);
+            }
+        }.start();
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,6 +142,8 @@ public class FullscreenActivity extends AppCompatActivity {
         mVisible = true;
         mControlsView = findViewById(R.id.fullscreen_content_controls);
         mContentView = findViewById(R.id.fullscreen_content);
+        mRealTimeView = findViewById(R.id.real_time);
+        Startthread();
         getWindow().getDecorView().setBackgroundColor(Color.BLUE);
 
 
@@ -111,6 +152,7 @@ public class FullscreenActivity extends AppCompatActivity {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (motionEvent.getAction() == MotionEvent.ACTION_UP) {
+                    Log.d(TAG, "Receive touch event");
                     nCountInput++;
                     Trace.beginSection("atou A1 ID: " + nCountInput);
                     Trace.endSection();

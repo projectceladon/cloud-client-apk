@@ -19,6 +19,12 @@
         android:textSize="50sp"
         android:textStyle="bold" />
 
+    <TextView
+        android:id="@+id/real_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="-- --" />
+
     <!-- This FrameLayout insets its children based on system windows using
          android:fitsSystemWindows. -->
     <FrameLayout
