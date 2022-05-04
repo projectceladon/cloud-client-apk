@@ -65,6 +65,7 @@ VideoDirectRender::VideoDirectRender() {
 }
 
 VideoDirectRender::~VideoDirectRender() {
+  std::cout << "~VideoDirectRender()" << std::endl;
   eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   eglDestroyContext(egl_display, egl_context);
   eglDestroySurface(egl_display, egl_surface);
@@ -101,7 +102,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
 
   XStoreName(mXDisplay, mWindow, "AIC Linux Native Client");
   XMapWindow(mXDisplay, mWindow);
-  XSelectInput(mXDisplay, mWindow, ExposureMask | StructureNotifyMask | KeyPressMask);
+  XSelectInput(mXDisplay, mWindow, ExposureMask | StructureNotifyMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
   mWMDeleteWindow = XInternAtom(mXDisplay, "WM_DELETE_WINDOW", True);
   XSetWMProtocols(mXDisplay, mWindow, &mWMDeleteWindow, 1);
 
@@ -128,12 +129,14 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
         EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
         EGL_NONE
   };
+
   EGLConfig cfg;
   EGLint cfg_count;
   if (!eglChooseConfig(egl_display, visual_attr, &cfg, 1, &cfg_count) || (cfg_count < 1)) {
     std::cerr << "eglChooseConfig failed!" << std::endl;
     return -1;
   }
+
   egl_surface = eglCreateWindowSurface(egl_display, cfg, mWindow, NULL);
   if (egl_surface == EGL_NO_SURFACE) {
     std::cerr << "eglCreateWindowSurface failed!" << std::endl;
@@ -158,6 +161,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
     std::cerr << "eglCreateContext failed!" << std::endl;
     return -1;
   }
+
   eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context);
   eglSwapInterval(egl_display, SWAP_INTERVAL);
 
@@ -188,7 +192,6 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
     std::cerr << "glCreateProgram failed!" << std::endl;
     return -1;
   }
-
   if (!vs || !fs) {
     std::cerr << "glCreateShader failed!" << std::endl;
     return -1;
@@ -240,13 +243,17 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
 }
 
 int VideoDirectRender::handleWindowEvents() {
+  char param[64];
+  XWindowAttributes attr;
+  XGetWindowAttributes(mXDisplay, mWindow, &attr);
+
   while (XPending(mXDisplay)) {
     XEvent ev;
     XNextEvent(mXDisplay, &ev);
     switch (ev.type) {
       case ClientMessage:
         if (((Atom) ev.xclient.data.l[0]) == mWMDeleteWindow) {
-          return -1;;
+          return -1;
         }
         break;
       case KeyPress:
@@ -260,6 +267,24 @@ int VideoDirectRender::handleWindowEvents() {
       case ConfigureNotify:
         glViewport(0, 0, ((XConfigureEvent*)&ev)->width, ((XConfigureEvent*)&ev)->height);
         break;
+      case MotionNotify:
+	if (ev.xmotion.state & Button1MotionMask) {
+          snprintf(param, 64, "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }",
+                   ev.xmotion.x * 32767 / attr.width,
+                   ev.xmotion.y * 32767 / attr.height,
+                   ev.xmotion.x_root,
+                   ev.xmotion.y_root);
+          mEventListener("mousemove", param);
+        }
+	break;
+      case ButtonPress:
+      case ButtonRelease:
+        snprintf(param, 64, "{\"which\": %d, \"x\": %d, \"y\": %d }",
+                 ev.xbutton.button,
+                 ev.xbutton.x * 32767 / attr.width,
+                 ev.xbutton.y * 32767 / attr.height);
+        mEventListener((ev.type == ButtonPress) ? "mousedown" : "mouseup", param);
+	break;
       default:
         break;
     }

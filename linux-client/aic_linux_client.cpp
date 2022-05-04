@@ -3,7 +3,11 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+
 #include <unistd.h>
+#include <getopt.h>
+#include <signal.h>
+
 #define USE_SDL 1
 #ifdef USE_SDL
 #include <SDL2/SDL.h>
@@ -20,8 +24,7 @@
 #include "VideoDecoder.h"
 #include "PcObserver.h"
 #endif
-#include <getopt.h>
-#include <signal.h>
+
 #include "owt/base/videorendererinterface.h"
 
 using namespace owt::p2p;
@@ -113,8 +116,10 @@ void help() {
   std::cout << "--url/-u <url>: Url of signaling server, for example: http://192.168.17.109:8095" << std::endl;
   std::cout << "--video-codec/-v <h264/h265>: Video codec, default: h264" << std::endl;
   std::cout << "--window-size/-w <window_size>: Window size, default: 352x288" << std::endl;
+#ifdef USE_SDL
   std::cout << "--window-x/-x <window_x>: Window postion x, default: in the center" << std::endl;
   std::cout << "--window-y/-y <window_y>: Window postion y, default: in the center" << std::endl;
+#endif
 }
 
 int main(int argc, char* argv[]) {
@@ -126,8 +131,10 @@ int main(int argc, char* argv[]) {
   std::string video_codec = "h264";
   std::string device = "hw";
   std::string window_size = "352x288";
+#ifdef USE_SDL
   int window_x = SDL_WINDOWPOS_UNDEFINED;
   int window_y = SDL_WINDOWPOS_UNDEFINED;
+#endif
 
   int opt = 0;
   while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h", long_option, NULL)) != -1) {
@@ -153,12 +160,14 @@ int main(int argc, char* argv[]) {
       case 'w':
         window_size = optarg;
         break;
+#ifdef USE_SDL
       case 'x':
         window_x = atoi(optarg);
         break;
       case 'y':
         window_y = atoi(optarg);
         break;
+#endif
       case 'h':
         help();
         exit(0);
@@ -221,8 +230,8 @@ int main(int argc, char* argv[]) {
   std::string ip = str.substr(pos + 1);
 
   // parse window_size
-  int window_width;
-  int window_height;
+  int window_width = 0;
+  int window_height = 0;
   if (lines == 1) {
     pos = window_size.find("x");
     if (pos == std::string::npos) {
@@ -427,31 +436,30 @@ int main(int argc, char* argv[]) {
   }
   SDL_Quit();
 #else
-  std::shared_ptr<VideoDirectRender> renderer = std::make_shared<VideoDirectRender>();
-  renderer->initRender(window_width, window_height);
-
-  std::shared_ptr<VideoDecoder> decoder = std::make_shared<VideoDecoder>(renderer);
-  decoder->initDecoder(codec_type);
-
-  std::list<AVPacket*> pkt_list;
+  std::list<AVFrame*> frame_list;
   std::mutex mutex;
   std::condition_variable cond;
+
+  std::shared_ptr<VideoDecoder> decoder = std::make_shared<VideoDecoder>();
+  decoder->initDecoder(codec_type);
 
   auto callback = [&](std::unique_ptr<VideoEncodedFrame> frame) {
     if (frame->length > 0) {
       AVPacket *pkt = av_packet_alloc();
-      uint8_t* data = new uint8_t[frame->length];
-      memcpy(data, frame->buffer, frame->length);
-      pkt->data = data;
+      pkt->data = const_cast<uint8_t*>(frame->buffer);
       pkt->size = frame->length;
 
+      AVFrame *frame = av_frame_alloc();
+      decoder->decode(pkt, frame);
+      av_packet_free(&pkt);
+
       std::unique_lock<std::mutex> locker(mutex);
-      if (pkt_list.size() > 10) {
-        delete [] data;
-        av_packet_free(&pkt);
+      if (frame_list.size() > 10) {
+	av_frame_free(&frame);
         return;
       }
-      pkt_list.push_back(pkt);
+
+      frame_list.push_back(frame);
       cond.notify_one();
     }
   };
@@ -496,29 +504,50 @@ int main(int argc, char* argv[]) {
   pc->Connect(signaling_server_url, vector_clients[0], nullptr, nullptr);
   pc->Send(vector_servers[0], "start", nullptr, nullptr);
 
-  AVPacket* pkt = nullptr;
-  while(1) {
-    if (renderer->handleWindowEvents() < 0)
+  std::shared_ptr<VideoDirectRender> renderer = std::make_shared<VideoDirectRender>();
+  renderer->initRender(window_width, window_height);
+  renderer->setVADisplay(decoder->getVADisplay());
+  renderer->setEventListener([&](const char* event, const char* param) {
+    char msg[256];
+    snprintf(msg, 256, "{\"type\": \"control\", \"data\": { \"event\": \"%s\", \"parameters\": %s }}", event, param);
+    pc->Send(vector_servers[0], msg, nullptr, nullptr);
+  });
+
+  AVFrame* av_frame = nullptr;
+  while (1) {
+    if (renderer->handleWindowEvents() < 0) {
       break;
+    }
 
     {
       std::unique_lock<std::mutex> locker(mutex);
-      while (pkt_list.size() <= 0) {
-        cond.wait(locker);
+      while (frame_list.size() <= 0) {
+        if (cond.wait_for(locker, std::chrono::milliseconds(10)) == std::cv_status::timeout)
+          break;
       }
-      pkt = pkt_list.front();
-      pkt_list.pop_front();
+
+      if (frame_list.size() <= 0)
+        continue;
+
+      av_frame = frame_list.front();
+      frame_list.pop_front();
     }
 
-    if (pkt != nullptr) {
-      decoder->decode(pkt);
-      delete [] pkt->data;
-      av_packet_free(&pkt);
-    }
+    VASurfaceID va_surface = (uintptr_t)av_frame->data[3];
+    renderer->OnFrame(va_surface);
+    av_frame_free(&av_frame);
   }
+
   pc->Stop(vector_servers[0], nullptr, nullptr);
   pc->RemoveObserver(ob);
   pc->Disconnect(nullptr, nullptr);
+
+  std::unique_lock<std::mutex> locker(mutex);
+  while (frame_list.size() > 0) {
+    av_frame = frame_list.front();
+    frame_list.pop_front();
+    av_frame_free(&av_frame);
+  }
 #endif
   return 0;
 }

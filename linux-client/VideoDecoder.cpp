@@ -10,8 +10,7 @@ enum AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *
   return AV_PIX_FMT_VAAPI;
 }
 
-VideoDecoder::VideoDecoder(std::shared_ptr<VideoDecoderListener> listener)
- : mListener(listener) {
+VideoDecoder::VideoDecoder() {
   std::cout << "using VA-API device: " << DRM_NODE << std::endl;
   mDrmFd = open(DRM_NODE, O_RDWR);
   if (mDrmFd < 0) {
@@ -23,24 +22,21 @@ VideoDecoder::VideoDecoder(std::shared_ptr<VideoDecoderListener> listener)
     std::cerr << "vaGetDisplay failed!" << std::endl;
   }
 
-  int major;
-  int minor;
+  int major, minor;
   if (vaInitialize(mVADisplay, &major, &minor) != VA_STATUS_SUCCESS) {
     std::cerr << "vaInitialize failed!" << std::endl;
   }
-
-  mListener->setVADisplay(mVADisplay);
 }
 
 VideoDecoder::~VideoDecoder() {
+  std::cout << "~VideoDecoder()" << std::endl;
   avcodec_free_context(&mCodecContext);
   av_buffer_unref(&mHWDeviceCtx);
 
+  vaTerminate(mVADisplay);
   if (mDrmFd >= 0) {
     close(mDrmFd);
   }
-
-  vaTerminate(mVADisplay);
 }
 
 int VideoDecoder::initDecoder(uint32_t codec_type) {
@@ -78,7 +74,7 @@ int VideoDecoder::initDecoder(uint32_t codec_type) {
   return 0;
 }
 
-int VideoDecoder::decode(AVPacket *pkt) {
+int VideoDecoder::decode(AVPacket *pkt, AVFrame *frame) {
   int sent = avcodec_send_packet(mCodecContext, pkt);
   if (sent < 0) {
     std::cerr << "avcodec_send_packet failed!" << std::endl;
@@ -86,7 +82,7 @@ int VideoDecoder::decode(AVPacket *pkt) {
   }
 
   int decode_stat = 0;
-  AVFrame *frame = av_frame_alloc();
+  AVFrame *hw_frame = av_frame_alloc();
 
   while (decode_stat >= 0) {
     decode_stat = avcodec_receive_frame(mCodecContext, frame);
@@ -96,13 +92,9 @@ int VideoDecoder::decode(AVPacket *pkt) {
       std::cerr << "Error during decoding!" << std::endl;
       break;
     }
-
-    if (mListener) {
-      VASurfaceID va_surface = (uintptr_t)frame->data[3];
-      mListener->OnFrame(va_surface);
-    }
+    frame = hw_frame;
   }
 
-  av_frame_free(&frame);
+  av_frame_free(&hw_frame);
   return 0;
 }

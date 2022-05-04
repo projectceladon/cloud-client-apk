@@ -22,16 +22,4 @@ enum class FrameResolution {
   kAll = 15
 };
 
-class VideoDecoderListener {
-public:
-  virtual ~VideoDecoderListener() {}
-  virtual void OnFrame(VASurfaceID va_surface) = 0;
-
-  void setVADisplay(VADisplay va_display) {
-    mVADisplay = va_display;
-  }
-
-public:
-  VADisplay mVADisplay = 0;
-};
 #endif

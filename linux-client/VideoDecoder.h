@@ -18,11 +18,13 @@ extern "C" {
 
 class VideoDecoder {
 public:
-  VideoDecoder(std::shared_ptr<VideoDecoderListener> listener);
+  VideoDecoder();
   virtual ~VideoDecoder();
 
   int initDecoder(uint32_t codec_type);
-  int decode(AVPacket *pkt);
+  int decode(AVPacket *pkt, AVFrame* frame);
+
+  VADisplay getVADisplay() { return mVADisplay; }
 
 private:
   const char *DRM_NODE = "/dev/dri/renderD128";
@@ -32,8 +34,6 @@ private:
   AVCodec *mCodec = nullptr;
   AVCodecContext *mCodecContext = nullptr;
   AVBufferRef *mHWDeviceCtx = nullptr;
-
-  std::shared_ptr<VideoDecoderListener> mListener = nullptr;
 };
 
 #endif

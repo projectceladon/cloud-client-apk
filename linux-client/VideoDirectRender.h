@@ -15,12 +15,15 @@
 #include <GL/glext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <functional>
 
 #include "Common.h"
 
 #define USE_CORE_PROFILE 1
 
-class VideoDirectRender : public VideoDecoderListener {
+using EventListener = std::function<void(const char* event, const char* param)>;
+
+class VideoDirectRender {
 public:
   VideoDirectRender();
   virtual ~VideoDirectRender();
@@ -29,6 +32,14 @@ public:
   int initRender(int window_width, int window_height);
   int renderFrame(VASurfaceID va_surface);
   int handleWindowEvents();
+
+  void setEventListener(EventListener event_listener) {
+    mEventListener = event_listener;
+  }
+
+  void setVADisplay(VADisplay va_display) {
+    mVADisplay = va_display;
+  }
 
   void OnFrame(VASurfaceID va_surface) {
     renderFrame(va_surface);
@@ -57,6 +68,9 @@ private:
   bool texture_size_valid = false;
   float texcoord_x1 = 1.0f;
   float texcoord_y1 = 1.0f;
+
+  VADisplay mVADisplay = 0;
+  EventListener mEventListener = nullptr;
 };
 
 #endif
