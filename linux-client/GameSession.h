@@ -2,6 +2,7 @@
 #define _GAME_SESSION_H
 
 #include "VideoRender.h"
+#include "AudioPlayer.h"
 #include "PcObserver.h"
 #include "owt/p2p/p2pclient.h"
 #include "owt_signalingchannel.h"
@@ -47,6 +48,7 @@ private:
   GameP2PParams p2p_params_;
 
   std::shared_ptr<VideoRenderer> video_renderer_;
+  std::shared_ptr<AudioPlayer> audio_player_;
   SDL_Renderer* renderer_ = nullptr;
   SDL_Texture* texture_ = nullptr;
   SDL_Rect rect_;

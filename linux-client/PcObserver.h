@@ -8,7 +8,9 @@
 class PcObserver : public owt::p2p::P2PClientObserver {
 public:
   PcObserver():direct_render(true) {}
-  PcObserver(std::shared_ptr<VideoRenderer> renderer):renderer_(renderer), direct_render(false) {}
+  PcObserver(std::shared_ptr<VideoRenderer> renderer, std::shared_ptr<AudioPlayer> audio_player)
+   : renderer_(renderer), audio_player_(audio_player), direct_render(false) {}
+
   virtual ~PcObserver() {}
 
   void OnMessageReceived(const std::string& remote_user_id,
@@ -20,6 +22,9 @@ public:
     if (!direct_render) {
       VideoRenderer* render = renderer_.get();
       stream->AttachVideoRenderer(*render);
+
+      AudioPlayer* audio_player = audio_player_.get();
+      stream->AttachAudioPlayer(*audio_player);
     }
   }
 
@@ -29,6 +34,7 @@ public:
 
 private:
   std::shared_ptr<VideoRenderer> renderer_;
+  std::shared_ptr<AudioPlayer> audio_player_;
   bool direct_render;
 };
 #endif

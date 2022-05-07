@@ -251,7 +251,9 @@ int main(int argc, char* argv[]) {
 
 #ifdef USE_SDL
   // parse window_size
-  SDL_Init(SDL_INIT_VIDEO);
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+    std::cout << "SDL could not initialized with error: " << SDL_GetError() << endl;
+  }
   if (lines > 1 && TTF_Init() == -1){
     std::cout << "ttf init error" << TTF_GetError() << std::endl;
     exit(0);

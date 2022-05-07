@@ -40,6 +40,7 @@ add_executable(aic_linux_client
   VideoRender.cpp
   VideoDecoder.cpp
   VideoDirectRender.cpp
+  AudioPlayer.cpp
 )
 
 set_target_properties(aic_linux_client PROPERTIES COMPILE_DEFINITIONS "WEBRTC_LINUX;WEBRTC_POSIX;USE_X11=1;")

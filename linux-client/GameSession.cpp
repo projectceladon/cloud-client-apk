@@ -57,11 +57,12 @@ void GameSession::initP2P() {
 
   sc_ = std::make_shared<OwtSignalingChannel>();
   pc_ = std::make_shared<P2PClient>(configuration, sc_);
-  video_renderer_=std::make_shared<VideoRenderer>();
+  video_renderer_ = std::make_shared<VideoRenderer>();
+  audio_player_ = std::make_shared<AudioPlayer>();
 }
 
 void GameSession::startSession() {
-  ob_ = std::make_unique<PcObserver>(video_renderer_);
+  ob_ = std::make_unique<PcObserver>(video_renderer_, audio_player_);
   pc_->AddObserver(*ob_);
   pc_->AddAllowedRemoteId(p2p_params_.server_id);
   pc_->Connect(p2p_params_.signaling_server_url, p2p_params_.client_id, nullptr, nullptr);
