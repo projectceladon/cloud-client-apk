@@ -13,6 +13,7 @@ set(LINK_FLAGS "-pie -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
 set(CMAKE_EXE_LINKER_FLAGS "${LINK_FLAGS}")
 set(CMAKE_SHARED_LINKER_FLAGS "${LINK_FLAGS}")
 add_definitions(-DUSE_CLANG=0)
+add_definitions(-DUSE_SDL)
 
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
@@ -66,4 +67,5 @@ target_link_libraries(aic_linux_client
   drm
   EGL
   GL
+  asound
 )

@@ -8,7 +8,6 @@
 #include <getopt.h>
 #include <signal.h>
 
-#define USE_SDL 1
 #ifdef USE_SDL
 #include <SDL2/SDL.h>
 #include "GameSession.h"
@@ -20,6 +19,7 @@
 #include "owt_signalingchannel.h"
 #include "EncodedVideoDispatcher.h"
 #include "VideoRender.h"
+#include "AudioPlayer.h"
 #include "VideoDirectRender.h"
 #include "VideoDecoder.h"
 #include "PcObserver.h"
@@ -500,7 +500,8 @@ int main(int argc, char* argv[]) {
   auto sc = std::make_shared<OwtSignalingChannel>();
   auto pc = std::make_shared<P2PClient>(configuration, sc);
 
-  PcObserver ob;
+  std::shared_ptr<AudioPlayer> audio_player = std::make_shared<AudioPlayer>();
+  PcObserver ob(audio_player);
   pc->AddObserver(ob);
   pc->AddAllowedRemoteId(vector_servers[0]);
   pc->Connect(signaling_server_url, vector_clients[0], nullptr, nullptr);
