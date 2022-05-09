@@ -8,6 +8,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.PopupWindow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
@@ -18,6 +19,7 @@ import com.intel.gamepad.bean.GameListBean;
 import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
+import com.intel.gamepad.utils.DeviceMnager;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.PopupUtil;
 
@@ -150,6 +152,20 @@ public class GameDetailActivity extends BaseActvitiy {
             }
         });
 
+        checkMediaCodecSupport();
+
+    }
+
+    private void checkMediaCodecSupport() {
+        if (!DeviceMnager.getInstance().checkMediaCodecSupportTypes(DeviceMnager.Dodec.h264)) {
+            Toast.makeText(this, R.string.no_h264, Toast.LENGTH_LONG).show();
+        }
+        if(!DeviceMnager.getInstance().checkMediaCodecSupportTypes(DeviceMnager.Dodec.hevc)){
+            Toast.makeText(this, R.string.no_hevc, Toast.LENGTH_LONG).show();
+        }
+        if(!DeviceMnager.getInstance().checkMediaCodecSupportTypes(DeviceMnager.Dodec.vp9)){
+            Toast.makeText(this, R.string.no_vp9, Toast.LENGTH_LONG).show();
+        }
     }
 
     public void showPopupOrientation(View parent) {

@@ -48,8 +48,9 @@
     <string name="net_delays">网络延时：</string>
     <string name="current_net_speed">当前网速：</string>
     <string name="app_name2">AIC</string>
-    <string name="no_hevc">设备不支持hevc</string>
-    <string name="no_h264">设备不支持h264</string>
+    <string name="no_hevc">Error:HEVC codec is not supported by this device</string>
+    <string name="no_h264">Error:H264 codec is not supported by this device</string>
+    <string name="no_vp9">Error:vp9 codec is not supported by this device</string>
     <string name="connect_failed">连接服务器失败: </string>
     <string name="title_activity_player">PlayerActivity</string>
     <string name="back">Back</string>
