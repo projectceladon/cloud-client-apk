@@ -397,8 +397,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                 case "gps-stop":
                                     runOnUiThread(() -> disableLocation());
                                     break;
-                                case "start-audio": {
-                                    LogEx.d("Received start-audio");
+                                case "start-audio-rec": {
+                                    LogEx.d("Received start-audio-rec");
                                     Thread thread = new Thread(() -> {
                                         LogEx.d("publishing localAudioStream");
                                         audioPublication = null;
@@ -423,8 +423,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     thread.start();
                                     break;
                                 }
-                                case "stop-audio":
-                                    LogEx.d("Received stop-audio");
+                                case "stop-audio-rec":
+                                    LogEx.d("Received stop-audio-rec");
                                     LogEx.d("stopping localAudioStream");
                                     if (localAudioStream != null) {
                                         localAudioStream.disableAudio();
