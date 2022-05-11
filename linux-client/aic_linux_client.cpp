@@ -66,7 +66,7 @@ static const struct option long_option[] = {
 
 void resolveIds(std::string& ids, std::vector<std::string>& vector_ids) {
   std::string sep_comma(",");
-  std::string sep_semi("-");
+  std::string sep_semi(":");
   ids += sep_comma;
   int size = ids.size();
   std::string::size_type pos;
@@ -93,6 +93,8 @@ void resolveIds(std::string& ids, std::vector<std::string>& vector_ids) {
         } else {
           vector_ids.push_back(s);
         }
+      } else {
+        vector_ids.push_back(s);
       }
       i = pos;
     }
