@@ -12,14 +12,14 @@ public:
   EncodedVideoDispatcher(VideoFrameCallback callback);
   virtual ~EncodedVideoDispatcher() {}
 
-  bool InitDecodeContext(VideoCodec video_codec) override {
+  bool InitDecodeContext(VideoCodec video_codec, int* width, int* height) override {
     video_codec_ = video_codec;
     return true;
   }
 
   bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) override;
 
-  uint8_t* getDecodedFrame() override;
+  uint8_t* getDecodedFrame(int *frame_width, int *frame_height) override;
 
   bool Release() override {
     return true;

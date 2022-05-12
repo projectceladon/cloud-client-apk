@@ -93,9 +93,8 @@ public:
    * @param device_name       the string of hardware acclerator device, such as "vaapi"
    * @param extra_hw_frames   allocate extra frames for hardware acclerator when decoding
    */
-  int init(FrameResolution resolution, uint32_t codec_type,
+  int init(FrameResolution resolution, uint32_t codec_type, int* width, int* height,
            const char *device_name = nullptr, int extra_hw_frames = 0);
-
   /**
    * Send a piece of ES stream data to decoder, the data must have a padding with a lengh
    * of CG_INPUT_BUFFER_PADDING_SIZE
@@ -103,7 +102,7 @@ public:
    * @param length    buffer size in bytes without the padding. I.e. the full buffer
    *                  size is assumed to be buf_size + CG_INPUT_BUFFER_PADDING_SIZE.
    */
-  int decode(const uint8_t *data, int length, uint8_t *out_buf, int *out_size);
+  int decode(const uint8_t *data, int length, uint8_t *out_buf, int *out_size, int *out_width, int *out_height);
 
   /**
    * Get one decoded video frame
@@ -129,7 +128,9 @@ public:
 private:
   CGDecContex m_decode_ctx;        ///<! cg decoder internal context
   CGHWAccelContex m_hw_accel_ctx;  ///<! hw decoding accelerator context
-  int decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int *out_size);
+  int decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int *out_size, int *out_width, int *out_height);
+  int init_impl(FrameResolution resolution, uint32_t codec_type,
+           const char *device_name = nullptr, int extra_hw_frames = 0);
   bool decoder_ready = false;
   std::recursive_mutex pull_lock;  // Guard m_decode_ctx at get_decoded_frame
   std::recursive_mutex push_lock;  // Guard m_decode_ctx at decode/decode_one_frame

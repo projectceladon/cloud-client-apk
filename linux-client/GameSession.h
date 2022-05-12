@@ -57,6 +57,9 @@ private:
   SDL_Texture *text_texture_;
   SDL_Rect text_rect_;
   SDL_Surface *text_surface_;
+  SDL_Rect render_rect_;
+  int frame_width_;
+  int frame_height_;
 };
 
 #endif

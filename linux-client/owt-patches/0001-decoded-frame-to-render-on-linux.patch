@@ -1,19 +1,19 @@
-From 95868a44c4be4d68b23842d3b1f710faa5d27426 Mon Sep 17 00:00:00 2001
+From 7743684a8d15078aa69ed0df5cce27484ff134dc Mon Sep 17 00:00:00 2001
 From: Some One <someone@somewhere.com>
 Date: Fri, 15 Apr 2022 11:29:53 +0800
 Subject: [PATCH] decoded frame to render on linux
 
 Signed-off-by: Some One <someone@somewhere.com>
 ---
- .../sdk/base/customizedvideodecoderproxy.cc   | 37 ++++++++++++++++++-
- .../sdk/base/customizedvideodecoderproxy.h    |  5 +++
+ .../sdk/base/customizedvideodecoderproxy.cc   | 45 ++++++++++++++++---
+ .../sdk/base/customizedvideodecoderproxy.h    |  6 +++
  talk/owt/sdk/base/stream.cc                   |  2 -
  talk/owt/sdk/include/cpp/owt/base/stream.h    |  2 -
- .../cpp/owt/base/videodecoderinterface.h      |  7 ++++
- 5 files changed, 48 insertions(+), 5 deletions(-)
+ .../cpp/owt/base/videodecoderinterface.h      |  9 +++-
+ 5 files changed, 54 insertions(+), 10 deletions(-)
 
 diff --git a/talk/owt/sdk/base/customizedvideodecoderproxy.cc b/talk/owt/sdk/base/customizedvideodecoderproxy.cc
-index 6fef4ee..c0a887c 100644
+index 6fef4ee..320cd87 100644
 --- a/talk/owt/sdk/base/customizedvideodecoderproxy.cc
 +++ b/talk/owt/sdk/base/customizedvideodecoderproxy.cc
 @@ -4,12 +4,16 @@
@@ -34,7 +34,7 @@ index 6fef4ee..c0a887c 100644
  
  CustomizedVideoDecoderProxy::~CustomizedVideoDecoderProxy() {
    if (external_decoder_) {
-@@ -23,6 +27,9 @@ int32_t CustomizedVideoDecoderProxy::InitDecode(const webrtc::VideoCodec* codec_
+@@ -23,16 +27,19 @@ int32_t CustomizedVideoDecoderProxy::InitDecode(const webrtc::VideoCodec* codec_
      << "Unsupported codec type" << codec_settings->codecType << " for "
      << codec_type_;
    codec_settings_ = *codec_settings;
@@ -42,17 +42,31 @@ index 6fef4ee..c0a887c 100644
 +  height_ = codec_settings_.height;
 +  RTC_LOG(LS_ERROR) << "CustomizedVideoDecoderProxy::InitDecode" << width_ << "-" << height_;
    if (external_decoder_) {
-     if (codec_type_ == kVideoCodecH264 && external_decoder_->InitDecodeContext(VideoCodec::kH264)) {
+-    if (codec_type_ == kVideoCodecH264 && external_decoder_->InitDecodeContext(VideoCodec::kH264)) {
++    if (codec_type_ == kVideoCodecH264 && external_decoder_->InitDecodeContext(VideoCodec::kH264, &width_, &height_)) {
        return WEBRTC_VIDEO_CODEC_OK;
+ #ifndef DISABLE_H265
+-    } else if (codec_type_ == kVideoCodecH265 && external_decoder_->InitDecodeContext(VideoCodec::kH265)) {
++    } else if (codec_type_ == kVideoCodecH265 && external_decoder_->InitDecodeContext(VideoCodec::kH265, &width_, &height_)) {
+       return WEBRTC_VIDEO_CODEC_OK;
+ #endif
+-    } else if (codec_type_ == kVideoCodecVP8 && external_decoder_->InitDecodeContext(VideoCodec::kVp8)) {
++    } else if (codec_type_ == kVideoCodecVP8 && external_decoder_->InitDecodeContext(VideoCodec::kVp8, &width_, &height_)) {
+       return WEBRTC_VIDEO_CODEC_OK;
+-    } else if (codec_type_ == kVideoCodecVP9 && external_decoder_->InitDecodeContext(VideoCodec::kVp9)) {
++    } else if (codec_type_ == kVideoCodecVP9 && external_decoder_->InitDecodeContext(VideoCodec::kVp9, &width_, &height_)) {
+       return WEBRTC_VIDEO_CODEC_OK;
+     }
+     return WEBRTC_VIDEO_CODEC_ERROR;
 @@ -56,6 +63,33 @@ int32_t CustomizedVideoDecoderProxy::Decode(const EncodedImage& input_image,
    if (external_decoder_) {
      std::unique_ptr<VideoEncodedFrame> frame(new VideoEncodedFrame{input_image.data(), input_image.size(), input_image.Timestamp(), input_image._frameType == webrtc::VideoFrameType::kVideoFrameKey});
      if (external_decoder_->OnEncodedFrame(std::move(frame))) {
-+      uint8_t* decoded_frame = external_decoder_->getDecodedFrame();
++      uint8_t* decoded_frame = external_decoder_->getDecodedFrame(&video_width_, &video_height_);
 +      if (decoded_frame == nullptr) { //decode succ , but frame null, just return success
 +        return WEBRTC_VIDEO_CODEC_OK;
 +      }
-+      rtc::scoped_refptr<I420Buffer> buffer = buffer_pool_.CreateBuffer(width_, height_);
++      rtc::scoped_refptr<I420Buffer> buffer = buffer_pool_.CreateBuffer(video_width_, video_height_);
 +      if (!buffer.get()) {
 +        // Pool has too many pending frames.
 +	RTC_LOG(LS_ERROR) <<"CustomizedVideoDecoder to many frame skipped";
@@ -68,7 +82,7 @@ index 6fef4ee..c0a887c 100644
 +                   buffer->MutableDataY(), buffer->StrideY(),
 +                   buffer->MutableDataU(), buffer->StrideU(),
 +                   buffer->MutableDataV(), buffer->StrideV(),
-+                   width_, height_);
++                   video_width_, video_height_);
 +
 +      VideoFrame decoded_image = VideoFrame::Builder()
 +                                 .set_video_frame_buffer(buffer)
@@ -87,7 +101,7 @@ index 6fef4ee..c0a887c 100644
      }
      return WEBRTC_VIDEO_CODEC_ERROR;
 diff --git a/talk/owt/sdk/base/customizedvideodecoderproxy.h b/talk/owt/sdk/base/customizedvideodecoderproxy.h
-index 0d0ce93..9ef0beb 100644
+index 0d0ce93..99d3163 100644
 --- a/talk/owt/sdk/base/customizedvideodecoderproxy.h
 +++ b/talk/owt/sdk/base/customizedvideodecoderproxy.h
 @@ -9,6 +9,7 @@
@@ -98,14 +112,15 @@ index 0d0ce93..9ef0beb 100644
  
  namespace owt {
  namespace base {
-@@ -35,6 +36,10 @@ class CustomizedVideoDecoderProxy : public VideoDecoder {
+@@ -35,6 +36,11 @@ class CustomizedVideoDecoderProxy : public VideoDecoder {
    VideoCodecType codec_type_;
    DecodedImageCallback* decoded_image_callback_;
    VideoDecoderInterface* external_decoder_;
 +  I420BufferPool buffer_pool_;
-+  uint16_t width_;
-+  uint16_t height_;
-+
++  int width_;
++  int height_;
++  int video_width_;
++  int video_height_;
  };
  
  } // namespace base
@@ -145,9 +160,18 @@ index 256d36f..a6a5da1 100644
  #if defined(WEBRTC_WIN)
    /// Attach the stream to a renderer to receive frames from decoder.
 diff --git a/talk/owt/sdk/include/cpp/owt/base/videodecoderinterface.h b/talk/owt/sdk/include/cpp/owt/base/videodecoderinterface.h
-index ef88b59..34fdac9 100644
+index ef88b59..00057ac 100644
 --- a/talk/owt/sdk/include/cpp/owt/base/videodecoderinterface.h
 +++ b/talk/owt/sdk/include/cpp/owt/base/videodecoderinterface.h
+@@ -35,7 +35,7 @@ class VideoDecoderInterface {
+    @param video_codec Video codec of the encoded video stream
+    @return true if successful or false if failed
+    */
+-  virtual bool InitDecodeContext(VideoCodec video_codec) = 0;
++  virtual bool InitDecodeContext(VideoCodec video_codeci, int* width, int* height) = 0;
+   /**
+    @brief This function releases the customized video decoder
+    @return true if successful or false if failed
 @@ -47,6 +47,13 @@ class VideoDecoderInterface {
     @return true if successful or false if failed
     */
@@ -157,7 +181,7 @@ index ef88b59..34fdac9 100644
 +   @brief This function receives the decoded frame for the further rendering
 +   @return Video decoded frame
 +   */
-+  virtual uint8_t* getDecodedFrame() = 0;
++  virtual uint8_t* getDecodedFrame(int *frame_width, int *frame_height) = 0;
 +
    /**
     @brief This function generates the customized decoder for each peer connection

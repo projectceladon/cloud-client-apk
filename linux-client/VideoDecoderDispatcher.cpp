@@ -5,10 +5,10 @@
   decoder_ = std::make_shared<CGVideoDecoder>();
 }
 
-bool VideoDecoderDispatcher::InitDecodeContext(VideoCodec video_codec) {
+bool VideoDecoderDispatcher::InitDecodeContext(VideoCodec video_codec, int* width, int* height) {
   std::cout << "InitDecodeContext begin." << std::endl;
   video_codec_ = video_codec;
-  if (decoder_->init(codec_settings_.resolution, codec_settings_.codec_type, codec_settings_.device_name, 0) < 0) {
+  if (decoder_->init(codec_settings_.resolution, codec_settings_.codec_type, width, height, codec_settings_.device_name, 0) < 0) {
     std::cout << "VideoDecoder init failed. " << std::endl;
     return false;
   } else {
@@ -18,15 +18,17 @@ bool VideoDecoderDispatcher::InitDecodeContext(VideoCodec video_codec) {
 }
 
 bool VideoDecoderDispatcher::OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) {
-  decoder_->decode(frame->buffer, (int)frame->length, &buffer_[0], &out_size);
-  if (out_size > 0 && out_size == codec_settings_.frame_size) {
+  decoder_->decode(frame->buffer, (int)frame->length, &buffer_[0], &out_size, &frame_width_, &frame_height_);
+  if (out_size > 0 && frame_width_ > 0 && frame_height_ > 0) {
     return true;
   } else {
     return false;
   }
 }
 
-uint8_t* VideoDecoderDispatcher::getDecodedFrame() {
+uint8_t* VideoDecoderDispatcher::getDecodedFrame(int *frame_width, int *frame_height) {
+  *frame_width = frame_width_;
+  *frame_height = frame_height_;
   return &buffer_[0];
 }
 

@@ -35,7 +35,7 @@ class VideoDecoderInterface {
    @param video_codec Video codec of the encoded video stream
    @return true if successful or false if failed
    */
-  virtual bool InitDecodeContext(VideoCodec video_codec) = 0;
+  virtual bool InitDecodeContext(VideoCodec video_codec, int* width, int* height) = 0;
   /**
    @brief This function releases the customized video decoder
    @return true if successful or false if failed
@@ -52,7 +52,7 @@ class VideoDecoderInterface {
    @brief This function receives the decoded frame for the further rendering
    @return Video decoded frame
    */
-  virtual uint8_t* getDecodedFrame() = 0;
+  virtual uint8_t* getDecodedFrame(int *frame_width, int *frame_height) = 0;
 
   /**
    @brief This function generates the customized decoder for each peer connection

@@ -11,7 +11,7 @@ bool EncodedVideoDispatcher::OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> f
   return true;
 }
 
-uint8_t* EncodedVideoDispatcher::getDecodedFrame() {
+uint8_t* EncodedVideoDispatcher::getDecodedFrame(int *frame_width, int *frame_height) {
   return nullptr;
 }
 

@@ -21,9 +21,11 @@ GameSession::GameSession(GameP2PParams p2p_params, SDL_Renderer* sdlRenderer, Re
     video_width_ = render_params.video_width;
     video_height_ = render_params.video_height;
     texture_ = SDL_CreateTexture(renderer_, render_params.format, SDL_TEXTUREACCESS_STREAMING, video_width_, video_height_);
-	SDL_Color textColor = {255, 0, 0};
+	  SDL_Color textColor = {255, 0, 0};
     text_surface_ = TTF_RenderText_Blended(font, session_desc_.c_str(), textColor);
     text_texture_ = SDL_CreateTextureFromSurface(renderer_, text_surface_);
+    render_rect_.x = 0;
+    render_rect_.y = 0;
 }
 
 
@@ -74,18 +76,21 @@ void GameSession::renderFrame() {
     if (video_buffer) {
       uint8_t* buffer = static_cast<uint8_t *>(video_buffer -> buffer);
       if (buffer) {
-          uint32_t w = video_width_;
+          frame_width_ = video_buffer ->resolution.width;
+          frame_height_ = video_buffer ->resolution.height;
+          uint32_t w = video_buffer ->resolution.width;
           uint8_t *y = buffer;
-          uint8_t *u = y + video_width_ * video_height_;
-          uint8_t *v = u + video_width_ * video_height_ / 4;
-          //SDL_UpdateYUVTexture(texture_, nullptr, y, w, u, w / 2, v, w / 2);
-          SDL_UpdateTexture(texture_, nullptr, buffer, video_width_);
+          uint8_t *u = y + frame_width_ * frame_height_;
+          uint8_t *v = u + frame_width_ * frame_height_ / 4;
+          render_rect_.w = frame_width_;
+          render_rect_.h = frame_height_;
+          SDL_UpdateTexture(texture_, &render_rect_, buffer, video_buffer ->resolution.width);
         }
     }
 }
 
 void GameSession::copyFrame() {
-  SDL_RenderCopy(renderer_, texture_, NULL, &rect_);// &this->rect
+  SDL_RenderCopy(renderer_, texture_, &render_rect_, &rect_);// &this->rect
   SDL_RenderCopy(renderer_, text_texture_, NULL, &text_rect_);
 }
 

@@ -11,11 +11,11 @@ public:
   VideoDecoderDispatcher(CGCodecSettings settings);
   virtual ~ VideoDecoderDispatcher() {}
 
-  bool InitDecodeContext(VideoCodec video_codec) override;
+  bool InitDecodeContext(VideoCodec video_codec, int* width, int* height) override;
 
   bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) override;
 
-  uint8_t* getDecodedFrame() override;
+  uint8_t* getDecodedFrame(int *frame_width, int *frame_height) override;
 
   bool Release() override {
     return true;
@@ -34,6 +34,8 @@ private:
   CGCodecSettings codec_settings_;
   std::vector<uint8_t> buffer_;
   int out_size;
+  int frame_width_;
+  int frame_height_;
   FILE *fid;
   int count = 0;
 };
