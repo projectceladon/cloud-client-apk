@@ -77,4 +77,7 @@
     <string name="portrait">Portrait</string>
     <string name="landscape">Landscape</string>
     <string name="for_e2e">For E2E</string>
+    <string name="media_codec">Media Codec</string>
+    <string name="hevc">HEVC</string>
+    <string name="h264">H264</string>
 </resources>

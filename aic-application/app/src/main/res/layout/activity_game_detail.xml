@@ -75,11 +75,24 @@
                             style="@style/text_16_black"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_alignParentRight="true"
+                            android:layout_alignParentEnd="true"
                             android:background="@color/colorPrimary"
                             android:padding="5dp"
                             android:text="@string/orientation"
                             android:textColor="@color/white" />
+
+                        <TextView
+                            android:id="@+id/codec"
+                            style="@style/text_16_black"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="5dip"
+                            android:layout_toStartOf="@+id/orient"
+                            android:background="@color/colorPrimary"
+                            android:padding="5dp"
+                            android:text="@string/media_codec"
+                            android:textColor="@color/white"
+                            android:visibility="gone"/>
                     </RelativeLayout>
 
                     <LinearLayout

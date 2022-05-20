@@ -1,6 +1,7 @@
 package com.intel.gamepad.utils;
 
 import com.commonlibrary.utils.LogEx;
+import com.intel.gamepad.app.AppConst;
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 
 import java.util.ArrayList;
@@ -16,6 +17,11 @@ public class IPUtils {
     public static final boolean DEFAULT_ALPHA_CHANNEL = true;
     public static final boolean DEFAULT_FOR_TEST = false;
     public static final boolean DEFAULT_PORTRAIT = false;
+    public static final String DEFAULT_CODEC = AppConst.HEVC;
+
+    public static void saveMediaCodec(String codec) {
+        FastSharedPreferences.get("ip_file").edit().putString("mediacodec", codec).commit();
+    }
 
     public static void savePortrait(boolean portrait) {
         FastSharedPreferences.get("ip_file").edit().putBoolean("portrait", portrait).commit();
@@ -81,6 +87,12 @@ public class IPUtils {
 
     public static boolean loadPortrait() {
         return FastSharedPreferences.get("ip_file").getBoolean("portrait", DEFAULT_PORTRAIT);
+    }
+
+    public static String loadMediaCodec() {
+        String codec = FastSharedPreferences.get("ip_file").getString("mediacodec", DEFAULT_CODEC);
+        LogEx.i(codec);
+        return codec;
     }
 
 

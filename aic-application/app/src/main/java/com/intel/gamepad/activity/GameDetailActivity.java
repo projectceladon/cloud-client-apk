@@ -15,11 +15,12 @@ import com.commonlibrary.utils.StatusBarUtil;
 import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
 import com.intel.gamepad.R;
+import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.GameListBean;
 import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
-import com.intel.gamepad.utils.DeviceMnager;
+import com.intel.gamepad.utils.DeviceManager;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.PopupUtil;
 
@@ -28,7 +29,9 @@ import java.util.List;
 public class GameDetailActivity extends BaseActvitiy {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
+    private MaterialButton btnPlay;
     private PopupWindow popupOrient;
+    private PopupWindow popupCodec;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,15 +160,36 @@ public class GameDetailActivity extends BaseActvitiy {
     }
 
     private void checkMediaCodecSupport() {
-        if (!DeviceMnager.getInstance().checkMediaCodecSupportTypes(DeviceMnager.Dodec.h264)) {
+        boolean[] result = DeviceManager.getInstance().checkMediaCodecSupport(new String[]{AppConst.H264, AppConst.HEVC, AppConst.VP9});
+        if (!result[0]) {
             Toast.makeText(this, R.string.no_h264, Toast.LENGTH_LONG).show();
         }
-        if(!DeviceMnager.getInstance().checkMediaCodecSupportTypes(DeviceMnager.Dodec.hevc)){
+        if (!result[1]) {
             Toast.makeText(this, R.string.no_hevc, Toast.LENGTH_LONG).show();
         }
-        if(!DeviceMnager.getInstance().checkMediaCodecSupportTypes(DeviceMnager.Dodec.vp9)){
+        if (!result[2]) {
             Toast.makeText(this, R.string.no_vp9, Toast.LENGTH_LONG).show();
         }
+
+        if (!result[0] && !result[1]) {
+            btnPlay.setClickable(false);
+            btnPlay.setBackgroundResource(R.color.gray67);
+        } else if (result[0] && !result[1]) {
+            IPUtils.saveMediaCodec(AppConst.H264);
+        } else {
+            IPUtils.saveMediaCodec(AppConst.HEVC);
+            TextView codec = findViewById(R.id.codec);
+            codec.setVisibility(View.VISIBLE);
+            codec.setOnClickListener(v -> {
+                if (popupCodec != null) {
+                    popupCodec.dismiss();
+                    popupCodec = null;
+                } else {
+                    showPopupCodec(codec);
+                }
+            });
+        }
+
     }
 
     public void showPopupOrientation(View parent) {
@@ -206,6 +230,46 @@ public class GameDetailActivity extends BaseActvitiy {
         });
     }
 
+    public void showPopupCodec(View parent) {
+        View popView = View.inflate(this, R.layout.popup_orientation_window, null);
+        popupCodec = PopupUtil.createPopup(parent, popView, DensityUtils.dp2px(150f));
+        CheckBox HECV = popView.findViewById(R.id.chk_landscape);
+        HECV.setText(R.string.hevc);
+        CheckBox H264 = popView.findViewById(R.id.chk_portrait);
+        H264.setText(R.string.h264);
+        popView.findViewById(R.id.close).setVisibility(View.GONE);
+        if (AppConst.HEVC.equals(IPUtils.loadMediaCodec())) {
+            H264.setChecked(false);
+            HECV.setChecked(true);
+            HECV.setClickable(false);
+        } else {
+            H264.setChecked(true);
+            HECV.setChecked(false);
+            H264.setClickable(false);
+        }
+        H264.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                IPUtils.saveMediaCodec(AppConst.H264);
+                HECV.setChecked(false);
+                HECV.setClickable(true);
+            } else {
+                IPUtils.saveMediaCodec(AppConst.HEVC);
+                HECV.setChecked(true);
+                HECV.setClickable(false);
+            }
+        });
+        HECV.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                H264.setChecked(false);
+                H264.setClickable(true);
+            } else {
+                H264.setChecked(true);
+                H264.setClickable(false);
+            }
+        });
+    }
+
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -224,7 +288,7 @@ public class GameDetailActivity extends BaseActvitiy {
 
     private void initView() {
         initBackButton(R.id.ibtnBack);
-        MaterialButton btnPlay = findViewById(R.id.btnPlay);
+        btnPlay = findViewById(R.id.btnPlay);
         btnPlay.setOnClickListener(v -> {
             BaseController.manuallyPressBackButton.set(false);
             requestStartGame();
