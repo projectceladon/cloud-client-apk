@@ -17,7 +17,7 @@ public class IPUtils {
     public static final boolean DEFAULT_ALPHA_CHANNEL = true;
     public static final boolean DEFAULT_FOR_TEST = false;
     public static final boolean DEFAULT_PORTRAIT = false;
-    public static final String DEFAULT_CODEC = AppConst.HEVC;
+    public static final String DEFAULT_CODEC = AppConst.H264;
 
     public static void saveMediaCodec(String codec) {
         FastSharedPreferences.get("ip_file").edit().putString("mediacodec", codec).commit();

@@ -177,7 +177,7 @@ public class GameDetailActivity extends BaseActvitiy {
         } else if (result[0] && !result[1]) {
             IPUtils.saveMediaCodec(AppConst.H264);
         } else {
-            IPUtils.saveMediaCodec(AppConst.HEVC);
+            IPUtils.saveMediaCodec(AppConst.H264);
             TextView codec = findViewById(R.id.codec);
             codec.setVisibility(View.VISIBLE);
             codec.setOnClickListener(v -> {
