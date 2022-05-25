@@ -2,10 +2,9 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/shape_id">
         <rotate
-            android:fromDegrees="45"
-            android:toDegrees="45"
-            android:pivotX="-20%"
-            android:pivotY="80%">
+            android:fromDegrees="-45"
+            android:pivotX="85%"
+            android:pivotY="-35%">
             <shape android:shape="rectangle">
                 <size android:height="24dp" android:width="24dp"/>
                 <solid android:color="@color/white"/>
