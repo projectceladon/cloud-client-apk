@@ -8,6 +8,9 @@
 #include "owt_signalingchannel.h"
 #include <SDL2/SDL_ttf.h>
 
+#include <iostream>
+#include <fstream>
+
 struct GameP2PParams
 {
   std::string signaling_server_url;
@@ -18,19 +21,18 @@ struct GameP2PParams
 };
 
 struct RenderParams {
-    int left;
-    int top;
-    int width;
-    int height;
-    int video_width;
-    int video_height;
-    Uint32 format;
+  int left;
+  int top;
+  int width;
+  int height;
+  SDL_Texture* texture;
 };
 
 
 class GameSession {
 public:
-  GameSession(GameP2PParams p2p_params, SDL_Renderer* sdlRenderer, RenderParams render_params, TTF_Font* font);
+  GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render);
+  void setupRenderEnv(RenderParams* render_params);
   void startSession();
   void renderFrame();
   void copyFrame();
@@ -40,26 +42,30 @@ public:
   bool inArea(int x, int y);
   void initP2P();
   void sendCtrl(const char* event, const char* param);
+  void suspendStream(bool suspend, RenderParams* render_params);
 private:
   std::shared_ptr<OwtSignalingChannel> sc_;
   std::shared_ptr<P2PClient> pc_;
   std::unique_ptr<PcObserver> ob_;
   std::string session_desc_;
-  GameP2PParams p2p_params_;
+  std::unique_ptr<GameP2PParams> p2p_params_;
 
   std::shared_ptr<VideoRenderer> video_renderer_;
   std::shared_ptr<AudioPlayer> audio_player_;
   SDL_Renderer* renderer_ = nullptr;
   SDL_Texture* texture_ = nullptr;
+  TTF_Font* font_ = nullptr;
   SDL_Rect rect_;
   int video_width_;
   int video_height_;
   SDL_Texture *text_texture_;
   SDL_Rect text_rect_;
-  SDL_Surface *text_surface_;
+  SDL_Surface *text_surface_ = nullptr;
   SDL_Rect render_rect_;
   int frame_width_;
   int frame_height_;
+  bool suspend_;
+  //std::ofstream ouF;
 };
 
 #endif

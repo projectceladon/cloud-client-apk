@@ -37,6 +37,7 @@ namespace p2p {
 struct OWT_EXPORT P2PClientConfiguration : owt::base::ClientConfiguration {
   std::vector<AudioEncodingParameters> audio_encodings;
   std::vector<VideoEncodingParameters> video_encodings;
+  bool suspend_remote_stream;
 };
 class P2PPeerConnectionChannelObserverCppImpl;
 class P2PPeerConnectionChannel;
@@ -157,6 +158,7 @@ class OWT_EXPORT P2PClient final : protected P2PSignalingSenderInterface,
   void Stop(const std::string& target_id,
             std::function<void()> on_success,
             std::function<void(std::unique_ptr<Exception>)> on_failure);
+
   /**
    @brief Publish a stream to the remote client.
    @param stream The stream which will be published.
@@ -223,6 +225,11 @@ class OWT_EXPORT P2PClient final : protected P2PSignalingSenderInterface,
             const std::vector<uint8_t>& data,
             std::function<void()> on_success,
             std::function<void(std::unique_ptr<Exception>)> on_failure);
+
+  void Suspend(
+    const std::string& target_id,
+    bool suspend,
+    std::function<void(std::unique_ptr<Exception>)> on_failure);
   /**
    @brief Get the connection statistics with target client.
    @param target_id Remote user's ID.

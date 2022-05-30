@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <signal.h>
-
 #ifdef USE_SDL
 #include <SDL2/SDL.h>
 #include "GameSession.h"
 #include <SDL2/SDL_ttf.h>
 #include "VideoDecoderDispatcher.h"
+#include "owt/base/logging.h"
 #else
 #include "owt/base/stream.h"
 #include "owt/p2p/p2pclient.h"
@@ -34,13 +34,34 @@ using namespace owt::p2p;
 
 #define AIC_BREAK_EVENT  (SDL_USEREVENT + 2)
 
+#define AIC_SWAP_EVENT  (SDL_USEREVENT + 3)
+
+#define VIDEO_FPS_INTERVAL 1000 / 30
 int exit_thread = 0;
 int video_fps_thread(void* opaque) {
+  int space = 0;
+  int count;
+  if (opaque != nullptr) {
+    space = *((int *)opaque);
+    count = space * 60 * 1000 / (VIDEO_FPS_INTERVAL);
+    space = count;
+  }
+  std::cout<< "video_fps_thread space " << space << std::endl;
+  count = 0;
 	while (!exit_thread) {
 		SDL_Event event;
 		event.type = AIC_REFRESH_EVENT;
 		SDL_PushEvent(&event);
-		SDL_Delay(33);  // 30fps
+		SDL_Delay(VIDEO_FPS_INTERVAL);  // 30fps
+    if (space != 0) {
+      count++;
+      if (count == space) {
+        count = 0;
+        SDL_Event event1;
+        event1.type = AIC_SWAP_EVENT;
+        SDL_PushEvent(&event1);
+      }
+    }
 	}
 	exit_thread = 0;
 	SDL_Event event;
@@ -118,6 +139,8 @@ void help() {
   std::cout << "--url/-u <url>: Url of signaling server, for example: http://192.168.17.109:8095" << std::endl;
   std::cout << "--video-codec/-v <h264/h265>: Video codec, default: h264" << std::endl;
   std::cout << "--window-size/-w <window_size>: Window size, default: 352x288" << std::endl;
+  std::cout << "--cycle_number/-n <cycle_num>: numbers to show in a cycle option is 4, 9, 16, 25, 36" << std::endl;
+  std::cout << "--cycle_interval/-i <cycle-interval>: time spaces bewtween a cycle, minitues , default 5 minitues"<< std::endl;
 #ifdef USE_SDL
   std::cout << "--window-x/-x <window_x>: Window postion x, default: in the center" << std::endl;
   std::cout << "--window-y/-y <window_y>: Window postion y, default: in the center" << std::endl;
@@ -136,10 +159,11 @@ int main(int argc, char* argv[]) {
 #ifdef USE_SDL
   int window_x = SDL_WINDOWPOS_UNDEFINED;
   int window_y = SDL_WINDOWPOS_UNDEFINED;
+  int cycle_num = 0;
+  int cycle_interval = 5;
 #endif
-
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h", long_option, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h:n:i:", long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
         client_ids = optarg;
@@ -169,6 +193,12 @@ int main(int argc, char* argv[]) {
       case 'y':
         window_y = atoi(optarg);
         break;
+      case 'n':
+        cycle_num = atoi(optarg);
+        break;
+      case 'i':
+        cycle_interval = atoi(optarg);
+        break;
 #endif
       case 'h':
         help();
@@ -188,7 +218,6 @@ int main(int argc, char* argv[]) {
      help();
      exit(0);
   }
-
   std::vector<std::string> vector_servers;
   std::vector<std::string> vector_clients;
   resolveIds(server_ids, vector_servers);
@@ -208,8 +237,10 @@ int main(int argc, char* argv[]) {
 
   int lines = vector_servers.size();
   if (lines > 36) {
-    std::cout << "max support line is 36" << std::endl;
-    exit(0);
+    if (cycle_num == 0 || cycle_num > 36) {
+      std::cout << "max support line is 36, --cycle-num option will help to recive more" << std::endl;
+      exit(0);
+    }
   }
   if (lines != vector_clients.size()) {
     std::cout << "client an server not match" << std::endl;
@@ -330,11 +361,28 @@ int main(int argc, char* argv[]) {
   GlobalConfiguration::SetCustomizedVideoDecoderEnabled(std::move(mVideoDecoderDispatcher));
 
   /***************render 2***********/
+  std::vector<std::shared_ptr<GameSession>> game_sessions_display_;
   std::vector<std::shared_ptr<GameSession>> game_sessions_;
-  int sp_num = ceilSqrt(lines);
+  std::vector<RenderParams*> render_params_;
+  int playingIndex = 0;
+
+  int sp_num;
+  int displays;
+  if (lines > 36) {
+    sp_num = ceilSqrt(cycle_num);
+    cycle_num = sp_num * sp_num;
+    displays = cycle_num;
+  } else if (cycle_num > 0) {
+    sp_num = ceilSqrt(cycle_num);
+    cycle_num = sp_num * sp_num;
+    displays = cycle_num;
+  } else {
+    sp_num = ceilSqrt(lines);
+    displays = lines;
+  }
   int row;
   int colomn;
-  int margin = lines > 1 ? 10 : 0;
+  int margin = displays > 1 ? 10 : 0;
   int cell_width = window_width / sp_num;
   int cell_height = window_height / sp_num;
   int cell_with_margin = cell_width - margin;
@@ -344,39 +392,56 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < sp_num; i++)
     game_matrix[i] = new int[sp_num];
 
-  for (int i = 0; i < lines; i++) {
-    GameP2PParams p2pParams;
-    p2pParams.signaling_server_url = signaling_server_url;
-    p2pParams.server_id = vector_servers[i];
-    p2pParams.client_id = vector_clients[i];
-    p2pParams.server_ip = ip;
-    p2pParams.video_codec = video_codec;
+  for (int i = 0; i < displays; i++) {
+    std::unique_ptr<GameP2PParams> p2pParams = std::make_unique<GameP2PParams>();
+    p2pParams -> signaling_server_url = signaling_server_url;
+    p2pParams -> server_id = vector_servers[i];
+    p2pParams -> client_id = vector_clients[i];
+    p2pParams -> server_ip = ip;
+    p2pParams -> video_codec = video_codec;
 
     row = i / sp_num;
     colomn = i % sp_num;
-    RenderParams render_params;
-    render_params.left = colomn * cell_width;
-    render_params.top = row * cell_height;
-    render_params.width = cell_with_margin;
-    render_params.height = cell_height_margin;
-    render_params.video_width = width;
-    render_params.video_height = height;
-    render_params.format = is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12;
-    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(p2pParams, sdlRenderer, render_params, font);
-    game_sessions_.push_back(game_session);
+    RenderParams* render_params = new RenderParams();
+    render_params -> left = colomn * cell_width;
+    render_params -> top = row * cell_height;
+    render_params -> width = cell_with_margin;
+    render_params -> height = cell_height_margin;
+    render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING, width, height);
+    render_params_.push_back(render_params);
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, render_params, font, true);
+    game_sessions_display_.push_back(game_session);
     game_matrix[row][colomn] = i;
+    game_sessions_.push_back(game_session);
   }
-  for (auto session : game_sessions_) {
-    session -> startSession();
+  playingIndex = displays -1;
+  for (int i = displays; i < lines; i++) {
+    std::unique_ptr<GameP2PParams> p2pParams = std::make_unique<GameP2PParams>();
+    p2pParams -> signaling_server_url = signaling_server_url;
+    p2pParams -> server_id = vector_servers[i];
+    p2pParams -> client_id = vector_clients[i];
+    p2pParams -> server_ip = ip;
+    p2pParams -> video_codec = video_codec;
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false);
+    game_sessions_.push_back(game_session);
   }
 
-   SDL_Thread* video_tick_tid = SDL_CreateThread(video_fps_thread, NULL, NULL);
+  for (auto session : game_sessions_) {
+    session -> startSession();  // pull all the stream
+  }
+
+  if (lines > displays) {
+    SDL_Thread* display_tick_tid = SDL_CreateThread(video_fps_thread, "video_fps_thread-2", &cycle_interval);
+  } else {
+    SDL_Thread* video_tick_tid = SDL_CreateThread(video_fps_thread, "video_fps_thread-1", NULL);
+  }
+
   auto onMouseMove = [&](SDL_MouseMotionEvent& e) {
     if (e.state == 1) {
       int row = (e.y + margin) / cell_height;
       int colomn = (e.x + margin) / cell_width;
       int index = game_matrix[row][colomn];
-      game_sessions_[index] -> dispatchEvent(e);
+      game_sessions_display_[index] -> dispatchEvent(e);
     }
   };
 
@@ -384,7 +449,27 @@ int main(int argc, char* argv[]) {
     int row = (e.y + margin) / cell_height;
     int colomn = (e.x + margin) / cell_width;
     int index = game_matrix[row][colomn];
-    game_sessions_[index] -> dispatchEvent(e);
+    game_sessions_display_[index] -> dispatchEvent(e);
+  };
+
+  auto onSwapStream = [&]() {
+    std::cout << "onSwapStream " << std::endl;
+    int startIndex = (playingIndex + 1) % lines;
+    int endIndex = startIndex + displays <= lines ? startIndex + displays: lines;
+
+    std::vector<std::shared_ptr<GameSession>> sv;
+    for (int i = startIndex; i < endIndex; i++) {
+      sv.push_back(game_sessions_[i]);
+    }
+    for (auto session : game_sessions_display_) {
+      session -> suspendStream(true, nullptr);
+    }
+    game_sessions_display_.assign(sv.begin(),sv.end());
+
+    for (int i = 0; i < game_sessions_display_.size(); i++) {
+      game_sessions_display_[i] -> suspendStream(false, render_params_[i]);
+    }
+    playingIndex = endIndex -1;
   };
 
   bool fullscreen = false;
@@ -393,12 +478,12 @@ int main(int argc, char* argv[]) {
   while (running) {
     SDL_WaitEvent(&e);
     switch (e.type) {
-      case  AIC_REFRESH_EVENT:
-        for (auto session : game_sessions_) {
+      case AIC_REFRESH_EVENT:
+        for (auto session : game_sessions_display_) {
           session -> renderFrame();
         }
 			  SDL_RenderClear(sdlRenderer);
-        for (auto session : game_sessions_) {
+        for (auto session : game_sessions_display_) {
           session -> copyFrame();
         }
 			  SDL_RenderPresent(sdlRenderer);
@@ -422,6 +507,9 @@ int main(int argc, char* argv[]) {
           }
         }
         break;
+      case AIC_SWAP_EVENT:
+         onSwapStream();
+         break;
       case SDL_WINDOWEVENT:
         break;
       /*case AIC_BREAK_EVENT:
@@ -430,6 +518,10 @@ int main(int argc, char* argv[]) {
         //std::cout << "Unhandled SDL event " << e.type << std::endl;
         break;
     }
+  }
+  for (auto rp : render_params_) {
+    SDL_DestroyTexture(rp -> texture);
+    delete rp;
   }
   SDL_DestroyRenderer(sdlRenderer);
   SDL_DestroyWindow(win);

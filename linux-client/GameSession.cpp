@@ -1,45 +1,50 @@
 #include "GameSession.h"
 
-GameSession::GameSession(GameP2PParams p2p_params, SDL_Renderer* sdlRenderer, RenderParams render_params, TTF_Font* font) {
-    p2p_params_ = p2p_params;
-    renderer_ = sdlRenderer;
-    rect_.x = render_params.left;
-	  rect_.y = render_params.top;
-	  rect_.w = render_params.width;
-	  rect_.h = render_params.height;
-    text_rect_.y = rect_.y + render_params.height /2 - 15;
+GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render) {
+  p2p_params_ = std::move(p2p_params);
+  renderer_ = sdlRenderer;
+  suspend_ = !render;
+  font_ = font;
+  session_desc_ = p2p_params_ -> server_id;
+  initP2P();
+  if(TTF_SizeText(font,session_desc_.c_str(),&text_rect_.w,&text_rect_.h)) {
+    std::cout << "GameSession get textsize error" << std::endl;
     text_rect_.h = 30;
-    if (120 < render_params.width) {
-      text_rect_.x = rect_.x + render_params.width / 2 -60;
-      text_rect_.w = 120;
-    } else {
-      text_rect_.x = 0;
-      text_rect_.w = render_params.width;
-    }
-    session_desc_ = p2p_params.server_ip + ":" + p2p_params.server_id;
-    initP2P();
-    video_width_ = render_params.video_width;
-    video_height_ = render_params.video_height;
-    texture_ = SDL_CreateTexture(renderer_, render_params.format, SDL_TEXTUREACCESS_STREAMING, video_width_, video_height_);
-	  SDL_Color textColor = {255, 0, 0};
-    text_surface_ = TTF_RenderText_Blended(font, session_desc_.c_str(), textColor);
-    text_texture_ = SDL_CreateTextureFromSurface(renderer_, text_surface_);
-    render_rect_.x = 0;
-    render_rect_.y = 0;
+    text_rect_.w = 30;
+  }
+  render_rect_.x = 0;
+  render_rect_.y = 0;
+  if (render) {
+    setupRenderEnv(render_params);
+  }
 }
 
+void GameSession::setupRenderEnv(RenderParams* render_params) {
+  rect_.x = render_params -> left;
+  rect_.y = render_params -> top;
+  rect_.w = render_params -> width;
+  rect_.h = render_params -> height;
+  text_rect_.y = rect_.y + render_params -> height / 2 - text_rect_.h / 2;
+  text_rect_.x = rect_.x + render_params -> width / 2 - text_rect_.w / 2;
+  texture_ = render_params -> texture;
+  if (text_surface_ == nullptr) {
+    SDL_Color textColor = {255, 0, 0};
+    text_surface_ = TTF_RenderText_Blended(font_, session_desc_.c_str(), textColor);
+    text_texture_ = SDL_CreateTextureFromSurface(renderer_, text_surface_);
+  }
+}
 
 void GameSession::initP2P() {
   P2PClientConfiguration configuration;
   IceServer stunServer, turnServer;
-  std::string stunUrl = "stun:" + p2p_params_.server_ip + ":3478";
+  std::string stunUrl = "stun:" + p2p_params_ -> server_ip + ":3478";
   stunServer.urls.push_back(stunUrl);
   stunServer.username = "username";
   stunServer.password = "password";
   configuration.ice_servers.push_back(stunServer);
 
-  std::string turnUrlTcp = "turn:" + p2p_params_.server_ip + ":3478?transport=tcp";
-  std::string turnUrlUdp = "turn:" + p2p_params_.server_ip + ":3478?transport=udp";
+  std::string turnUrlTcp = "turn:" + p2p_params_ -> server_ip + ":3478?transport=tcp";
+  std::string turnUrlUdp = "turn:" + p2p_params_ -> server_ip + ":3478?transport=udp";
   turnServer.urls.push_back(turnUrlTcp);
   turnServer.urls.push_back(turnUrlUdp);
   turnServer.username = "username";
@@ -47,9 +52,9 @@ void GameSession::initP2P() {
   configuration.ice_servers.push_back(turnServer);
 
   VideoCodecParameters videoParam;
-  if (p2p_params_.video_codec == "h264") {
+  if (p2p_params_ -> video_codec == "h264") {
     videoParam.name = owt::base::VideoCodec::kH264;
-  } else if (p2p_params_.video_codec == "h265") {
+  } else if (p2p_params_ -> video_codec == "h265") {
     videoParam.name = owt::base::VideoCodec::kH265;
   } else {
     std::cout << "Cannot support this codec!" << std::endl;
@@ -57,24 +62,43 @@ void GameSession::initP2P() {
   VideoEncodingParameters video_params(videoParam, 0, true);
   configuration.video_encodings.push_back(video_params);
 
+  configuration.suspend_remote_stream = suspend_;
+
   sc_ = std::make_shared<OwtSignalingChannel>();
   pc_ = std::make_shared<P2PClient>(configuration, sc_);
   video_renderer_ = std::make_shared<VideoRenderer>();
   audio_player_ = std::make_shared<AudioPlayer>();
+  //ouF.open("./me.yuv", std::ofstream::binary| std::ofstream::out);
 }
 
 void GameSession::startSession() {
   ob_ = std::make_unique<PcObserver>(video_renderer_, audio_player_);
   pc_->AddObserver(*ob_);
-  pc_->AddAllowedRemoteId(p2p_params_.server_id);
-  pc_->Connect(p2p_params_.signaling_server_url, p2p_params_.client_id, nullptr, nullptr);
-  pc_->Send(p2p_params_.server_id, "start", nullptr, nullptr);
+  pc_->AddAllowedRemoteId(p2p_params_ -> server_id);
+  pc_->Connect(p2p_params_ -> signaling_server_url, p2p_params_ -> client_id, nullptr, nullptr);
+  pc_->Send(p2p_params_ -> server_id, "start", nullptr, nullptr);
 }
 
+void GameSession::suspendStream(bool suspend, RenderParams* render_params) {
+  suspend_ = suspend;
+  if (!suspend) {
+    setupRenderEnv(render_params);
+  }
+  pc_ -> Suspend(p2p_params_ -> server_id, suspend, nullptr);
+}
+
+/*int count = 0;
+bool suspend = true;*/
 void GameSession::renderFrame() {
     std::unique_ptr<owt::base::VideoBuffer> video_buffer = video_renderer_ -> getFrame();
     if (video_buffer) {
+      if (suspend_) {
+        video_buffer = nullptr;  // release the buffer
+        return;
+      }
       uint8_t* buffer = static_cast<uint8_t *>(video_buffer -> buffer);
+     // ouF.write((const char *)buffer, frame_width_ * frame_height_ * 3/2);
+     // ouF.flush();
       if (buffer) {
           frame_width_ = video_buffer ->resolution.width;
           frame_height_ = video_buffer ->resolution.height;
@@ -87,11 +111,21 @@ void GameSession::renderFrame() {
           SDL_UpdateTexture(texture_, &render_rect_, buffer, video_buffer ->resolution.width);
         }
     }
+    /*count++;
+    std::cout<< "renderFrame " << count << std::endl;
+    if (count == 300) {
+      suspend = !suspend;
+      std::cout<< "count == 300 , change suspend state to " << suspend << std::endl;
+      pc_ -> Suspend(p2p_params_.server_id, suspend, nullptr);
+      count = 0;
+    }*/
 }
 
 void GameSession::copyFrame() {
-  SDL_RenderCopy(renderer_, texture_, &render_rect_, &rect_);// &this->rect
-  SDL_RenderCopy(renderer_, text_texture_, NULL, &text_rect_);
+  if (!suspend_) {
+    SDL_RenderCopy(renderer_, texture_, &render_rect_, &rect_);// &this->rect
+    SDL_RenderCopy(renderer_, text_texture_, NULL, &text_rect_);
+  }
 }
 
 bool GameSession::inArea(int x, int y) {
@@ -101,7 +135,7 @@ bool GameSession::inArea(int x, int y) {
 void GameSession::sendCtrl(const char* event, const char* param) {
   char msg[256];
   snprintf(msg, 256, "{\"type\": \"control\", \"data\": { \"event\": \"%s\", \"parameters\": %s }}", event, param);
-  pc_->Send(p2p_params_.server_id, msg, nullptr, nullptr);
+  pc_->Send(p2p_params_ -> server_id, msg, nullptr, nullptr);
 }
 
 bool GameSession::dispatchEvent(SDL_MouseMotionEvent& e) {
@@ -130,11 +164,10 @@ bool GameSession::dispatchEvent(SDL_MouseButtonEvent& e) {
 }
 
 GameSession::~GameSession() {
-  pc_->Stop(p2p_params_.server_id, nullptr, nullptr);
+  pc_->Stop(p2p_params_ -> server_id, nullptr, nullptr);
   pc_->RemoveObserver(*ob_);
   pc_->Disconnect(nullptr, nullptr);
 
   SDL_DestroyTexture(text_texture_);
   SDL_FreeSurface(text_surface_);
-  SDL_DestroyTexture(texture_);
 }

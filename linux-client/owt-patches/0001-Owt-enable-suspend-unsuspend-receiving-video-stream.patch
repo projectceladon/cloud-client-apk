@@ -1,0 +1,632 @@
+From 2ab46af7d80c29e544ff78b2d47653af911c881d Mon Sep 17 00:00:00 2001
+From: Some One <someone@somewhere.com>
+Date: Thu, 2 Jun 2022 10:22:34 +0800
+Subject: [PATCH] Owt enable suspend/unsuspend receiving video stream
+
+Suspend means only receive stream, no decoding or rendering
+
+Signed-off-by: Some One <someone@somewhere.com>
+---
+ scripts/prepare_dev.py                       |   3 +
+ talk/owt/patches/0017-add-suspend-ifce.patch | 452 +++++++++++++++++++
+ talk/owt/sdk/base/peerconnectionchannel.cc   |   1 +
+ talk/owt/sdk/base/peerconnectionchannel.h    |   1 +
+ talk/owt/sdk/include/cpp/owt/p2p/p2pclient.h |   7 +
+ talk/owt/sdk/p2p/p2pclient.cc                |  24 +
+ talk/owt/sdk/p2p/p2ppeerconnectionchannel.cc |   9 +
+ talk/owt/sdk/p2p/p2ppeerconnectionchannel.h  |   1 +
+ 8 files changed, 498 insertions(+)
+ create mode 100644 talk/owt/patches/0017-add-suspend-ifce.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index 65c36a5..dfb82f2 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -23,6 +23,7 @@ WEBRTC_OVERRIDES_PATH = os.path.join(THIRD_PARTY_PATH, 'webrtc_overrides')
+ BUILD_PATH = os.path.join(HOME_PATH, 'build')
+ TOOL_PATH = os.path.join(HOME_PATH, 'tools')
+ BASE_PATH = os.path.join(HOME_PATH, 'base')
++WEBRTC_PATH = os.path.join(THIRD_PARTY_PATH, 'webrtc')
+ platform = os.name
+ useShell = False
+ if(platform == "nt"):
+@@ -49,6 +50,8 @@ def _patch():
+     subprocess.call(['git', 'am', '--skip'], shell=useShell, cwd=FFMPEG_PATH)
+   if (subprocess.call(['git', 'am', os.path.join(PATCH_PATH, '0015-Allow-forcing-MD-build-for-msvc.patch')], shell=useShell, cwd=BUILD_PATH)) != 0:
+     subprocess.call(['git', 'am', '--skip'], shell=useShell, cwd=BUILD_PATH)
++  if (subprocess.call(['git', 'am', os.path.join(PATCH_PATH, '0017-add-suspend-ifce.patch')], shell=useShell, cwd=WEBRTC_PATH)) != 0:
++    subprocess.call(['git', 'am', '--skip'], shell=useShell, cwd=WEBRTC_PATH)
+ 
+ def main(argv):
+   _patch()
+diff --git a/talk/owt/patches/0017-add-suspend-ifce.patch b/talk/owt/patches/0017-add-suspend-ifce.patch
+new file mode 100644
+index 0000000..891f2b6
+--- /dev/null
++++ b/talk/owt/patches/0017-add-suspend-ifce.patch
+@@ -0,0 +1,452 @@
++From 96f636cd5374fc7db9841f90f7a5bbd80f08a940 Mon Sep 17 00:00:00 2001
++From: Some One <someone@somewhere.com>
++Date: Wed, 25 May 2022 17:33:33 +0800
++Subject: [PATCH] add suspend ifce
++
++Signed-off-by: Some One <someone@somewhere.com>
++---
++ api/peer_connection_interface.h     |  2 ++
++ api/peer_connection_proxy.h         |  1 +
++ call/video_receive_stream.h         |  2 ++
++ media/base/media_channel.h          |  3 ++
++ media/engine/webrtc_video_engine.cc | 36 ++++++++++++++++++++++++
++ media/engine/webrtc_video_engine.h  |  4 +++
++ media/engine/webrtc_voice_engine.cc |  3 ++
++ media/engine/webrtc_voice_engine.h  |  1 +
++ pc/peer_connection.cc               | 38 +++++++++++++++++++++++--
++ pc/peer_connection.h                |  5 ++++
++ video/video_receive_stream.cc       | 43 +++++++++++++++++++++++++----
++ video/video_receive_stream.h        |  4 +++
++ 12 files changed, 135 insertions(+), 7 deletions(-)
++ mode change 100644 => 100755 call/video_receive_stream.h
++ mode change 100644 => 100755 media/base/media_channel.h
++ mode change 100644 => 100755 media/engine/webrtc_video_engine.cc
++ mode change 100644 => 100755 media/engine/webrtc_video_engine.h
++ mode change 100644 => 100755 media/engine/webrtc_voice_engine.cc
++ mode change 100644 => 100755 media/engine/webrtc_voice_engine.h
++ mode change 100644 => 100755 pc/peer_connection.cc
++ mode change 100644 => 100755 pc/peer_connection.h
++ mode change 100644 => 100755 video/video_receive_stream.cc
++ mode change 100644 => 100755 video/video_receive_stream.h
++
++diff --git a/api/peer_connection_interface.h b/api/peer_connection_interface.h
++index 0ae47b2a2f..1ca7d7409e 100644
++--- a/api/peer_connection_interface.h
+++++ b/api/peer_connection_interface.h
++@@ -941,6 +941,8 @@ class RTC_EXPORT PeerConnectionInterface : public rtc::RefCountInterface {
++   virtual const SessionDescriptionInterface* local_description() const = 0;
++   virtual const SessionDescriptionInterface* remote_description() const = 0;
++ 
+++  virtual void Suspend(bool suspend) = 0;
+++
++   // A "current" description the one currently negotiated from a complete
++   // offer/answer exchange.
++   virtual const SessionDescriptionInterface* current_local_description()
++diff --git a/api/peer_connection_proxy.h b/api/peer_connection_proxy.h
++index c278308ccb..837df8a346 100644
++--- a/api/peer_connection_proxy.h
+++++ b/api/peer_connection_proxy.h
++@@ -28,6 +28,7 @@ PROXY_METHOD0(rtc::scoped_refptr<StreamCollectionInterface>, local_streams)
++ PROXY_METHOD0(rtc::scoped_refptr<StreamCollectionInterface>, remote_streams)
++ PROXY_METHOD1(bool, AddStream, MediaStreamInterface*)
++ PROXY_METHOD1(void, RemoveStream, MediaStreamInterface*)
+++PROXY_METHOD1(void, Suspend, bool)
++ PROXY_METHOD2(RTCErrorOr<rtc::scoped_refptr<RtpSenderInterface>>,
++               AddTrack,
++               rtc::scoped_refptr<MediaStreamTrackInterface>,
++diff --git a/call/video_receive_stream.h b/call/video_receive_stream.h
++old mode 100644
++new mode 100755
++index 388c28be24..f0a27954f7
++--- a/call/video_receive_stream.h
+++++ b/call/video_receive_stream.h
++@@ -274,6 +274,8 @@ class VideoReceiveStream {
++   // When a stream is stopped, it can't receive, process or deliver packets.
++   virtual void Stop() = 0;
++ 
+++  virtual void SuspendStream(bool suspend) = 0;
+++
++   // TODO(pbos): Add info on currently-received codec to Stats.
++   virtual Stats GetStats() const = 0;
++ 
++diff --git a/media/base/media_channel.h b/media/base/media_channel.h
++old mode 100644
++new mode 100755
++index c2c1b56aab..1fd45f1ffb
++--- a/media/base/media_channel.h
+++++ b/media/base/media_channel.h
++@@ -232,6 +232,7 @@ class MediaChannel : public sigslot::has_slots<> {
++   // Resets any cached StreamParams for an unsignaled RecvStream.
++   virtual void ResetUnsignaledRecvStream() = 0;
++   // Returns the absoulte sendtime extension id value from media channel.
+++
++   virtual int GetRtpSendTimeExtnId() const;
++   // Set the frame encryptor to use on all outgoing frames. This is optional.
++   // This pointers lifetime is managed by the set of RtpSender it is attached
++@@ -852,6 +853,7 @@ class VoiceMediaChannel : public MediaChannel, public Delayable {
++       std::unique_ptr<webrtc::AudioSinkInterface> sink) = 0;
++ 
++   virtual std::vector<webrtc::RtpSource> GetSources(uint32_t ssrc) const = 0;
+++  virtual void SuspendStream(bool suspend) = 0;
++ };
++ 
++ // TODO(deadbeef): Rename to VideoSenderParameters, since they're intended to
++@@ -928,6 +930,7 @@ class VideoMediaChannel : public MediaChannel, public Delayable {
++   virtual void GenerateKeyFrame(uint32_t ssrc) = 0;
++ 
++   virtual std::vector<webrtc::RtpSource> GetSources(uint32_t ssrc) const = 0;
+++  virtual void SuspendStream(bool suspend) = 0;
++ };
++ 
++ enum DataMessageType {
++diff --git a/media/engine/webrtc_video_engine.cc b/media/engine/webrtc_video_engine.cc
++old mode 100644
++new mode 100755
++index 3e8de6c528..47db1030de
++--- a/media/engine/webrtc_video_engine.cc
+++++ b/media/engine/webrtc_video_engine.cc
++@@ -1366,6 +1366,19 @@ bool WebRtcVideoChannel::AddRecvStream(const StreamParams& sp) {
++   return AddRecvStream(sp, false);
++ }
++ 
+++void WebRtcVideoChannel::SuspendStream(bool suspend) {
+++  RTC_LOG(LS_INFO) << this << " SuspendStream suspend "
+++                   << suspend << ", suspend_stream_: " << suspend_stream_;
+++  if (suspend_stream_ != suspend) {
+++    for (auto it = receive_streams_.begin(); it != receive_streams_.end(); ++it) {
+++      it -> second -> SuspendStream(suspend);
+++      RTC_LOG(LS_INFO) << this << "SuspendStream Inner "
+++                   << suspend << ", suspend_stream_: " << suspend_stream_;
+++    }
+++    suspend_stream_ = suspend;
+++  }  
+++}
+++
++ bool WebRtcVideoChannel::AddRecvStream(const StreamParams& sp,
++                                        bool default_stream) {
++   RTC_DCHECK_RUN_ON(&thread_checker_);
++@@ -1417,6 +1430,12 @@ bool WebRtcVideoChannel::AddRecvStream(const StreamParams& sp,
++   receive_streams_[ssrc] = new WebRtcVideoReceiveStream(
++       this, call_, sp, std::move(config), decoder_factory_, default_stream,
++       recv_codecs_, flexfec_config);
+++  if (suspend_stream_) {
+++    receive_streams_[ssrc] -> SuspendStream(suspend_stream_);
+++    RTC_LOG(LS_INFO) << this << "add ssrc: whith suspend" << ssrc ;
+++  } else {
+++    RTC_LOG(LS_INFO) << this << "add ssrc: no suspend" << ssrc ;
+++  }
++ 
++   return true;
++ }
++@@ -2697,6 +2716,16 @@ WebRtcVideoChannel::WebRtcVideoReceiveStream::GetSsrcs() const {
++   return stream_params_.ssrcs;
++ }
++ 
+++void WebRtcVideoChannel::WebRtcVideoReceiveStream::SuspendStream(bool suspend) {
+++  RTC_LOG(LS_INFO) << this << "suspend " << suspend << ", suspend_stream_ " << suspend_stream_ << stream_;
+++  if (suspend != suspend_stream_) {
+++    if (stream_) {
+++      stream_ -> SuspendStream(suspend);
+++    }
+++    suspend_stream_ = suspend;
+++  }
+++}
+++
++ std::vector<webrtc::RtpSource>
++ WebRtcVideoChannel::WebRtcVideoReceiveStream::GetSources() {
++   RTC_DCHECK(stream_);
++@@ -2868,6 +2897,13 @@ void WebRtcVideoChannel::WebRtcVideoReceiveStream::RecreateWebRtcVideoStream() {
++     stream_->SetBaseMinimumPlayoutDelayMs(
++         base_minimum_playout_delay_ms.value());
++   }
+++
+++  if (suspend_stream_) {
+++    stream_ -> SuspendStream(suspend_stream_);
+++    RTC_LOG(LS_INFO) << this << "RecreateWebRtcVideoStream suspend_stream_";
+++  } else {
+++    RTC_LOG(LS_INFO) << this << "RecreateWebRtcVideoStream no suspend_stream_";
+++  }
++   if (recording_state) {
++     stream_->SetAndGetRecordingState(std::move(*recording_state),
++                                      /*generate_key_frame=*/false);
++diff --git a/media/engine/webrtc_video_engine.h b/media/engine/webrtc_video_engine.h
++old mode 100644
++new mode 100755
++index 323eaa96ff..1f0d0ccb13
++--- a/media/engine/webrtc_video_engine.h
+++++ b/media/engine/webrtc_video_engine.h
++@@ -154,6 +154,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
++   bool AddSendStream(const StreamParams& sp) override;
++   bool RemoveSendStream(uint32_t ssrc) override;
++   bool AddRecvStream(const StreamParams& sp) override;
+++  void SuspendStream(bool suspend) override;
++   bool AddRecvStream(const StreamParams& sp, bool default_stream);
++   bool RemoveRecvStream(uint32_t ssrc) override;
++   void ResetUnsignaledRecvStream() override;
++@@ -249,6 +250,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
++       override;
++ 
++  private:
+++  bool suspend_stream_ = false;
++   class WebRtcVideoReceiveStream;
++ 
++   // Finds VideoReceiveStream corresponding to ssrc. Aware of unsignalled ssrc
++@@ -485,6 +487,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
++     void SetDepacketizerToDecoderFrameTransformer(
++         rtc::scoped_refptr<webrtc::FrameTransformerInterface>
++             frame_transformer);
+++    void SuspendStream(bool suspend);
++ 
++    private:
++     void RecreateWebRtcVideoStream();
++@@ -524,6 +527,7 @@ class WebRtcVideoChannel : public VideoMediaChannel,
++     // Start NTP time is estimated as current remote NTP time (estimated from
++     // RTCP) minus the elapsed time, as soon as remote NTP time is available.
++     int64_t estimated_remote_start_ntp_time_ms_ RTC_GUARDED_BY(sink_lock_);
+++    bool suspend_stream_ = false;
++   };
++ 
++   void Construct(webrtc::Call* call, WebRtcVideoEngine* engine);
++diff --git a/media/engine/webrtc_voice_engine.cc b/media/engine/webrtc_voice_engine.cc
++old mode 100644
++new mode 100755
++index 1fe700881b..f2a28d0e2d
++--- a/media/engine/webrtc_voice_engine.cc
+++++ b/media/engine/webrtc_voice_engine.cc
++@@ -1851,6 +1851,9 @@ bool WebRtcVoiceMediaChannel::RemoveSendStream(uint32_t ssrc) {
++   return true;
++ }
++ 
+++void WebRtcVoiceMediaChannel::SuspendStream(bool suspend) {
+++}
+++
++ bool WebRtcVoiceMediaChannel::AddRecvStream(const StreamParams& sp) {
++   TRACE_EVENT0("webrtc", "WebRtcVoiceMediaChannel::AddRecvStream");
++   RTC_DCHECK(worker_thread_checker_.IsCurrent());
++diff --git a/media/engine/webrtc_voice_engine.h b/media/engine/webrtc_voice_engine.h
++old mode 100644
++new mode 100755
++index 86a7a495fe..7220c1b69b
++--- a/media/engine/webrtc_voice_engine.h
+++++ b/media/engine/webrtc_voice_engine.h
++@@ -163,6 +163,7 @@ class WebRtcVoiceMediaChannel final : public VoiceMediaChannel,
++   bool AddSendStream(const StreamParams& sp) override;
++   bool RemoveSendStream(uint32_t ssrc) override;
++   bool AddRecvStream(const StreamParams& sp) override;
+++  void SuspendStream(bool suspend) override;
++   bool RemoveRecvStream(uint32_t ssrc) override;
++   void ResetUnsignaledRecvStream() override;
++ 
++diff --git a/pc/peer_connection.cc b/pc/peer_connection.cc
++old mode 100644
++new mode 100755
++index 20b24b911c..c7d657b725
++--- a/pc/peer_connection.cc
+++++ b/pc/peer_connection.cc
++@@ -1402,8 +1402,7 @@ bool PeerConnection::Initialize(
++     transceivers_.push_back(
++         RtpTransceiverProxyWithInternal<RtpTransceiver>::Create(
++             signaling_thread(), new RtpTransceiver(cricket::MEDIA_TYPE_AUDIO)));
++-    transceivers_.push_back(
++-        RtpTransceiverProxyWithInternal<RtpTransceiver>::Create(
+++    transceivers_.push_back(RtpTransceiverProxyWithInternal<RtpTransceiver>::Create(
++             signaling_thread(), new RtpTransceiver(cricket::MEDIA_TYPE_VIDEO)));
++   }
++   int delay_ms =
++@@ -3590,6 +3589,10 @@ RTCError PeerConnection::UpdateTransceiverChannel(
++             "Failed to create channel for mid=" + content.name);
++       }
++       transceiver->internal()->SetChannel(channel);
+++      RTC_LOG(LS_INFO) << this << " UpdateTransceiverChannel " << suspend_;
+++      if (suspend_) {
+++        suspendTransceiver(transceiver, true);
+++      }
++     }
++   }
++   return RTCError::OK();
++@@ -6592,6 +6595,9 @@ RTCError PeerConnection::CreateChannels(const SessionDescription& desc) {
++                            "Failed to create video channel.");
++     }
++     GetVideoTransceiver()->internal()->SetChannel(video_channel);
+++    if (suspend_) {
+++      suspendTransceiver(GetVideoTransceiver(), true);
+++    } 
++   }
++ 
++   const cricket::ContentInfo* data = cricket::GetFirstDataContent(&desc);
++@@ -7373,6 +7379,34 @@ void PeerConnection::ClearStatsCache() {
++   }
++ }
++ 
+++void PeerConnection::suspendTransceiver(rtc::scoped_refptr<RtpTransceiverProxyWithInternal<RtpTransceiver>> transceiver, bool suspend) {
+++  if (transceiver->media_type() == cricket::MEDIA_TYPE_VIDEO) {
+++    RTC_LOG(LS_ERROR) << this << " PeerConnection Suspend MEDIA_TYPE_VIDEO " << suspend;
+++    auto* video_channel = static_cast<cricket::VideoChannel*>(
+++                transceiver->internal()->channel());
+++    if (video_channel) {
+++      cricket::VideoMediaChannel* video_media_channel = video_channel->media_channel();
+++      video_media_channel -> SuspendStream(suspend);
+++      RTC_LOG(LS_ERROR) << this << " PeerConnection has video_channel";
+++    } else {
+++      RTC_LOG(LS_ERROR) << this << " PeerConnection no video_channel";
+++    }
+++  } else {
+++    RTC_LOG(LS_ERROR) << this << " PeerConnection Suspend MEDIA_TYPE" << transceiver->media_type();
+++  }
+++}
+++
+++
+++void PeerConnection::Suspend(bool suspend){
+++  RTC_LOG(LS_ERROR) << this << " PeerConnection Suspend " << suspend;
+++  if (suspend_ != suspend) {
+++    for (const auto& transceiver : transceivers_) {
+++      suspendTransceiver(transceiver, suspend);
+++    }
+++    suspend_ = suspend;
+++  }
+++}
+++
++ void PeerConnection::RequestUsagePatternReportForTesting() {
++   signaling_thread()->Post(RTC_FROM_HERE, this, MSG_REPORT_USAGE_PATTERN,
++                            nullptr);
++diff --git a/pc/peer_connection.h b/pc/peer_connection.h
++old mode 100644
++new mode 100755
++index f3102572fb..598e3ee466
++--- a/pc/peer_connection.h
+++++ b/pc/peer_connection.h
++@@ -325,6 +325,8 @@ class PeerConnection : public PeerConnectionInternal,
++     return sctp_mid_s_;
++   }
++ 
+++  void Suspend(bool suspend) override;
+++
++  protected:
++   ~PeerConnection() override;
++ 
++@@ -1276,6 +1278,7 @@ class PeerConnection : public PeerConnectionInternal,
++       RTC_GUARDED_BY(signaling_thread());
++ 
++   bool remote_peer_supports_msid_ RTC_GUARDED_BY(signaling_thread()) = false;
+++  void suspendTransceiver(rtc::scoped_refptr<RtpTransceiverProxyWithInternal<RtpTransceiver>> transceiver, bool suspend);
++ 
++   // The unique_ptr belongs to the worker thread, but the Call object manages
++   // its own thread safety.
++@@ -1287,6 +1290,8 @@ class PeerConnection : public PeerConnectionInternal,
++   // pointer from any thread.
++   Call* const call_ptr_;
++ 
+++  bool suspend_ = false;
+++
++   std::unique_ptr<StatsCollector> stats_
++       RTC_GUARDED_BY(signaling_thread());  // A pointer is passed to senders_
++   rtc::scoped_refptr<RTCStatsCollector> stats_collector_
++diff --git a/video/video_receive_stream.cc b/video/video_receive_stream.cc
++old mode 100644
++new mode 100755
++index f812c8d467..34d79f2492
++--- a/video/video_receive_stream.cc
+++++ b/video/video_receive_stream.cc
++@@ -443,6 +443,14 @@ void VideoReceiveStream::Stop() {
++   transport_adapter_.Disable();
++ }
++ 
+++void VideoReceiveStream::SuspendStream(bool suspend) {
+++  RTC_LOG(LS_INFO) << this << "SuspendStream " << suspend << ", suspend_stream_ "<< suspend_stream_;
+++  if (suspend != suspend_stream_) {
+++    suspend_stream_ = suspend;
+++  }
+++}
+++
+++
++ VideoReceiveStream::Stats VideoReceiveStream::GetStats() const {
++   VideoReceiveStream::Stats stats = stats_proxy_.GetStats();
++   stats.total_bitrate_bps = 0;
++@@ -529,8 +537,12 @@ void VideoReceiveStream::OnFrame(const VideoFrame& video_frame) {
++   }
++   source_tracker_.OnFrameDelivered(video_frame.packet_infos());
++ 
++-  config_.renderer->OnFrame(video_frame);
++-
+++  if (!suspend_stream_) {
+++    config_.renderer->OnFrame(video_frame);
+++    RTC_LOG(LS_INFO) << this << " OnFrame not suspend_stream_";
+++  } else {
+++    RTC_LOG(LS_INFO) << this << " OnFrame suspend_stream_";
+++  }
++   // TODO(tommi): OnRenderFrame grabs a lock too.
++   stats_proxy_.OnRenderedFrame(video_frame);
++ }
++@@ -669,13 +681,35 @@ void VideoReceiveStream::HandleEncodedFrame(
++   stats_proxy_.OnPreDecode(frame->CodecSpecific()->codecType, qp);
++   HandleKeyFrameGeneration(frame->FrameType() == VideoFrameType::kVideoFrameKey,
++                            now_ms);
++-  int decode_result = video_receiver_.Decode(frame.get());
+++  int decode_result;
+++  if (suspend_stream_) {
+++    if (everDecoded) {
+++      decode_result = WEBRTC_VIDEO_CODEC_OK;
+++    } else {
+++      decode_result = video_receiver_.Decode(frame.get());
+++      everDecoded = true;
+++    }
+++    if(keyFrameRequested) {
+++      keyFrameRequested = false;
+++    }
+++  } else {
+++    decode_result = video_receiver_.Decode(frame.get());
+++    if (!keyFrameRequested) {
+++      RequestKeyFrame(now_ms);
+++      keyFrameRequested = true;
+++    }
+++    if (!everDecoded) {
+++       everDecoded = true;
+++    }
+++  }
+++
+++  RTC_LOG(LS_INFO) << this << " HandleEncodedFrame " << suspend_stream_;
+++  
++   if (decode_result == WEBRTC_VIDEO_CODEC_OK ||
++       decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME) {
++     keyframe_required_ = false;
++     frame_decoded_ = true;
++     rtp_video_stream_receiver_.FrameDecoded(frame->id.picture_id);
++-
++     if (decode_result == WEBRTC_VIDEO_CODEC_OK_REQUEST_KEYFRAME)
++       RequestKeyFrame(now_ms);
++   } else if (!frame_decoded_ || !keyframe_required_ ||
++@@ -685,7 +719,6 @@ void VideoReceiveStream::HandleEncodedFrame(
++     //                 has been fixed.
++     RequestKeyFrame(now_ms);
++   }
++-
++   if (encoded_frame_buffer_function_) {
++     frame->Retain();
++     encoded_frame_buffer_function_(WebRtcRecordableEncodedFrame(*frame));
++diff --git a/video/video_receive_stream.h b/video/video_receive_stream.h
++old mode 100644
++new mode 100755
++index c1ebf2b600..2aa8e05b7d
++--- a/video/video_receive_stream.h
+++++ b/video/video_receive_stream.h
++@@ -85,6 +85,7 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
++   // Implements webrtc::VideoReceiveStream.
++   void Start() override;
++   void Stop() override;
+++  void SuspendStream(bool suspend) override;
++ 
++   webrtc::VideoReceiveStream::Stats GetStats() const override;
++ 
++@@ -231,6 +232,9 @@ class VideoReceiveStream : public webrtc::VideoReceiveStream,
++ 
++   // Defined last so they are destroyed before all other members.
++   rtc::TaskQueue decode_queue_;
+++  bool suspend_stream_ = false;
+++  bool everDecoded = false;
+++  bool keyFrameRequested = false;
++ };
++ }  // namespace internal
++ }  // namespace webrtc
++-- 
++2.25.1
++
+diff --git a/talk/owt/sdk/base/peerconnectionchannel.cc b/talk/owt/sdk/base/peerconnectionchannel.cc
+index 4594163..7eadb1b 100644
+--- a/talk/owt/sdk/base/peerconnectionchannel.cc
++++ b/talk/owt/sdk/base/peerconnectionchannel.cc
+@@ -37,6 +37,7 @@ bool PeerConnectionChannel::InitializePeerConnection() {
+     return false;
+   }
+   RTC_CHECK(peer_connection_);
++  peer_connection_ -> Suspend(configuration_.suspend_remote_stream);
+   rtc::NetworkMonitorInterface* network_monitor = factory_->NetworkMonitor();
+   if (network_monitor) {
+     network_monitor->SignalNetworksChanged.connect(
+diff --git a/talk/owt/sdk/base/peerconnectionchannel.h b/talk/owt/sdk/base/peerconnectionchannel.h
+index 797fd82..8d860b4 100644
+--- a/talk/owt/sdk/base/peerconnectionchannel.h
++++ b/talk/owt/sdk/base/peerconnectionchannel.h
+@@ -55,6 +55,7 @@ struct PeerConnectionChannelConfiguration
+   std::vector<AudioEncodingParameters> audio;
+   /// Indicate whether this PeerConnection is used for sending encoded frame.
+   bool encoded_video_frame_;
++  bool suspend_remote_stream;
+ };
+ class PeerConnectionChannel : public webrtc::PeerConnectionObserver,
+                               public webrtc::DataChannelObserver,
+diff --git a/talk/owt/sdk/include/cpp/owt/p2p/p2pclient.h b/talk/owt/sdk/include/cpp/owt/p2p/p2pclient.h
+index 8bb9c62..b5c9e66 100644
+--- a/talk/owt/sdk/include/cpp/owt/p2p/p2pclient.h
++++ b/talk/owt/sdk/include/cpp/owt/p2p/p2pclient.h
+@@ -37,6 +37,7 @@ namespace p2p {
+ struct OWT_EXPORT P2PClientConfiguration : owt::base::ClientConfiguration {
+   std::vector<AudioEncodingParameters> audio_encodings;
+   std::vector<VideoEncodingParameters> video_encodings;
++  bool suspend_remote_stream;
+ };
+ class P2PPeerConnectionChannelObserverCppImpl;
+ class P2PPeerConnectionChannel;
+@@ -157,6 +158,7 @@ class OWT_EXPORT P2PClient final : protected P2PSignalingSenderInterface,
+   void Stop(const std::string& target_id,
+             std::function<void()> on_success,
+             std::function<void(std::unique_ptr<Exception>)> on_failure);
++
+   /**
+    @brief Publish a stream to the remote client.
+    @param stream The stream which will be published.
+@@ -223,6 +225,11 @@ class OWT_EXPORT P2PClient final : protected P2PSignalingSenderInterface,
+             const std::vector<uint8_t>& data,
+             std::function<void()> on_success,
+             std::function<void(std::unique_ptr<Exception>)> on_failure);
++
++  void Suspend(
++    const std::string& target_id,
++    bool suspend,
++    std::function<void(std::unique_ptr<Exception>)> on_failure);
+   /**
+    @brief Get the connection statistics with target client.
+    @param target_id Remote user's ID.
+diff --git a/talk/owt/sdk/p2p/p2pclient.cc b/talk/owt/sdk/p2p/p2pclient.cc
+index 1e44f4d..f168f3e 100644
+--- a/talk/owt/sdk/p2p/p2pclient.cc
++++ b/talk/owt/sdk/p2p/p2pclient.cc
+@@ -205,6 +205,29 @@ void P2PClient::Send(
+   pcc->Send(data, true, on_success, on_failure);
+ }
+ 
++void P2PClient::Suspend(
++    const std::string& target_id,
++    bool suspend,
++    std::function<void(std::unique_ptr<Exception>)> on_failure) {
++  // Firstly check whether target_id is in the allowed_remote_ids_ list.
++  if (std::find(allowed_remote_ids_.begin(), allowed_remote_ids_.end(),
++                target_id) == allowed_remote_ids_.end()) {
++    if (on_failure) {
++      event_queue_->PostTask([on_failure] {
++        std::unique_ptr<Exception> e(
++            new Exception(ExceptionType::kP2PClientRemoteNotAllowed,
++                          "Sending a message cannot be done since the remote "
++                          "user is not allowed."));
++        on_failure(std::move(e));
++      });
++    }
++    return;
++  }
++  // Secondly use pcc to send the message.
++  auto pcc = GetPeerConnectionChannel(target_id);
++  pcc->Suspend(suspend);
++}
++
+ void P2PClient::Stop(
+     const std::string& target_id,
+     std::function<void()> on_success,
+@@ -447,6 +470,7 @@ P2PClient::GetPeerConnectionChannelConfiguration() {
+   // this HC.
+   config.continual_gathering_policy =
+       PeerConnectionInterface::ContinualGatheringPolicy::GATHER_CONTINUALLY;
++  config.suspend_remote_stream = configuration_.suspend_remote_stream;
+   return config;
+ }
+ void P2PClient::OnMessageReceived(const std::string& remote_id,
+diff --git a/talk/owt/sdk/p2p/p2ppeerconnectionchannel.cc b/talk/owt/sdk/p2p/p2ppeerconnectionchannel.cc
+index 37e8870..5418231 100644
+--- a/talk/owt/sdk/p2p/p2ppeerconnectionchannel.cc
++++ b/talk/owt/sdk/p2p/p2ppeerconnectionchannel.cc
+@@ -358,6 +358,15 @@ void P2PPeerConnectionChannel::Send(
+   }
+ }
+ 
++void P2PPeerConnectionChannel::Suspend(bool suspend) {
++  if (ended_)
++    return;
++  if (suspend != configuration_.suspend_remote_stream) {
++    configuration_.suspend_remote_stream = suspend;
++    peer_connection_ -> Suspend(suspend);
++  }
++}
++
+ void P2PPeerConnectionChannel::ChangeSessionState(SessionState state) {
+   RTC_LOG(LS_INFO) << "PeerConnectionChannel change session state : " << state;
+   session_state_ = state;
+diff --git a/talk/owt/sdk/p2p/p2ppeerconnectionchannel.h b/talk/owt/sdk/p2p/p2ppeerconnectionchannel.h
+index b70f260..9a38a90 100644
+--- a/talk/owt/sdk/p2p/p2ppeerconnectionchannel.h
++++ b/talk/owt/sdk/p2p/p2ppeerconnectionchannel.h
+@@ -85,6 +85,7 @@ class P2PPeerConnectionChannel : public P2PSignalingReceiverInterface,
+             bool is_reliable,
+             std::function<void()> on_success,
+             std::function<void(std::unique_ptr<Exception>)> on_failure);
++  void Suspend(bool suspend);
+   // Stop current WebRTC session.
+   void Stop(std::function<void()> on_success,
+             std::function<void(std::unique_ptr<Exception>)> on_failure);
+-- 
+2.25.1
+

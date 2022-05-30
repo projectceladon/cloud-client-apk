@@ -38,7 +38,7 @@ sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libgle
 ## Owt game streaming sdk
 1. git clone https://github.com/intel-innersource/libraries.communications.webrtc.owt-sdk-game-streaming.git
 2. prepare source code according to README.md in owt game streaming sdk.
-3. apply owt-patches/0001-decoded-frame-to-render-on-linux.patch to src
+3. apply patches under folder owt-patches to src
 4. python scripts/build_linux.py --gn_gen --sdk --ssl_root openssl_dir --output_path dist --fake_audio --scheme release --arch x64
 
 

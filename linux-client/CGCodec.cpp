@@ -1,6 +1,7 @@
 #include <vector>
 #include <mutex>
 #include "CGCodec.h"
+#include <fstream>
 
 #define MAX_DEVICE_NAME_SIZE 21
 #define MAX_ALLOWED_PENDING_FRAMES 2
@@ -8,6 +9,8 @@
 using namespace std;
 
 //////// @class CGVideoFrame ////////
+
+//std::ofstream ouF;
 
 CGPixelFormat CGVideoFrame::format() {
   switch (m_avframe->format) {
@@ -181,6 +184,7 @@ int CGVideoDecoder::init_impl(FrameResolution resolution,
   std::lock_guard<std::recursive_mutex> decode_push_lock(push_lock);
   std::lock_guard<std::recursive_mutex> decode_pull_lock(pull_lock);
   decoder_ready = false;
+ // ouF.open("./decode.yuv", std::ofstream::binary| std::ofstream::out);
 
   // Update current init parameters which would be used during re-init.
   this->codec_type = codec_type;
@@ -427,6 +431,9 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
       *out_width = frame->width;
       *out_height = frame->height;
       std::cout << "frame_size" << frame->width <<  "---" << frame->height <<  std::endl;
+
+      //ouF.write((const char*)out_buf, m_decode_ctx->frame_size);
+
       // untransfer, cause we can get it correctly
       /*if (!nv12buffer_.empty()) {
         // nv12toi420
