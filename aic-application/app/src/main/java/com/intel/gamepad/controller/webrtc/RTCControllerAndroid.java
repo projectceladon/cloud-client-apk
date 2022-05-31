@@ -18,6 +18,7 @@ import com.commonlibrary.utils.LogEx;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
+import com.intel.gamepad.utils.KeyTypeEnum;
 import com.intel.gamepad.utils.PopupUtil;
 
 import org.webrtc.JniCommon;
@@ -360,6 +361,10 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 }
             }
             return true;
+        }else if ((eventSource & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD) {
+            sendKeyEvent("k "+KeyTypeEnum.findValue(event.getKeyCode())+" "+(event.getAction()==MotionEvent.ACTION_DOWN?1:0)+"\nc\n");
+            if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
+                onBackPress();
         } else {
             sendAndroidEvent(event.getAction(), event.getKeyCode());
             LogEx.i(keyCode + " " + event + " " + event.getDevice().getId());

@@ -21,7 +21,6 @@ import com.google.gson.Gson;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.app.AppConst;
-import com.intel.gamepad.app.KeyConst;
 import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
 import com.intel.gamepad.owt.p2p.P2PHelper;
@@ -418,235 +417,6 @@ public abstract class BaseController implements OnTouchListener {
         });
     }
 
-    /**
-     * 将WASD作为方向键时的事件响应
-     */
-    protected void emulateWASDKeys(int action, int part) {
-        boolean onKeyLeft, onKeyRight, onKeyUp, onKeyDown;
-        onKeyUp = false;
-        onKeyRight = false;
-        onKeyDown = false;
-        onKeyLeft = false;
-        boolean isPress = false;
-        // 根据方向盘的分区号判断需要响应的方向键
-        switch (part) {
-            case 0:
-                break;
-            case 12:
-            case 1:
-                onKeyUp = true;
-                break;
-            case 3:
-            case 4:
-                onKeyRight = true;
-                break;
-            case 6:
-            case 7:
-                onKeyDown = true;
-                break;
-            case 9:
-            case 10:
-                onKeyLeft = true;
-                break;
-            case 2:
-                onKeyUp = onKeyRight = true;
-                break;
-            case 5:
-                onKeyRight = onKeyDown = true;
-                break;
-            case 8:
-                onKeyDown = onKeyLeft = true;
-                break;
-            case 11:
-                onKeyLeft = onKeyUp = true;
-                break;
-        }
-        // 根据action判断是按键是按下还是抬起
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                isPress = true;
-                break;
-            case MotionEvent.ACTION_MOVE:
-                if (lastPartition != part) {
-                    sendKeyEvent(false, KeyConst.VK_W);
-                    sendKeyEvent(false, KeyConst.VK_S);
-                    sendKeyEvent(false, KeyConst.VK_A);
-                    sendKeyEvent(false, KeyConst.VK_D);
-                }
-                lastPartition = part;
-                isPress = true;
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-            case MotionEvent.ACTION_CANCEL:
-                break;
-        }
-        // 根据具体方向设置键的按下和抬起状态
-        if (onKeyUp) {
-            sendKeyEvent(isPress, KeyConst.VK_W);
-        }
-        if (onKeyDown) {
-            sendKeyEvent(isPress, KeyConst.VK_S);
-        }
-        if (onKeyLeft) {
-            sendKeyEvent(isPress, KeyConst.VK_A);
-        }
-        if (onKeyRight) {
-            sendKeyEvent(isPress, KeyConst.VK_D);
-        }
-        LogEx.i(">>>>>u=" + onKeyUp + " d=" + onKeyDown + " l=" + onKeyLeft + " r=" + onKeyRight + " press=" + isPress);
-    }
-
-    /**
-     * 上下左右方向键的事件响应
-     */
-    protected void emulateArrowKeys(int action, int part) {
-        boolean myKeyLeft, myKeyRight, myKeyUp, myKeyDown;
-        myKeyUp = myKeyRight = myKeyDown = myKeyLeft = false;
-        boolean isPress = false;
-        // 根据方向盘的分区号判断需要响应的方向键
-        switch (part) {
-            case 0:
-                break;
-            case 12:
-            case 1:
-                myKeyUp = true;
-                break;
-            case 3:
-            case 4:
-                myKeyRight = true;
-                break;
-            case 6:
-            case 7:
-                myKeyDown = true;
-                break;
-            case 9:
-            case 10:
-                myKeyLeft = true;
-                break;
-            // hybrid keys
-            case 2:
-                myKeyUp = myKeyRight = true;
-                break;
-            case 5:
-                myKeyRight = myKeyDown = true;
-                break;
-            case 8:
-                myKeyDown = myKeyLeft = true;
-                break;
-            case 11:
-                myKeyLeft = myKeyUp = true;
-                break;
-        }
-        // 根据action判断是按键是按下还是抬起
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                isPress = true;
-                break;
-            case MotionEvent.ACTION_MOVE:
-                if (lastPartition != part) {
-                    sendKeyEvent(false, KeyConst.VK_LEFT);
-                    sendKeyEvent(false, KeyConst.VK_RIGHT);
-                    sendKeyEvent(false, KeyConst.VK_UP);
-                    sendKeyEvent(false, KeyConst.VK_DOWN);
-                }
-                lastPartition = part;
-                isPress = true;
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-                break;
-        }
-        if (myKeyUp) {
-            sendKeyEvent(isPress, KeyConst.VK_UP);
-        }
-        if (myKeyDown) {
-            sendKeyEvent(isPress, KeyConst.VK_DOWN);
-        }
-        if (myKeyLeft) {
-            sendKeyEvent(isPress, KeyConst.VK_LEFT);
-        }
-        if (myKeyRight) {
-            sendKeyEvent(isPress, KeyConst.VK_RIGHT);
-        }
-        LogEx.i(">>>>>" + myKeyUp + " " + myKeyDown + " " + myKeyLeft + " " + myKeyRight);
-    }
-
-    protected void emulateDPadArrowKeys(int action, int part) {
-        boolean myKeyLeft, myKeyRight, myKeyUp, myKeyDown;
-        myKeyUp = myKeyRight = myKeyDown = myKeyLeft = false;
-        boolean isPress = false;
-        // 根据方向盘的分区号判断需要响应的方向键
-        switch (part) {
-            case 0:
-                break;
-            case 12:
-            case 1:
-                myKeyUp = true;
-                break;
-            case 3:
-            case 4:
-                myKeyRight = true;
-                break;
-            case 6:
-            case 7:
-                myKeyDown = true;
-                break;
-            case 9:
-            case 10:
-                myKeyLeft = true;
-                break;
-            // hybrid keys
-            case 2:
-                myKeyUp = myKeyRight = true;
-                break;
-            case 5:
-                myKeyRight = myKeyDown = true;
-                break;
-            case 8:
-                myKeyDown = myKeyLeft = true;
-                break;
-            case 11:
-                myKeyLeft = myKeyUp = true;
-                break;
-        }
-        // 根据action判断是按键是按下还是抬起
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                isPress = true;
-                break;
-            case MotionEvent.ACTION_MOVE:
-                if (lastPartition != part) {
-                    sendJoyKeyEvent(false, KeyConst.VK_DPAD_LEFT);
-                    sendJoyKeyEvent(false, KeyConst.VK_DPAD_RIGHT);
-                    sendJoyKeyEvent(false, KeyConst.VK_DPAD_UP);
-                    sendJoyKeyEvent(false, KeyConst.VK_DPAD_DOWN);
-                }
-                lastPartition = part;
-                isPress = true;
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-                break;
-        }
-        if (myKeyUp) {
-            sendJoyKeyEvent(isPress, KeyConst.VK_DPAD_UP);
-        }
-        if (myKeyDown) {
-            sendJoyKeyEvent(isPress, KeyConst.VK_DPAD_DOWN);
-        }
-        if (myKeyLeft) {
-            sendJoyKeyEvent(isPress, KeyConst.VK_DPAD_LEFT);
-        }
-        if (myKeyRight) {
-            sendJoyKeyEvent(isPress, KeyConst.VK_DPAD_RIGHT);
-        }
-        LogEx.i(">>>>>" + myKeyUp + " " + myKeyDown + " " + myKeyLeft + " " + myKeyRight);
-    }
-
     protected void addControllerView(ViewGroup viewGroup) {
         this.layoutCtrlBox.removeAllViews();
         this.layoutCtrlBox.addView(viewGroup, new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -719,54 +489,6 @@ public abstract class BaseController implements OnTouchListener {
             case MotionEvent.ACTION_POINTER_UP:
             case MotionEvent.ACTION_CANCEL:
                 sendJoyKeyEvent(false, keyCode);
-                if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_false);
-                break;
-        }
-        return true;
-    }
-
-    public boolean handleButtonTouch(int action, int keyCode) {
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                sendKeyEvent(true, keyCode);
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-                sendKeyEvent(false, keyCode);
-                break;
-        }
-        return true;
-    }
-
-    public boolean handleButtonTouch(int action, int keyCode, View v) {
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                sendKeyEvent(true, keyCode);
-                if (v != null) v.setBackgroundResource(R.drawable.bg_rect_btn_press_true);
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-            case MotionEvent.ACTION_CANCEL:
-                sendKeyEvent(false, keyCode);
-                if (v != null) v.setBackgroundResource(R.drawable.bg_rect_btn_press_false);
-                break;
-        }
-        return true;
-    }
-
-    public boolean handleOvalButtonTouch(int action, int keyCode, View v) {
-        switch (action) {
-            case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_POINTER_DOWN:
-                sendKeyEvent(true, keyCode);
-                if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_true);
-                break;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-            case MotionEvent.ACTION_CANCEL:
-                sendKeyEvent(false, keyCode);
                 if (v != null) v.setBackgroundResource(R.drawable.bg_oval_btn_press_false);
                 break;
         }
@@ -868,17 +590,18 @@ public abstract class BaseController implements OnTouchListener {
     /**
      * 发送键盘按键事件
      *
-     * @param pressed true按下，false释放
+     * @param data key event
      */
-    public void sendKeyEvent(boolean pressed, int keyCode) {
+    public void sendKeyEvent(String data) {
         Map<String, Object> mapKey = new HashMap<>();
         Map<String, Object> mapData = new HashMap<>();
         Map<String, Object> mapParams = new HashMap<>();
         mapKey.put("type", "control");
         mapKey.put("data", mapData);
-        mapData.put("event", pressed ? "keydown" : "keyup");
+        mapData.put("event", "joystick");
         mapData.put("parameters", mapParams);
-        mapParams.put("which", keyCode);
+        mapParams.put("data", data);
+        mapParams.put("jID", 0);
         String jsonString = new JSONObject(mapKey).toString();
         LogEx.i(jsonString + " ");
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
@@ -888,6 +611,7 @@ public abstract class BaseController implements OnTouchListener {
             }
         });
     }
+
 
     /**
      * Send mouse event
