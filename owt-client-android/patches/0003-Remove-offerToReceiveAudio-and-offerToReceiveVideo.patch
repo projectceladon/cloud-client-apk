@@ -1,0 +1,28 @@
+From 49e0fa4f6cc39947f690769e8a0293e563939ef5 Mon Sep 17 00:00:00 2001
+From: shipeigx <peigangx.shi@intel.com>
+Date: Wed, 1 Jun 2022 14:16:52 +0800
+Subject: [PATCH] Remove offerToReceiveAudio and offerToReceiveVideo.
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ .../base/src/main/java/owt/base/PeerConnectionChannel.java    | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+index cf61788..e1f74be 100644
+--- a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
++++ b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+@@ -85,10 +85,6 @@ public abstract class PeerConnectionChannel
+         queuedMessage = new ArrayList<>();
+         queuedMessage2 = new ArrayList<>();
+         sdpConstraints = new MediaConstraints();
+-        sdpConstraints.mandatory.add(
+-                new KeyValuePair("OfferToReceiveAudio", String.valueOf(receiveAudio)));
+-        sdpConstraints.mandatory.add(
+-                new KeyValuePair("OfferToReceiveVideo", String.valueOf(receiveVideo)));
+         peerConnection = PCFactoryProxy.instance().createPeerConnection(configuration, this);
+         RCHECK(peerConnection);
+         signalingState = peerConnection.signalingState();
+-- 
+2.25.1
+

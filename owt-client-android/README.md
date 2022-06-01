@@ -14,6 +14,7 @@ Download owt-client-android source code:
 4. $ cp -r ../../owt-client-native/src/out/dist/release/* dependencies/libwebrtc/
 5. $ git am ../patches/0001-Enable-second-data-channel-for-owt-android-sdk.patch
 6. $ git am ../patches/0002-Fix-the-garbled-message-from-the-streamer-by-getting.patch
+7. $ git am ../patches/0003-Remove-offerToReceiveAudio-and-offerToReceiveVideo.patch
 
 Compile:
 1. $ python tools/pack.py
