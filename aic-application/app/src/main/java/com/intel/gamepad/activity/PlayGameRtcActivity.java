@@ -64,7 +64,6 @@ import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.ImageManager;
 import com.intel.gamepad.utils.LocationUtils;
 import com.intel.gamepad.utils.sink.BweStatsVideoSink;
-import org.webrtc.Logging;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -95,10 +94,7 @@ import owt.p2p.Publication;
 import owt.p2p.RemoteStream;
 
 
-public class PlayGameRtcActivity extends AppCompatActivity
-        implements InputManager.InputDeviceListener,
-        DeviceSwitchListtener,
-        SensorEventListener {
+public class PlayGameRtcActivity extends AppCompatActivity implements InputManager.InputDeviceListener, DeviceSwitchListtener, SensorEventListener {
     public static AtomicBoolean alpha = new AtomicBoolean(false);
     private static String cameraRes;
     private final String TAG = "PlayGameRtcActivity";
@@ -116,7 +112,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private LocalStream localVideoStream = null;
     private Publication audioPublication = null;
     private Publication videoPublication = null;
-    private AicVideoCapturer videoCapturer = null;
+    private AicVideoCapturer videoCapture = null;
     private BaseController controller = null;
     private int viewWidth = DensityUtils.getmScreenWidth();
     private int viewHeight = DensityUtils.getmScreenHeight();
@@ -124,7 +120,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private int screenHeight = viewHeight;
     private Handler handler = null;
     private CameraEventsHandler mCameraEventsHandler = null;
-    private boolean requesPermissionFromServer = false;
+    private boolean requestPermissionFromServer = false;
     private int satelliteCountCurrent = 0;
     private LocationListener mLocationListenerNetwork = null;
     private LocationListener mLocationListenerGPS = null;
@@ -167,27 +163,21 @@ public class PlayGameRtcActivity extends AppCompatActivity
         loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
 
-        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(),
-                false,
-                ImageManager.getInstance().getBitmapById(
-                        IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha,
-                        getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ?
-                                90 : 0),
-                new RendererCommon.RendererEvents() {
-                    @Override
-                    public void onFirstFrameRendered() {
+        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, ImageManager.getInstance().getBitmapById(IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0), new RendererCommon.RendererEvents() {
+            @Override
+            public void onFirstFrameRendered() {
 
-                    }
+            }
 
-                    @Override
-                    public void onFrameResolutionChanged(int width, int height, int rotation) {
-                        if (loading != null) {
-                            loading.setVisibility(View.GONE);
-                        }
-                        if (fullRenderer.getVisibility() != View.VISIBLE)
-                            fullRenderer.setVisibility(View.VISIBLE);
-                    }
-                });
+            @Override
+            public void onFrameResolutionChanged(int width, int height, int rotation) {
+                if (loading != null) {
+                    loading.setVisibility(View.GONE);
+                }
+                if (fullRenderer.getVisibility() != View.VISIBLE)
+                    fullRenderer.setVisibility(View.VISIBLE);
+            }
+        });
         fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
         fullRenderer.setEnableHardwareScaler(true);
         fullRenderer.setZOrderMediaOverlay(true);
@@ -299,26 +289,20 @@ public class PlayGameRtcActivity extends AppCompatActivity
     private void initUIFeature() {
         StatusBarUtil.setTranslucentStatus(this);
         this.supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
-        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         hideStatusBar();
     }
 
     private void hideStatusBar() {
         Window window = this.getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
-                | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         WindowManager.LayoutParams lp = window.getAttributes();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         }
         window.setAttributes(lp);
         View v = window.getDecorView();
-        v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
 
     }
 
@@ -334,8 +318,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 LogEx.e("Server disconnected");
                 if (!isNetworkAvailable()) {
                     LogEx.e("Network is unavailable. Quit.");
-                    Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT)
-                            .sendToTarget();
+                    Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT).sendToTarget();
                 }
                 getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
             }
@@ -402,8 +385,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     Thread thread = new Thread(() -> {
                                         LogEx.d("publishing localAudioStream");
                                         audioPublication = null;
-                                        localAudioStream =
-                                                new LocalStream(new MediaConstraints.AudioTrackConstraints());
+                                        localAudioStream = new LocalStream(new MediaConstraints.AudioTrackConstraints());
                                         localAudioStream.enableAudio();
                                         LogEx.d("localAudioStream id: " + localAudioStream.id());
                                         P2PHelper.getClient().publish(P2PHelper.peerId, localAudioStream, new ActionCallback<Publication>() {
@@ -452,8 +434,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                     if (videoPublication != null) {
                                         videoPublication.stop();
                                     }
-                                    if (videoCapturer != null) {
-                                        videoCapturer.stopCapture();
+                                    if (videoCapture != null) {
+                                        videoCapture.stopCapture();
                                     }
                                     break;
                                 case "sensor-start":
@@ -540,15 +522,17 @@ public class PlayGameRtcActivity extends AppCompatActivity
                                 }
 
                                 requestFile = new File(fileTransferPath + "/" + file_name);
-                                StringBuilder newFileName = new StringBuilder(file_name);
+                                StringBuilder newFileName;
+                                int ii = 1;
                                 while (requestFile.exists()) {
-                                    int pointIndex = newFileName.indexOf(".");
+                                    int pointIndex = file_name.lastIndexOf(".");
                                     if (pointIndex > 0) {
-                                        newFileName = new StringBuilder(newFileName.substring(0, pointIndex) + "1" + newFileName.substring(pointIndex));
+                                        newFileName = new StringBuilder(file_name.substring(0, pointIndex) + ii + file_name.substring(pointIndex));
                                     } else {
-                                        newFileName.append("1");
+                                        newFileName = new StringBuilder(file_name + ii);
                                     }
                                     requestFile = new File(fileTransferPath + "/" + newFileName);
+                                    ii++;
                                 }
                                 try {
                                     fileOutputStream = new FileOutputStream(requestFile);
@@ -637,10 +621,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     public void onLocationChanged(Location location) {
                         lastNetworkLocationTime = System.currentTimeMillis();
                         if (lastNetworkLocationTime - lastGpsLocationTime > TIME_INTERVAL_BETWEEN_NETWORK_GPS) {
-                            String strNMEA = LocationUtils.buildComposedNmeaMessage(
-                                    location.getLatitude(),
-                                    location.getLongitude()
-                            );
+                            String strNMEA = LocationUtils.buildComposedNmeaMessage(location.getLatitude(), location.getLongitude());
                             sendGPSData(strNMEA);
                         }
                     }
@@ -658,20 +639,12 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            REQUEST_PERMISSIONS_REQUEST_CODE);
-                    requesPermissionFromServer = true;
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSIONS_REQUEST_CODE);
+                    requestPermissionFromServer = true;
                 } else {
-                    isNetworkEnabled =
-                            mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                    isNetworkEnabled = mLocationManagerNetwork.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
                     if (isNetworkEnabled) {
-                        mLocationManagerNetwork.requestLocationUpdates(
-                                LocationManager.NETWORK_PROVIDER,
-                                TIME_INTERVAL_TO_GET_LOCATION,
-                                0f,
-                                mLocationListenerNetwork
-                        );
+                        mLocationManagerNetwork.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, TIME_INTERVAL_TO_GET_LOCATION, 0f, mLocationListenerNetwork);
                     }
                 }
             }
@@ -693,7 +666,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     }
 
                     @Override
-                    public void onFirstFix(int ttffMillis) {
+                    public void onFirstFix(int tiffMillis) {
                     }
 
                     @Override
@@ -703,15 +676,8 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 };
             }
             OnNmeaMessageListener mOnNmeaMessageListener = (message, timestamp) -> {
-                if (satelliteCountCurrent > 0
-                        && message != null
-                        && !message.contains("GPGGA,,,,,,")
-                ) {
-                    if (message.startsWith("$" + "GPGGA")
-                            || message.startsWith("$" + "GNGGA")
-                            || message.startsWith("$" + "GNRMC")
-                            || message.startsWith("$" + "GPRMC")
-                    ) {
+                if (satelliteCountCurrent > 0 && message != null && !message.contains("GPGGA,,,,,,")) {
+                    if (message.startsWith("$" + "GPGGA") || message.startsWith("$" + "GNGGA") || message.startsWith("$" + "GNRMC") || message.startsWith("$" + "GPRMC")) {
 
                         lastGpsLocationTime = System.currentTimeMillis();
                     }
@@ -722,10 +688,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
                 public void onLocationChanged(Location location) {
                     lastNetworkLocationTime = System.currentTimeMillis();
                     if (lastNetworkLocationTime - lastGpsLocationTime > TIME_INTERVAL_BETWEEN_NETWORK_GPS) {
-                        String strNMEA = LocationUtils.buildComposedNmeaMessage(
-                                location.getLatitude(),
-                                location.getLongitude()
-                        );
+                        String strNMEA = LocationUtils.buildComposedNmeaMessage(location.getLatitude(), location.getLongitude());
                         sendGPSData(strNMEA);
                     }
                 }
@@ -742,21 +705,14 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                            REQUEST_PERMISSIONS_REQUEST_CODE);
-                    requesPermissionFromServer = true;
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_PERMISSIONS_REQUEST_CODE);
+                    requestPermissionFromServer = true;
                 } else {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         mLocationManagerGPS.addNmeaListener(mOnNmeaMessageListener, null);
                         mLocationManagerGPS.registerGnssStatusCallback(mStatusCallback, null);
                     }
-                    mLocationManagerGPS.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            TIME_INTERVAL_TO_GET_LOCATION,
-                            0f,
-                            mLocationListenerGPS
-                    );
+                    mLocationManagerGPS.requestLocationUpdates(LocationManager.GPS_PROVIDER, TIME_INTERVAL_TO_GET_LOCATION, 0f, mLocationListenerGPS);
                 }
             }
         }
@@ -777,7 +733,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
             }
         }
         satelliteCountCurrent = 0;
-        requesPermissionFromServer = false;
+        requestPermissionFromServer = false;
     }
 
     private void publishLocalVideo() {
@@ -800,48 +756,43 @@ public class PlayGameRtcActivity extends AppCompatActivity
         switch (cameraRes) {
             case "1":
                 LogEx.d("Requested for 480p");
-                videoCapturer = AicVideoCapturer.create(640, 480, mCameraEventsHandler);
+                videoCapture = AicVideoCapturer.create(640, 480, mCameraEventsHandler);
                 break;
             case "2":
                 LogEx.d("Requested for 720p");
-                videoCapturer = AicVideoCapturer.create(1280, 720, mCameraEventsHandler);
+                videoCapture = AicVideoCapturer.create(1280, 720, mCameraEventsHandler);
                 break;
             case "4":
                 LogEx.d("Requested for 1080p");
-                videoCapturer = AicVideoCapturer.create(1920, 1080, mCameraEventsHandler);
+                videoCapture = AicVideoCapturer.create(1920, 1080, mCameraEventsHandler);
                 break;
         }
 
-        localVideoStream = createLocalStream(videoCapturer);
-        P2PHelper.getClient().publish(P2PHelper.peerId,
-                localVideoStream,
-                new ActionCallback<Publication>() {
-                    @Override
-                    public void onSuccess(Publication publication) {
-                        videoPublication = publication;
-                        LogEx.d("onSuccess localVideoStream published!!");
-                        videoPublication.addObserver(() -> LogEx.e("videoPublication onEnded "));
-                    }
+        localVideoStream = createLocalStream(videoCapture);
+        P2PHelper.getClient().publish(P2PHelper.peerId, localVideoStream, new ActionCallback<Publication>() {
+            @Override
+            public void onSuccess(Publication publication) {
+                videoPublication = publication;
+                LogEx.d("onSuccess localVideoStream published!!");
+                videoPublication.addObserver(() -> LogEx.e("videoPublication onEnded "));
+            }
 
-                    @Override
-                    public void onFailure(OwtError owtError) {
-                        LogEx.e("onFailure: " + owtError.errorMessage);
-                    }
-                });
+            @Override
+            public void onFailure(OwtError owtError) {
+                LogEx.e("onFailure: " + owtError.errorMessage);
+            }
+        });
     }
 
-    private LocalStream createLocalStream(AicVideoCapturer capturer) {
-        LocalStream localCameraStream = new LocalStream(capturer, null);
+    private LocalStream createLocalStream(AicVideoCapturer capture) {
+        LocalStream localCameraStream = new LocalStream(capture, null);
         LogEx.d("localVideoStream id: " + localCameraStream.id() + " hasVideo: " + localCameraStream.hasVideo());
         return localCameraStream;
     }
 
     private void registerSensorEvents(int sensorType, int samplingPeriod_ms) {
-        if (samplingPeriod_ms <= 20)
-            samplingPeriod_ms = 20;
-        mSensorManager.registerListener(this,
-                mSensorManager.getDefaultSensor(sensorType),
-                samplingPeriod_ms);
+        if (samplingPeriod_ms <= 20) samplingPeriod_ms = 20;
+        mSensorManager.registerListener(this, mSensorManager.getDefaultSensor(sensorType), samplingPeriod_ms);
     }
 
     private void deRegisterSensorEvents(int sensorType) {
@@ -853,7 +804,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
         viewWidth = fullRenderer.getWidth();
         viewHeight = fullRenderer.getHeight();
         sendSizeChange();
-        controller.setViewDimenson(viewWidth, viewHeight, 0, 0);
+        controller.setViewDimension(viewWidth, viewHeight, 0, 0);
     }
 
     private void sendSizeChange() {
@@ -1017,19 +968,13 @@ public class PlayGameRtcActivity extends AppCompatActivity
             // value at 0th index. Tested and verified with multiple devices.
             int width = cameraParams.getSupportedPictureSizes().get(0).width;
             int height = cameraParams.getSupportedPictureSizes().get(0).height;
-            LogEx.d("width = " + width + ", height = " + height + ", facing = " +
-                    camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
+            LogEx.d("width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
 
-            if (width >= 7680 && height >= 4320)
-                maxCameraRes[i] = "4320p"; // 8k
-            else if (width >= 3840 && height >= 2160)
-                maxCameraRes[i] = "2160p"; // 4k
-            else if (width >= 1920 && height >= 1080)
-                maxCameraRes[i] = "1080p";
-            else if (width >= 1280 && height >= 720)
-                maxCameraRes[i] = "720p";
-            else
-                maxCameraRes[i] = "480p";
+            if (width >= 7680 && height >= 4320) maxCameraRes[i] = "4320p"; // 8k
+            else if (width >= 3840 && height >= 2160) maxCameraRes[i] = "2160p"; // 4k
+            else if (width >= 1920 && height >= 1080) maxCameraRes[i] = "1080p";
+            else if (width >= 1280 && height >= 720) maxCameraRes[i] = "720p";
+            else maxCameraRes[i] = "480p";
             LogEx.d("Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
 
             camera.release();
@@ -1075,39 +1020,26 @@ public class PlayGameRtcActivity extends AppCompatActivity
 
     private void checkPermissions() {
         LogEx.d("checkPermissions called");
-        String[] permissions = {
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.CAMERA,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-        };
+        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
         ArrayList<String> permissionsToAskFor = new ArrayList<>();
         for (String permission : permissions) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        permission
-                ) != PackageManager.PERMISSION_GRANTED) {
+                if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
                     permissionsToAskFor.add(permission);
                 }
             }
         }
         if (!permissionsToAskFor.isEmpty()) {
-            String[] arrayAskfor = new String[permissionsToAskFor.size()];
-            arrayAskfor = permissionsToAskFor.toArray(arrayAskfor);
-            ActivityCompat.requestPermissions(
-                    this,
-                    arrayAskfor,
-                    REQUEST_PERMISSIONS_REQUEST_CODE
-            );
+            String[] arrayAskFor = new String[permissionsToAskFor.size()];
+            arrayAskFor = permissionsToAskFor.toArray(arrayAskFor);
+            ActivityCompat.requestPermissions(this, arrayAskFor, REQUEST_PERMISSIONS_REQUEST_CODE);
         } else {
             LogEx.d("No need to request permissions to user, as App already has all the required permissions");
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         // grantResults.length <= 0. If user interaction was interrupted, the permission request is cancelled and you receive empty arrays.
         if (grantResults.length > 0) {
             for (int i = 0; i < permissions.length; i++) {
@@ -1115,15 +1047,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
                     if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                         if (ActivityCompat.checkSelfPermission(this, permissions[i]) == PackageManager.PERMISSION_GRANTED) {
                             Toast.makeText(this, "The " + permissions[i] + "has been granted", Toast.LENGTH_LONG).show();
-                            if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) && requesPermissionFromServer) {
+                            if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) && requestPermissionFromServer) {
                                 getPositionNetwork();
                                 getPositionGPS();
-                                requesPermissionFromServer = false;
+                                requestPermissionFromServer = false;
                             }
                         } else {
                             Toast.makeText(this, "The " + permissions[i] + " has been denied", Toast.LENGTH_LONG).show();
                             if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION))
-                                requesPermissionFromServer = false;
+                                requestPermissionFromServer = false;
                         }
                     }
                 }
@@ -1152,8 +1084,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     }
 
     private boolean isNetworkAvailable() {
-        ConnectivityManager connectivityManager
-                = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         return networkInfo != null && networkInfo.isConnected();
     }
@@ -1162,8 +1093,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
     public void onInputDeviceAdded(int deviceId) {
         InputDevice device = InputDevice.getDevice(deviceId);
         int source = device.getSources();
-        if ((source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
-                || ((source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
+        if ((source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK || ((source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
             int joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId);
             sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId);
         } else {
@@ -1209,15 +1139,9 @@ public class PlayGameRtcActivity extends AppCompatActivity
     @Override
     public void switchAlphaOrientation(boolean portrait) {
         if (portrait) {
-            fullRenderer.setDrawerBg(ImageManager.getInstance().getBitmapById(
-                    R.mipmap.bg_alpha_portrait,
-                    getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ?
-                            90 : 0));
+            fullRenderer.setDrawerBg(ImageManager.getInstance().getBitmapById(R.mipmap.bg_alpha_portrait, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0));
         } else {
-            fullRenderer.setDrawerBg(ImageManager.getInstance().getBitmapById(
-                    R.mipmap.bg_alpha,
-                    getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ?
-                            90 : 0));
+            fullRenderer.setDrawerBg(ImageManager.getInstance().getBitmapById(R.mipmap.bg_alpha, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0));
         }
     }
 
@@ -1434,15 +1358,15 @@ public class PlayGameRtcActivity extends AppCompatActivity
             if (action.equals("com.intel.gamepad.sendfiletoaic")) {
                 String uri = intent.getStringExtra("uri");
                 Log.e("MyReceiver", "To aic uri = " + uri);
-                sendFiletoAIC(uri);
+                sendFileToAIC(uri);
             } else if (action.equals("com.intel.gamepad.sendfiletoapp")) {
                 String uri = intent.getStringExtra("uri");
                 Log.e("MyReceiver", "To app uri = " + uri);
-                sendFiletoApp(uri);
+                sendFileToApp(uri);
             }
         }
 
-        private void sendFiletoAIC(String uri) {
+        private void sendFileToAIC(String uri) {
             File file = new File(uri);
             if (!file.exists()) {
                 runOnUiThread(() -> Toast.makeText(PlayGameRtcActivity.this, "There is no file: " + uri, Toast.LENGTH_LONG).show());
@@ -1453,7 +1377,7 @@ public class PlayGameRtcActivity extends AppCompatActivity
             controller.sendFile(uri);
         }
 
-        private void sendFiletoApp(String uri) {
+        private void sendFileToApp(String uri) {
             controller.sendFileNameToStreamer(uri);
         }
     }

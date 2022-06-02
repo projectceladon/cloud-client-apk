@@ -36,7 +36,10 @@ import java.lang.ref.WeakReference;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import owt.base.ActionCallback;
 import owt.base.OwtError;
@@ -73,8 +76,11 @@ public abstract class BaseController implements OnTouchListener {
     public static AtomicBoolean manuallyPressBackButton = new AtomicBoolean(false);
     //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
     protected final Context context;
+    private final String TAG = "BaseController";
     private final ViewGroup layoutCtrlBox;
     private final Object sendFileLock = new Object();
+    private final Executor sendFileExecutor = Executors.newSingleThreadExecutor();
+    private final AtomicInteger mWaitingFilesNumber = new AtomicInteger(0);
     protected int marginWidth;
     protected int marginHeight;
     protected boolean showMouse = false;
@@ -82,14 +88,13 @@ public abstract class BaseController implements OnTouchListener {
     protected int mouseY;
     protected DeviceSwitchListtener devSwitch;
     protected WeakReference<Handler> refHandler;
+    protected boolean mE2eEnabled = false;
     private int viewWidth = 0;
     private int viewHeight = 0;
     private ImageView cursor = null;
-    private int lastPartition;
     private int nCountInput;
     private boolean send_block_success_ = false;
     private boolean send_block_failed_ = false;
-    protected boolean mE2eEnabled = false;
 
     public BaseController(PlayGameRtcActivity act) {
         this.context = act;
@@ -172,13 +177,21 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public void sendFile(String fileName) {
-        new Thread(() -> {
+        Log.d(TAG, "Client is sending file " + fileName);
+        if (mWaitingFilesNumber.incrementAndGet() > 10 * Runtime.getRuntime().availableProcessors()) {
+            Log.e(TAG, "Skip this send file due to the number of sending is lager than 10 times available processors(" + Runtime.getRuntime().availableProcessors() + ").");
+            mWaitingFilesNumber.decrementAndGet();
+            return;
+        }
+
+        sendFileExecutor.execute(new Thread(() -> {
             send_block_success_ = false;
             send_block_failed_ = false;
 
             File file = new File(fileName);
             if (!file.exists()) {
-                LogEx.d("There is no file");
+                Log.e(TAG, fileName + " is not exists");
+                mWaitingFilesNumber.decrementAndGet();
                 return;
             }
             //send header
@@ -198,7 +211,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
-                    Log.e("BaseController", "Send begin success");
+                    Log.e(TAG, "Send begin success");
                     synchronized (sendFileLock) {
                         send_block_success_ = true;
                         sendFileLock.notify();
@@ -225,7 +238,8 @@ public abstract class BaseController implements OnTouchListener {
                 }
 
                 if (send_block_failed_) {
-                    Log.e("BaseController", "Send begin failed, return directly");
+                    Log.e(TAG, "Send begin failed, return directly");
+                    mWaitingFilesNumber.decrementAndGet();
                     return;
                 }
             }
@@ -234,20 +248,20 @@ public abstract class BaseController implements OnTouchListener {
             byte[] buf = new byte[size];
             try {
                 FileInputStream in = new FileInputStream(file);
-                int byteread;
-                while ((byteread = in.read(buf)) != -1) {
+                int byteRead;
+                while ((byteRead = in.read(buf)) != -1) {
 
                     send_block_success_ = false;
 
-                    Log.e("BaseController", "read = " + byteread);
+                    Log.e(TAG, "read = " + byteRead);
                     Map<String, Object> mapDataForFileContent = new HashMap<>();
                     mapData.put("parameters", mapDataForFileContent);
                     mapDataForFileContent.put("file_name", file.getName());
-                    mapDataForFileContent.put("block_size", String.valueOf(byteread));
+                    mapDataForFileContent.put("block_size", String.valueOf(byteRead));
                     mapDataForFileContent.put("indicator", "sending");
 
-                    byte[] buf_copy = new byte[byteread];
-                    System.arraycopy(buf, 0, buf_copy, 0, byteread);
+                    byte[] buf_copy = new byte[byteRead];
+                    System.arraycopy(buf, 0, buf_copy, 0, byteRead);
                     String block;
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                         block = android.util.Base64.encodeToString(buf_copy, android.util.Base64.DEFAULT);
@@ -259,7 +273,7 @@ public abstract class BaseController implements OnTouchListener {
                     P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
-                            Log.e("BaseController", "Send one of block success");
+                            Log.e(TAG, "Send one of block success");
                             synchronized (sendFileLock) {
                                 send_block_success_ = true;
                                 sendFileLock.notify();
@@ -286,7 +300,8 @@ public abstract class BaseController implements OnTouchListener {
                         }
 
                         if (send_block_failed_) {
-                            Log.e("BaseController", "Send block failed, return directly");
+                            Log.e(TAG, "Send block failed, return directly");
+                            mWaitingFilesNumber.decrementAndGet();
                             return;
                         }
                     }
@@ -304,7 +319,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
-                    Log.e("BaseController", "Send end success");
+                    Log.e(TAG, "Send end success");
                     synchronized (sendFileLock) {
                         send_block_success_ = true;
                         sendFileLock.notify();
@@ -330,7 +345,8 @@ public abstract class BaseController implements OnTouchListener {
                     }
                 }
             }
-        }).start();
+            mWaitingFilesNumber.decrementAndGet();
+        }));
     }
 
     /**
@@ -455,11 +471,11 @@ public abstract class BaseController implements OnTouchListener {
         }
     }
 
-    public void setViewDimenson(int width, int height, int offx, int offy) {
+    public void setViewDimension(int width, int height, int offX, int offY) {
         this.viewWidth = width;
         this.viewHeight = height;
-        this.marginWidth = offx;
-        this.marginHeight = offy;
+        this.marginWidth = offX;
+        this.marginHeight = offY;
     }
 
     protected int getViewWidth() {
@@ -699,7 +715,6 @@ public abstract class BaseController implements OnTouchListener {
                 parameters.setE2ELatency(inputTimeStamp);
             }
             String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            //LogEx.d(jsonString);
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
@@ -726,7 +741,6 @@ public abstract class BaseController implements OnTouchListener {
             parameters.setTouchy(y);
             parameters.setFingerId(pointId);
             String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            //LogEx.d(jsonString);
             if (action == MotionEvent.ACTION_UP) {
                 nCountInput++;
                 Trace.beginSection("atou C1 ID: " + nCountInput + " size: " + 0);
@@ -754,7 +768,7 @@ public abstract class BaseController implements OnTouchListener {
             parameters.setKeycode(keyCode);
 
             String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            LogEx.d(jsonString);
+            Log.d(TAG, jsonString);
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {

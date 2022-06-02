@@ -19,7 +19,7 @@ import com.intel.gamepad.utils.LanguageUtils;
 
 import java.util.Locale;
 
-public class BaseActvitiy extends AppCompatActivity {
+public class BaseActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

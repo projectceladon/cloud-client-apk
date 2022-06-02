@@ -13,7 +13,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 
-public class SplashActivity extends BaseActvitiy {
+public class SplashActivity extends BaseActivity {
     public static boolean isDeviceRooted() {
         return checkRootMethodOne() || checkRootMethodTwo() || checkRootMethodThree();
     }

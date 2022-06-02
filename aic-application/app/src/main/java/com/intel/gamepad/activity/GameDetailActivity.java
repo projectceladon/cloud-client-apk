@@ -26,7 +26,7 @@ import com.intel.gamepad.utils.PopupUtil;
 
 import java.util.List;
 
-public class GameDetailActivity extends BaseActvitiy {
+public class GameDetailActivity extends BaseActivity {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
     private MaterialButton btnPlay;
@@ -233,32 +233,32 @@ public class GameDetailActivity extends BaseActvitiy {
     public void showPopupCodec(View parent) {
         View popView = View.inflate(this, R.layout.popup_orientation_window, null);
         popupCodec = PopupUtil.createPopup(parent, popView, DensityUtils.dp2px(150f));
-        CheckBox HECV = popView.findViewById(R.id.chk_landscape);
-        HECV.setText(R.string.hevc);
+        CheckBox HEVC = popView.findViewById(R.id.chk_landscape);
+        HEVC.setText(R.string.hevc);
         CheckBox H264 = popView.findViewById(R.id.chk_portrait);
         H264.setText(R.string.h264);
         popView.findViewById(R.id.close).setVisibility(View.GONE);
         if (AppConst.HEVC.equals(IPUtils.loadMediaCodec())) {
             H264.setChecked(false);
-            HECV.setChecked(true);
-            HECV.setClickable(false);
+            HEVC.setChecked(true);
+            HEVC.setClickable(false);
         } else {
             H264.setChecked(true);
-            HECV.setChecked(false);
+            HEVC.setChecked(false);
             H264.setClickable(false);
         }
         H264.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 IPUtils.saveMediaCodec(AppConst.H264);
-                HECV.setChecked(false);
-                HECV.setClickable(true);
+                HEVC.setChecked(false);
+                HEVC.setClickable(true);
             } else {
                 IPUtils.saveMediaCodec(AppConst.HEVC);
-                HECV.setChecked(true);
-                HECV.setClickable(false);
+                HEVC.setChecked(true);
+                HEVC.setClickable(false);
             }
         });
-        HECV.setOnCheckedChangeListener((buttonView, isChecked) -> {
+        HEVC.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked) {
                 H264.setChecked(false);
                 H264.setClickable(true);
