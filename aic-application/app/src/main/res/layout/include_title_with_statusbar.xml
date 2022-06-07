@@ -27,7 +27,7 @@
             android:ellipsize="end"
             android:paddingLeft="?android:attr/actionBarSize"
             android:paddingRight="?android:attr/actionBarSize"
-            android:text="标题"
+            android:text="@string/login_title"
             android:textColor="@color/white"
             android:textStyle="bold" />
 
@@ -37,6 +37,7 @@
             android:layout_height="match_parent"
             android:layout_marginBottom="1dp"
             android:background="@android:color/transparent"
-            android:src="@drawable/ic_arrow_back_white_36dp" />
+            android:src="@drawable/ic_arrow_back_white_36dp"
+            android:contentDescription="Login" />
     </FrameLayout>
 </LinearLayout>

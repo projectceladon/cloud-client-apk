@@ -80,4 +80,5 @@
     <string name="media_codec">Media Codec</string>
     <string name="hevc">HEVC</string>
     <string name="h264">H264</string>
+    <string name="login_title">Login</string>
 </resources>
