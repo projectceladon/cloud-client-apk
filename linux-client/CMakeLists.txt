@@ -15,6 +15,12 @@ set(CMAKE_SHARED_LINKER_FLAGS "${LINK_FLAGS}")
 add_definitions(-DUSE_CLANG=0)
 add_definitions(-DUSE_SDL)
 
+execute_process (
+COMMAND bash -c "git log --oneline | head -1 | awk '{ print $1 }'"
+OUTPUT_VARIABLE LAST_COMMIT
+OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+add_definitions( -DLAST_COMMIT="${LAST_COMMIT}")
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 

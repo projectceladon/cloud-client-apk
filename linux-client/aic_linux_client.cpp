@@ -210,6 +210,8 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  std::cout << "LAST_COMMIT: " << LAST_COMMIT << std::endl;
+
   /***************p2p***********/
   if (signaling_server_url.empty() ||
       server_ids.empty() ||
