@@ -28,8 +28,8 @@ public:
       stream->AttachVideoRenderer(*render);
     }
 
-    if (audio_player_) {
-      AudioPlayer* audio_player = audio_player_.get();
+    AudioPlayer* audio_player = audio_player_.get();
+    if (audio_player != nullptr) {
       stream->AttachAudioPlayer(*audio_player);
     }
   }

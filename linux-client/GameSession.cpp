@@ -1,12 +1,18 @@
 #include "GameSession.h"
 
-GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render) {
+GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio) {
   p2p_params_ = std::move(p2p_params);
   renderer_ = sdlRenderer;
   suspend_ = !render;
   font_ = font;
   session_desc_ = p2p_params_ -> server_id;
   initP2P();
+  video_renderer_ = std::make_shared<VideoRenderer>();
+  if (play_audio) {
+    std::cout<< "play_audio " << play_audio << std::endl;
+    audio_player_ = std::make_shared<AudioPlayer>();
+  }
+
   if(TTF_SizeText(font,session_desc_.c_str(),&text_rect_.w,&text_rect_.h)) {
     std::cout << "GameSession get textsize error" << std::endl;
     text_rect_.h = 30;
@@ -66,8 +72,6 @@ void GameSession::initP2P() {
 
   sc_ = std::make_shared<OwtSignalingChannel>();
   pc_ = std::make_shared<P2PClient>(configuration, sc_);
-  video_renderer_ = std::make_shared<VideoRenderer>();
-  audio_player_ = std::make_shared<AudioPlayer>();
   //ouF.open("./me.yuv", std::ofstream::binary| std::ofstream::out);
 }
 

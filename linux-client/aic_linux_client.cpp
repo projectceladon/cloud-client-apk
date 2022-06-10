@@ -36,7 +36,8 @@ using namespace owt::p2p;
 
 #define AIC_SWAP_EVENT  (SDL_USEREVENT + 3)
 
-#define VIDEO_FPS_INTERVAL 1000 / 30
+//#define VIDEO_FPS_INTERVAL 1000 / 30
+int VIDEO_FPS_INTERVAL;
 int exit_thread = 0;
 int video_fps_thread(void* opaque) {
   int space = 0;
@@ -52,7 +53,7 @@ int video_fps_thread(void* opaque) {
 		SDL_Event event;
 		event.type = AIC_REFRESH_EVENT;
 		SDL_PushEvent(&event);
-		SDL_Delay(VIDEO_FPS_INTERVAL);  // 30fps
+		SDL_Delay(VIDEO_FPS_INTERVAL); // 30fps
     if (space != 0) {
       count++;
       if (count == space) {
@@ -82,6 +83,8 @@ static const struct option long_option[] = {
   {"window-x",    required_argument, NULL, 'x'},
   {"window-y",    required_argument, NULL, 'y'},
   {"help",        no_argument,       NULL, 'h'},
+  {"fps",         required_argument, NULL, 'f'},
+  {"audio",       no_argument, NULL, 'a'},
   {NULL,          0,                 NULL,  0 }
 };
 
@@ -141,6 +144,8 @@ void help() {
   std::cout << "--window-size/-w <window_size>: Window size, default: 352x288" << std::endl;
   std::cout << "--cycle_number/-n <cycle_num>: numbers to show in a cycle option is 4, 9, 16, 25, 36" << std::endl;
   std::cout << "--cycle_interval/-i <cycle-interval>: time spaces bewtween a cycle, minitues , default 5 minitues"<< std::endl;
+  std::cout << "--fps/-f : fps of the client, default 30"<< std::endl;
+  std::cout << "--audio/-a : with audio , defalut no audio"<< std::endl;
 #ifdef USE_SDL
   std::cout << "--window-x/-x <window_x>: Window postion x, default: in the center" << std::endl;
   std::cout << "--window-y/-y <window_y>: Window postion y, default: in the center" << std::endl;
@@ -156,6 +161,8 @@ int main(int argc, char* argv[]) {
   std::string video_codec = "h264";
   std::string device = "hw";
   std::string window_size = "352x288";
+  int fps = 30;
+  bool playAudio = false;
 #ifdef USE_SDL
   int window_x = SDL_WINDOWPOS_UNDEFINED;
   int window_y = SDL_WINDOWPOS_UNDEFINED;
@@ -163,7 +170,7 @@ int main(int argc, char* argv[]) {
   int cycle_interval = 5;
 #endif
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h:n:i:", long_option, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h:n:i:f:a", long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
         client_ids = optarg;
@@ -186,6 +193,9 @@ int main(int argc, char* argv[]) {
       case 'w':
         window_size = optarg;
         break;
+      case 'a':
+        playAudio = true;
+        break;
 #ifdef USE_SDL
       case 'x':
         window_x = atoi(optarg);
@@ -199,6 +209,9 @@ int main(int argc, char* argv[]) {
       case 'i':
         cycle_interval = atoi(optarg);
         break;
+      case 'f':
+        fps = atoi(optarg);
+        break;
 #endif
       case 'h':
         help();
@@ -210,7 +223,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  std::cout << "LAST_COMMIT: " << LAST_COMMIT << std::endl;
+  VIDEO_FPS_INTERVAL = 1000 / fps;
+
+  std::cout << "LAST_COMMIT: " << LAST_COMMIT << ", internal " << VIDEO_FPS_INTERVAL <<std::endl;
 
   /***************p2p***********/
   if (signaling_server_url.empty() ||
@@ -238,12 +253,6 @@ int main(int argc, char* argv[]) {
   std::cout <<std::endl;
 
   int lines = vector_servers.size();
-  if (lines > 36) {
-    if (cycle_num == 0 || cycle_num > 36) {
-      std::cout << "max support line is 36, --cycle-num option will help to recive more" << std::endl;
-      exit(0);
-    }
-  }
   if (lines != vector_clients.size()) {
     std::cout << "client an server not match" << std::endl;
     exit(0);
@@ -370,11 +379,7 @@ int main(int argc, char* argv[]) {
 
   int sp_num;
   int displays;
-  if (lines > 36) {
-    sp_num = ceilSqrt(cycle_num);
-    cycle_num = sp_num * sp_num;
-    displays = cycle_num;
-  } else if (cycle_num > 0) {
+  if (cycle_num > 0) {
     sp_num = ceilSqrt(cycle_num);
     cycle_num = sp_num * sp_num;
     displays = cycle_num;
@@ -411,7 +416,7 @@ int main(int argc, char* argv[]) {
     render_params -> height = cell_height_margin;
     render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING, width, height);
     render_params_.push_back(render_params);
-    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, render_params, font, true);
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, render_params, font, true, playAudio);
     game_sessions_display_.push_back(game_session);
     game_matrix[row][colomn] = i;
     game_sessions_.push_back(game_session);
@@ -424,7 +429,7 @@ int main(int argc, char* argv[]) {
     p2pParams -> client_id = vector_clients[i];
     p2pParams -> server_ip = ip;
     p2pParams -> video_codec = video_codec;
-    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false);
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false, playAudio);
     game_sessions_.push_back(game_session);
   }
 
@@ -477,10 +482,18 @@ int main(int argc, char* argv[]) {
   bool fullscreen = false;
   bool running = true;
   SDL_Event e;
+  Uint32 lastRenderTime = SDL_GetTicks();
+  Uint32 renderTime;
   while (running) {
     SDL_WaitEvent(&e);
     switch (e.type) {
       case AIC_REFRESH_EVENT:
+        renderTime = SDL_GetTicks();
+        if (renderTime - lastRenderTime > 2 * VIDEO_FPS_INTERVAL) {
+          std::cout <<"more than 2 frame, skip this frame, consider play with a lower fps, with -f option" << std::endl;
+          lastRenderTime = renderTime;
+          break;
+        }
         for (auto session : game_sessions_display_) {
           session -> renderFrame();
         }
@@ -489,6 +502,7 @@ int main(int argc, char* argv[]) {
           session -> copyFrame();
         }
 			  SDL_RenderPresent(sdlRenderer);
+        lastRenderTime = renderTime;
 		    break;
       case SDL_QUIT:
         exit_thread = 1;

@@ -31,7 +31,7 @@ struct RenderParams {
 
 class GameSession {
 public:
-  GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render);
+  GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio);
   void setupRenderEnv(RenderParams* render_params);
   void startSession();
   void renderFrame();
