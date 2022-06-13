@@ -10,6 +10,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <mutex>
+#include<pthread.h>
 
 struct GameP2PParams
 {
@@ -29,12 +31,12 @@ struct RenderParams {
 };
 
 
-class GameSession {
+class GameSession : public VideoRendererListener {
 public:
-  GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio);
+  GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio, pthread_rwlock_t* lock);
   void setupRenderEnv(RenderParams* render_params);
   void startSession();
-  void renderFrame();
+  //void renderFrame();
   void copyFrame();
   virtual ~GameSession();
   bool dispatchEvent(SDL_MouseMotionEvent& e);
@@ -43,6 +45,7 @@ public:
   void initP2P();
   void sendCtrl(const char* event, const char* param);
   void suspendStream(bool suspend, RenderParams* render_params);
+  void onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer)override;
 private:
   std::shared_ptr<OwtSignalingChannel> sc_;
   std::shared_ptr<P2PClient> pc_;
@@ -65,6 +68,8 @@ private:
   int frame_width_;
   int frame_height_;
   bool suspend_;
+  pthread_rwlock_t* render_lock_;
+  std::unique_ptr<owt::base::VideoBuffer> video_buffer_;
   //std::ofstream ouF;
 };
 

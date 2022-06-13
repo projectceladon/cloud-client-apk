@@ -9,15 +9,23 @@
 #include "owt/base/videorendererinterface.h"
 #include <mutex>
 
+class VideoRendererListener {
+  public:
+  /// Passes video buffer to renderer.
+  virtual ~VideoRendererListener() {}
+  virtual void onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer) = 0;
+};
+
 class VideoRenderer : public owt::base::VideoRendererInterface{
 public:
-  VideoRenderer();
+  VideoRenderer(VideoRendererListener* listener);
   virtual ~VideoRenderer();
   void RenderFrame(std::unique_ptr<owt::base::VideoBuffer> buffer)override;
-  std::unique_ptr<owt::base::VideoBuffer> getFrame();
+  //std::unique_ptr<owt::base::VideoBuffer> getFrame();
   owt::base::VideoRendererType Type() {
     return owt::base::VideoRendererType::kI420;
   }
+  void reset();
 private:
   void init();
  
@@ -29,8 +37,8 @@ private:
   Uint32 format_ = SDL_PIXELFORMAT_YV12;
   FILE *fid;
   int count = 0;*/
-  std::unique_ptr<owt::base::VideoBuffer> video_buffer_;
-  std::mutex m_lock;
+  //std::unique_ptr<owt::base::VideoBuffer> video_buffer_;
+  VideoRendererListener* mListener = nullptr;
 };
 
 #endif

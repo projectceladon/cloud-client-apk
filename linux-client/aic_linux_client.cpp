@@ -13,6 +13,7 @@
 #include <SDL2/SDL_ttf.h>
 #include "VideoDecoderDispatcher.h"
 #include "owt/base/logging.h"
+#include<pthread.h>
 #else
 #include "owt/base/stream.h"
 #include "owt/p2p/p2pclient.h"
@@ -372,6 +373,7 @@ int main(int argc, char* argv[]) {
   GlobalConfiguration::SetCustomizedVideoDecoderEnabled(std::move(mVideoDecoderDispatcher));
 
   /***************render 2***********/
+  pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
   std::vector<std::shared_ptr<GameSession>> game_sessions_display_;
   std::vector<std::shared_ptr<GameSession>> game_sessions_;
   std::vector<RenderParams*> render_params_;
@@ -416,7 +418,7 @@ int main(int argc, char* argv[]) {
     render_params -> height = cell_height_margin;
     render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING, width, height);
     render_params_.push_back(render_params);
-    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, render_params, font, true, playAudio);
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, render_params, font, true, playAudio, &rwlock);
     game_sessions_display_.push_back(game_session);
     game_matrix[row][colomn] = i;
     game_sessions_.push_back(game_session);
@@ -429,7 +431,7 @@ int main(int argc, char* argv[]) {
     p2pParams -> client_id = vector_clients[i];
     p2pParams -> server_ip = ip;
     p2pParams -> video_codec = video_codec;
-    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false, playAudio);
+    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false, playAudio, &rwlock);
     game_sessions_.push_back(game_session);
   }
 
@@ -494,14 +496,17 @@ int main(int argc, char* argv[]) {
           lastRenderTime = renderTime;
           break;
         }
-        for (auto session : game_sessions_display_) {
+        /*for (auto session : game_sessions_display_) {
           session -> renderFrame();
-        }
+        }*/
+        pthread_rwlock_wrlock(&rwlock);
+        SDL_SetRenderTarget(sdlRenderer, NULL);
 			  SDL_RenderClear(sdlRenderer);
         for (auto session : game_sessions_display_) {
           session -> copyFrame();
         }
 			  SDL_RenderPresent(sdlRenderer);
+        pthread_rwlock_unlock(&rwlock);
         lastRenderTime = renderTime;
 		    break;
       case SDL_QUIT:

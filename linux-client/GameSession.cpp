@@ -1,13 +1,13 @@
 #include "GameSession.h"
 
-GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio) {
+GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio, pthread_rwlock_t* lock) {
   p2p_params_ = std::move(p2p_params);
   renderer_ = sdlRenderer;
   suspend_ = !render;
   font_ = font;
   session_desc_ = p2p_params_ -> server_id;
   initP2P();
-  video_renderer_ = std::make_shared<VideoRenderer>();
+  video_renderer_ = std::make_shared<VideoRenderer>(this);
   if (play_audio) {
     std::cout<< "play_audio " << play_audio << std::endl;
     audio_player_ = std::make_shared<AudioPlayer>();
@@ -23,6 +23,7 @@ GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer
   if (render) {
     setupRenderEnv(render_params);
   }
+  render_lock_ = lock;
 }
 
 void GameSession::setupRenderEnv(RenderParams* render_params) {
@@ -93,7 +94,7 @@ void GameSession::suspendStream(bool suspend, RenderParams* render_params) {
 
 /*int count = 0;
 bool suspend = true;*/
-void GameSession::renderFrame() {
+/*void GameSession::renderFrame() {
     std::unique_ptr<owt::base::VideoBuffer> video_buffer = video_renderer_ -> getFrame();
     if (video_buffer) {
       if (suspend_) {
@@ -115,15 +116,35 @@ void GameSession::renderFrame() {
           SDL_UpdateTexture(texture_, &render_rect_, buffer, video_buffer ->resolution.width);
         }
     }
-    /*count++;
-    std::cout<< "renderFrame " << count << std::endl;
-    if (count == 300) {
-      suspend = !suspend;
-      std::cout<< "count == 300 , change suspend state to " << suspend << std::endl;
-      pc_ -> Suspend(p2p_params_.server_id, suspend, nullptr);
-      count = 0;
-    }*/
-}
+    //count++;
+    //std::cout<< "renderFrame " << count << std::endl;
+    //if (count == 300) {
+    //  suspend = !suspend;
+    //  std::cout<< "count == 300 , change suspend state to " << suspend << std::endl;
+    //  pc_ -> Suspend(p2p_params_.server_id, suspend, nullptr);
+    //  count = 0;
+    //}
+}*/
+
+void GameSession::onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer) {
+  //std::lock_guard<std::mutex> lock(m_lock);^M
+  // video_buffer_ = std::move(video_buffer);^M
+  video_buffer_ = move(video_buffer);
+  if (video_buffer_) {
+    uint8_t* buffer = static_cast<uint8_t *>(video_buffer_ -> buffer);
+    if (buffer) {
+      frame_width_ = video_buffer_ ->resolution.width;
+      frame_height_ = video_buffer_ ->resolution.height;
+      //memcpy(data, buffer, frame_width_ * frame_height_ * 3 / 2);
+      render_rect_.w = frame_width_;
+      render_rect_.h = frame_height_;
+      pthread_rwlock_wrlock(render_lock_);
+      SDL_SetRenderTarget(renderer_, texture_);
+      SDL_UpdateTexture(texture_, &render_rect_, buffer, frame_width_);
+      pthread_rwlock_unlock(render_lock_);
+    }
+  }
+ }
 
 void GameSession::copyFrame() {
   if (!suspend_) {
@@ -171,7 +192,7 @@ GameSession::~GameSession() {
   pc_->Stop(p2p_params_ -> server_id, nullptr, nullptr);
   pc_->RemoveObserver(*ob_);
   pc_->Disconnect(nullptr, nullptr);
-
+  video_renderer_ -> reset();
   SDL_DestroyTexture(text_texture_);
   SDL_FreeSurface(text_surface_);
 }
