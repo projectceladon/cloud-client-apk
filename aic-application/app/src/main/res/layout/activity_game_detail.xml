@@ -60,40 +60,11 @@
                     android:showDividers="middle"
                     tools:ignore="UselessParent">
 
-                    <RelativeLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-
-                        <CheckBox
-                            android:id="@+id/chkTest"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/virtual_navigation" />
-
-                        <TextView
-                            android:id="@+id/orient"
-                            style="@style/text_16_black"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_alignParentEnd="true"
-                            android:background="@color/colorPrimary"
-                            android:padding="5dp"
-                            android:text="@string/orientation"
-                            android:textColor="@color/white" />
-
-                        <TextView
-                            android:id="@+id/codec"
-                            style="@style/text_16_black"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="5dip"
-                            android:layout_toStartOf="@+id/orient"
-                            android:background="@color/colorPrimary"
-                            android:padding="5dp"
-                            android:text="@string/media_codec"
-                            android:textColor="@color/white"
-                            android:visibility="gone"/>
-                    </RelativeLayout>
+                    <CheckBox
+                        android:id="@+id/chkTest"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/virtual_navigation" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -206,7 +177,54 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:background="@drawable/bg_bottom_white"
+                        android:divider="@drawable/divider_hor_1x"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:showDividers="middle">
+
+                        <TextView
+                            style="@style/text_16_black"
+                            android:layout_width="110dip"
+                            android:layout_height="wrap_content"
+                            android:text="@string/orientation" />
+
+                        <Spinner
+                            android:id="@+id/orient_sp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:dropDownVerticalOffset="@dimen/ft20"
+                            />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_bottom_white"
+                        android:divider="@drawable/divider_hor_1x"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:showDividers="middle">
+
+                        <TextView
+                            style="@style/text_16_black"
+                            android:layout_width="110dip"
+                            android:layout_height="wrap_content"
+                            android:text="@string/media_codec" />
+
+                        <Spinner
+                            android:id="@+id/codec_sp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:dropDownVerticalOffset="@dimen/ft20"
+                            />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="@dimen/ft12">
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnPlay"

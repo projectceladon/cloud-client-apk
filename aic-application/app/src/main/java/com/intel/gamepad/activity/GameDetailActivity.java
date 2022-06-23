@@ -4,13 +4,15 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.PopupWindow;
-import android.widget.TextView;
+import android.widget.Spinner;
 import android.widget.Toast;
 
-import com.commonlibrary.utils.DensityUtils;
+import androidx.appcompat.content.res.AppCompatResources;
+
 import com.commonlibrary.utils.StatusBarUtil;
 import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
@@ -22,16 +24,14 @@ import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.DeviceManager;
 import com.intel.gamepad.utils.IPUtils;
-import com.intel.gamepad.utils.PopupUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameDetailActivity extends BaseActivity {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
     private MaterialButton btnPlay;
-    private PopupWindow popupOrient;
-    private PopupWindow popupCodec;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +45,6 @@ public class GameDetailActivity extends BaseActivity {
         EditText etPeerID = findViewById(R.id.etPeerID);
         EditText etClientID = findViewById(R.id.etClientID);
         CheckBox chkTest = findViewById(R.id.chkTest);
-        TextView orient = findViewById(R.id.orient);
 
         etServerIP.setText(IPUtils.loadIP());
         P2PHelper.serverIP = IPUtils.loadIP();
@@ -145,18 +144,35 @@ public class GameDetailActivity extends BaseActivity {
         chkTest.setChecked(IPUtils.loadTest());
         chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
 
-
-        orient.setOnClickListener(v -> {
-            if (popupOrient != null) {
-                popupOrient.dismiss();
-                popupOrient = null;
-            } else {
-                showPopupOrientation(orient);
-            }
-        });
-
+        checkOrientatin();
         checkMediaCodecSupport();
 
+    }
+
+    private void checkOrientatin() {
+        Spinner orient_sp = findViewById(R.id.orient_sp);
+        List<String> orientList = new ArrayList<>();
+        orientList.add(getResources().getString(R.string.landscape));
+        orientList.add(getResources().getString(R.string.portrait));
+        ArrayAdapter<String> codecAdapter=new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,orientList);
+        codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        orient_sp.setAdapter(codecAdapter);
+        if (IPUtils.loadPortrait()) {
+            orient_sp.setSelection(1);
+        } else {
+            orient_sp.setSelection(0);
+        }
+        orient_sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                IPUtils.savePortrait(position != 0);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
     }
 
     private void checkMediaCodecSupport() {
@@ -171,104 +187,42 @@ public class GameDetailActivity extends BaseActivity {
             Toast.makeText(this, R.string.no_vp9, Toast.LENGTH_LONG).show();
         }
 
+        Spinner codec_sp = findViewById(R.id.codec_sp);
+        List<String> codecList = new ArrayList<>();
         if (!result[0] && !result[1]) {
             btnPlay.setClickable(false);
-            btnPlay.setBackgroundResource(R.color.gray67);
+            btnPlay.setBackgroundTintList(AppCompatResources.getColorStateList(this,R.color.gray_99));
+            codecList.add(getResources().getString(R.string.none));
+            codec_sp.setEnabled(false);
         } else if (result[0] && !result[1]) {
             IPUtils.saveMediaCodec(AppConst.H264);
+            codecList.add(getResources().getString(R.string.h264));
+            codec_sp.setEnabled(false);
         } else {
             IPUtils.saveMediaCodec(AppConst.H264);
-            TextView codec = findViewById(R.id.codec);
-            codec.setVisibility(View.VISIBLE);
-            codec.setOnClickListener(v -> {
-                if (popupCodec != null) {
-                    popupCodec.dismiss();
-                    popupCodec = null;
+            codecList.add(getResources().getString(R.string.h264));
+            codecList.add(getResources().getString(R.string.hevc));
+        }
+        ArrayAdapter<String> codecAdapter=new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,codecList);
+        codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        codec_sp.setAdapter(codecAdapter);
+        codec_sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (position == 0) {
+                    IPUtils.saveMediaCodec(AppConst.H264);
                 } else {
-                    showPopupCodec(codec);
+                    IPUtils.saveMediaCodec(AppConst.HEVC);
                 }
-            });
-        }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
 
     }
-
-    public void showPopupOrientation(View parent) {
-        View popView = View.inflate(this, R.layout.popup_orientation_window, null);
-        popupOrient = PopupUtil.createPopup(parent, popView, DensityUtils.dp2px(150f));
-        CheckBox chkLandscape = popView.findViewById(R.id.chk_landscape);
-        CheckBox chkPortrait = popView.findViewById(R.id.chk_portrait);
-        popView.findViewById(R.id.close).setVisibility(View.GONE);
-
-        if (IPUtils.loadPortrait()) {
-            chkLandscape.setChecked(false);
-            chkPortrait.setChecked(true);
-            chkPortrait.setClickable(false);
-        } else {
-            chkLandscape.setChecked(true);
-            chkPortrait.setChecked(false);
-            chkLandscape.setClickable(false);
-        }
-        chkLandscape.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                IPUtils.savePortrait(false);
-                chkPortrait.setChecked(false);
-                chkPortrait.setClickable(true);
-            } else {
-                IPUtils.savePortrait(true);
-                chkPortrait.setChecked(true);
-                chkPortrait.setClickable(false);
-            }
-        });
-        chkPortrait.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                chkLandscape.setChecked(false);
-                chkLandscape.setClickable(true);
-            } else {
-                chkLandscape.setChecked(true);
-                chkLandscape.setClickable(false);
-            }
-        });
-    }
-
-    public void showPopupCodec(View parent) {
-        View popView = View.inflate(this, R.layout.popup_orientation_window, null);
-        popupCodec = PopupUtil.createPopup(parent, popView, DensityUtils.dp2px(150f));
-        CheckBox HEVC = popView.findViewById(R.id.chk_landscape);
-        HEVC.setText(R.string.hevc);
-        CheckBox H264 = popView.findViewById(R.id.chk_portrait);
-        H264.setText(R.string.h264);
-        popView.findViewById(R.id.close).setVisibility(View.GONE);
-        if (AppConst.HEVC.equals(IPUtils.loadMediaCodec())) {
-            H264.setChecked(false);
-            HEVC.setChecked(true);
-            HEVC.setClickable(false);
-        } else {
-            H264.setChecked(true);
-            HEVC.setChecked(false);
-            H264.setClickable(false);
-        }
-        H264.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                IPUtils.saveMediaCodec(AppConst.H264);
-                HEVC.setChecked(false);
-                HEVC.setClickable(true);
-            } else {
-                IPUtils.saveMediaCodec(AppConst.HEVC);
-                HEVC.setChecked(true);
-                HEVC.setClickable(false);
-            }
-        });
-        HEVC.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                H264.setChecked(false);
-                H264.setClickable(true);
-            } else {
-                H264.setChecked(true);
-                H264.setClickable(false);
-            }
-        });
-    }
-
 
     @Override
     protected void onResume() {
