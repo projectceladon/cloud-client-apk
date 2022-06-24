@@ -184,7 +184,7 @@ int CGVideoDecoder::init_impl(FrameResolution resolution,
   std::lock_guard<std::recursive_mutex> decode_push_lock(push_lock);
   std::lock_guard<std::recursive_mutex> decode_pull_lock(pull_lock);
   decoder_ready = false;
- // ouF.open("./decode.yuv", std::ofstream::binary| std::ofstream::out);
+  //ouF.open("./raw.yuv", std::ofstream::binary| std::ofstream::out);
 
   // Update current init parameters which would be used during re-init.
   this->codec_type = codec_type;
@@ -265,6 +265,7 @@ int CGVideoDecoder::init(FrameResolution resolution,
 }
 
 int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf, int *out_size, int *out_width, int *out_height) {
+ // ouF.write((const char *) data, data_size);
   std::lock_guard<std::recursive_mutex> decode_access_lock(push_lock);
   if (!can_decode()) {
     std::cout << "Decoder not initialized!" << std::endl;
@@ -418,10 +419,10 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
                                         (const uint8_t *const *)frame->data,
                                         (const int *)frame->linesize,
                                         (AVPixelFormat)frame->format,
-                                        //m_decode_ctx->resolution.first,
-                                        frame->width,
-                                        //m_decode_ctx->resolution.second,
-                                        frame->height,
+                                        m_decode_ctx->resolution.first,
+                                        //frame->width,
+                                        m_decode_ctx->resolution.second,
+                                        //frame->height,
                                         1);
       if (ret < 0) {
         std::cout << "Can not copy image to buffer" << std::endl;
