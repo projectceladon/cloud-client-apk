@@ -1,6 +1,30 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.google.protobuf'
 
+def buildTime() {
+    def date = new Date()
+    def formattedDate = date.format('yyyyMMdd_HHmm')
+    return formattedDate
+}
+
+ext.gitBranchName = {
+    def branch = ""
+    def proc = "git rev-parse --abbrev-ref HEAD".execute()
+    proc.in.eachLine {line -> branch = line}
+    proc.err.eachLine { line -> println line}
+    proc.waitFor()
+    return branch
+}
+
+ext.gitLastCommit = {
+    def commit = ""
+    def proc = "git rev-parse --short HEAD".execute()
+    proc.in.eachLine {line -> commit = line}
+    proc.err.eachLine { line -> println line}
+    proc.waitFor()
+    return commit
+}
+
 android {
     signingConfigs {
         debug {
@@ -16,7 +40,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
-        versionName "0.15"
+        versionName "0.16"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
         renderscriptTargetApi 18
@@ -33,14 +57,19 @@ android {
         }
         signingConfig signingConfigs.debug
     }
+
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", "BUGLY_ID", "\"e0d61c1947\""
+            buildConfigField "String", "BUILD_BRANCH", "\"${gitBranchName.call()}\""
+            buildConfigField "String", "BUILD_COMMIT", "\"${gitLastCommit.call()}\""
+            buildConfigField "String", "BUILD_TIME", "\"${buildTime()}\""
         }
         debug {
-            buildConfigField "String", "BUGLY_ID", "\"e0d61c1947\""
+            buildConfigField "String", "BUILD_BRANCH", "\"${gitBranchName.call()}\""
+            buildConfigField "String", "BUILD_COMMIT", "\"${gitLastCommit.call()}\""
+            buildConfigField "String", "BUILD_TIME", "\"${buildTime()}\""
         }
     }
     compileOptions {
@@ -65,7 +94,7 @@ android {
     android.applicationVariants.all {
         variant ->
             variant.outputs.all {
-                outputFileName = "AIC-${buildType.name}-v${defaultConfig.versionName}.apk"
+                outputFileName = "AIC-${buildType.name}-v${defaultConfig.versionName}-${gitLastCommit.call()}.apk"
             }
     }
 }

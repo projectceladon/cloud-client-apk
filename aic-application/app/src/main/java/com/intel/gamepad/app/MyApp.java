@@ -9,6 +9,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import com.commonlibrary.application.UtilsApplication;
+import com.intel.gamepad.BuildConfig;
 import com.intel.gamepad.utils.LanguageUtils;
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 import com.jeremyliao.liveeventbus.LiveEventBus;
@@ -38,7 +39,7 @@ public class MyApp extends UtilsApplication {
         try {
             PackageManager pm = context.getPackageManager();
             PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
-            Log.i("AIC-APPLICATION", "versionName = " + pi.versionName);
+            Log.i("AIC-APPLICATION", "versionName = " + pi.versionName + " Branch = " + BuildConfig.BUILD_BRANCH + " Commit = " + BuildConfig.BUILD_COMMIT + " Build Time = " + BuildConfig.BUILD_TIME);
         } catch (Exception e) {
             Log.e("VersionInfo", "Exception", e);
         }
