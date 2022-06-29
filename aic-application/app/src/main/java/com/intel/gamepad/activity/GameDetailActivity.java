@@ -1,5 +1,6 @@
 package com.intel.gamepad.activity;
 
+import android.Manifest;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -11,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.content.res.AppCompatResources;
 
 import com.commonlibrary.utils.StatusBarUtil;
@@ -24,6 +26,7 @@ import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.DeviceManager;
 import com.intel.gamepad.utils.IPUtils;
+import com.intel.gamepad.utils.permission.PermissionsUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +34,27 @@ import java.util.List;
 public class GameDetailActivity extends BaseActivity {
     private static final String PARAM_BEAN = "param_bean";
     private GameListBean bean = null;
+    PermissionsUtils.IPermissionResult permissionsResult = new PermissionsUtils.IPermissionResult() {
+        @Override
+        public void passPermission(boolean history, String[] permissions) {
+            BaseController.manuallyPressBackButton.set(false);
+            requestStartGame();
+            if (!history) {
+                for (String pass : permissions) {
+                    Toast.makeText(GameDetailActivity.this, "The " + pass + " has been granted", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
+
+        @Override
+        public void denyPermission(String[] permissions) {
+            BaseController.manuallyPressBackButton.set(false);
+            requestStartGame();
+            for (String deny : permissions) {
+                Toast.makeText(GameDetailActivity.this, "The " + deny + " has been denied", Toast.LENGTH_LONG).show();
+            }
+        }
+    };
     private MaterialButton btnPlay;
 
     @Override
@@ -144,17 +168,17 @@ public class GameDetailActivity extends BaseActivity {
         chkTest.setChecked(IPUtils.loadTest());
         chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
 
-        checkOrientatin();
+        checkOrientation();
         checkMediaCodecSupport();
 
     }
 
-    private void checkOrientatin() {
+    private void checkOrientation() {
         Spinner orient_sp = findViewById(R.id.orient_sp);
         List<String> orientList = new ArrayList<>();
         orientList.add(getResources().getString(R.string.landscape));
         orientList.add(getResources().getString(R.string.portrait));
-        ArrayAdapter<String> codecAdapter=new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,orientList);
+        ArrayAdapter<String> codecAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, orientList);
         codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         orient_sp.setAdapter(codecAdapter);
         if (IPUtils.loadPortrait()) {
@@ -191,7 +215,7 @@ public class GameDetailActivity extends BaseActivity {
         List<String> codecList = new ArrayList<>();
         if (!result[0] && !result[1]) {
             btnPlay.setClickable(false);
-            btnPlay.setBackgroundTintList(AppCompatResources.getColorStateList(this,R.color.gray_99));
+            btnPlay.setBackgroundTintList(AppCompatResources.getColorStateList(this, R.color.gray_99));
             codecList.add(getResources().getString(R.string.none));
             codec_sp.setEnabled(false);
         } else if (result[0] && !result[1]) {
@@ -203,7 +227,7 @@ public class GameDetailActivity extends BaseActivity {
             codecList.add(getResources().getString(R.string.h264));
             codecList.add(getResources().getString(R.string.hevc));
         }
-        ArrayAdapter<String> codecAdapter=new ArrayAdapter<>(this, android.R.layout.simple_spinner_item,codecList);
+        ArrayAdapter<String> codecAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, codecList);
         codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         codec_sp.setAdapter(codecAdapter);
         codec_sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -229,7 +253,6 @@ public class GameDetailActivity extends BaseActivity {
         super.onResume();
     }
 
-
     @Override
     protected void onStart() {
         super.onStart();
@@ -244,10 +267,16 @@ public class GameDetailActivity extends BaseActivity {
         initBackButton(R.id.ibtnBack);
         btnPlay = findViewById(R.id.btnPlay);
         btnPlay.setOnClickListener(v -> {
-            BaseController.manuallyPressBackButton.set(false);
-            requestStartGame();
+            String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            PermissionsUtils.getInstance().checkPermissions(this, permissions, permissionsResult);
         });
         btnPlay.requestFocus();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        PermissionsUtils.getInstance().onRequestPermissionsResult(GameDetailActivity.this, requestCode, permissions, grantResults);
     }
 
     private void requestStartGame() {

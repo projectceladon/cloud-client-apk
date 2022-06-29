@@ -40,7 +40,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 29
         versionCode 1
-        versionName "0.16"
+        versionName "0.17"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
         renderscriptTargetApi 18
