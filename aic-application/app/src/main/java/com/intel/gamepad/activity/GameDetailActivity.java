@@ -210,42 +210,6 @@ public class GameDetailActivity extends BaseActivity {
         if (!result[2]) {
             Toast.makeText(this, R.string.no_vp9, Toast.LENGTH_LONG).show();
         }
-
-        Spinner codec_sp = findViewById(R.id.codec_sp);
-        List<String> codecList = new ArrayList<>();
-        if (!result[0] && !result[1]) {
-            btnPlay.setClickable(false);
-            btnPlay.setBackgroundTintList(AppCompatResources.getColorStateList(this, R.color.gray_99));
-            codecList.add(getResources().getString(R.string.none));
-            codec_sp.setEnabled(false);
-        } else if (result[0] && !result[1]) {
-            IPUtils.saveMediaCodec(AppConst.H264);
-            codecList.add(getResources().getString(R.string.h264));
-            codec_sp.setEnabled(false);
-        } else {
-            IPUtils.saveMediaCodec(AppConst.H264);
-            codecList.add(getResources().getString(R.string.h264));
-            codecList.add(getResources().getString(R.string.hevc));
-        }
-        ArrayAdapter<String> codecAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, codecList);
-        codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        codec_sp.setAdapter(codecAdapter);
-        codec_sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position == 0) {
-                    IPUtils.saveMediaCodec(AppConst.H264);
-                } else {
-                    IPUtils.saveMediaCodec(AppConst.HEVC);
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-
     }
 
     @Override

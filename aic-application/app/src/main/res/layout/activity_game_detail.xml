@@ -200,29 +200,6 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:background="@drawable/bg_bottom_white"
-                        android:divider="@drawable/divider_hor_1x"
-                        android:orientation="horizontal"
-                        android:padding="12dp"
-                        android:showDividers="middle">
-
-                        <TextView
-                            style="@style/text_16_black"
-                            android:layout_width="110dip"
-                            android:layout_height="wrap_content"
-                            android:text="@string/media_codec" />
-
-                        <Spinner
-                            android:id="@+id/codec_sp"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:dropDownVerticalOffset="@dimen/ft20"
-                            />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:layout_marginTop="@dimen/ft12">
 
