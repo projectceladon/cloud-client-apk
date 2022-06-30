@@ -1,9 +1,15 @@
 package com.intel.gamepad.activity;
 
 import android.Manifest;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -13,8 +19,11 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.content.res.AppCompatResources;
+import androidx.core.app.ActivityCompat;
 
+import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
 import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
@@ -28,6 +37,10 @@ import com.intel.gamepad.utils.DeviceManager;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.permission.PermissionsUtils;
 
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +51,7 @@ public class GameDetailActivity extends BaseActivity {
         @Override
         public void passPermission(boolean history, String[] permissions) {
             BaseController.manuallyPressBackButton.set(false);
+            updateMediacodecXmlFile();
             requestStartGame();
             if (!history) {
                 for (String pass : permissions) {
@@ -49,6 +63,7 @@ public class GameDetailActivity extends BaseActivity {
         @Override
         public void denyPermission(String[] permissions) {
             BaseController.manuallyPressBackButton.set(false);
+            updateMediacodecXmlFile();
             requestStartGame();
             for (String deny : permissions) {
                 Toast.makeText(GameDetailActivity.this, "The " + deny + " has been denied", Toast.LENGTH_LONG).show();
@@ -56,6 +71,12 @@ public class GameDetailActivity extends BaseActivity {
         }
     };
     private MaterialButton btnPlay;
+
+    /* This file needs to be placed in "/sdcard/" folder. */
+    private File codecWhitelistXMLFile = new File(Environment.getExternalStorageDirectory().getAbsoluteFile(),
+                                                AppConst.CODEC_WHITELIST_FILENAME);
+
+    private final String TAG = GameDetailActivity.class.toString();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -264,4 +285,123 @@ public class GameDetailActivity extends BaseActivity {
             bean.setConf("rts");
         }
     }
+
+    private void updateMediacodecXmlFile() {
+        String fileContent = "";
+        String referenceXmlStr = prepareCodecWhitelistXmlStr();
+
+        // file does not exist, create it
+        if( ! codecWhitelistXMLFile.exists()) {
+            Log.d(TAG, "file not found, creating: " + codecWhitelistXMLFile.getName());
+
+            try {
+                FileUtils.writeStringToFile(codecWhitelistXMLFile, referenceXmlStr, "UTF8");
+            } catch (Exception e) {
+                Log.d(TAG, "error creating file: " + codecWhitelistXMLFile.getName());
+                e.printStackTrace();
+            }
+            return;
+        }
+
+        // file exists, compare and replace content if required
+        try {
+            fileContent = FileUtils.readFileToString(codecWhitelistXMLFile, "UTF8");
+        } catch (IOException e) {
+            // error reading file, probably
+            Log.d(TAG, "cannot update file (" + codecWhitelistXMLFile.getAbsolutePath()
+                    + "), error reading file: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+
+        int match = fileContent.compareTo(referenceXmlStr);
+
+        if(match != 0) {
+            // file different than expected, replace content with expected one
+            Log.d(TAG, "updating content of " + codecWhitelistXMLFile.getName());
+            try {
+                FileUtils.writeStringToFile(codecWhitelistXMLFile, referenceXmlStr, "UTF8");
+            } catch (Exception e) {
+                Log.d(TAG, "error updating file: " + codecWhitelistXMLFile.getName());
+                e.printStackTrace();
+            }
+        } else {
+            // do nothing, the expected file is already present.
+            Log.d(TAG, "no need to update file : " + codecWhitelistXMLFile.getName());
+        }
+    }
+
+    String prepareCodecWhitelistXmlStr() {
+        String[] mime_types = {"video/avc", "video/hevc"};
+
+        ArrayList<MediaCodecInfo> decoders = new ArrayList<>();
+        ArrayList<MediaCodecInfo> encoders = new ArrayList<>();
+
+        for (String mime_type : mime_types) {
+            decoders.addAll(findMediaCodecs(mime_type, false));
+        }
+
+        for (String mime_type : mime_types) {
+            encoders.addAll(findMediaCodecs(mime_type, true));
+        }
+
+        return codeclist2XmlStr(encoders, decoders);
+    }
+
+    private ArrayList<MediaCodecInfo> findMediaCodecs(String mimeType, boolean isEncoder) {
+        ArrayList<MediaCodecInfo> codecList = new ArrayList<MediaCodecInfo>();
+        int numCodecs = MediaCodecList.getCodecCount();
+        for (int i = 0; i < numCodecs; i++) {
+            MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
+            if (codecInfo.isEncoder() == isEncoder) {
+                String[] types = codecInfo.getSupportedTypes();
+                for (int j = 0; j < types.length; j++) {
+                    if (types[j].equalsIgnoreCase(mimeType)) {
+                        codecList.add(codecInfo);
+                        break;
+                    }
+                }
+            }
+        }
+        return codecList;
+    }
+
+    String codeclist2XmlStr(ArrayList<MediaCodecInfo> encoderList, ArrayList<MediaCodecInfo> decoderList) {
+        /* Creates mediacodec.xml content for list of codecs supplied. The XML format is based on format specified at
+         * https://github.com/open-webrtc-toolkit/owt-client-android/blob/f2294c55f9d3bdc1de78ab84c9b7d018c3e3a04b/docs/index.md?plain=1#L71.
+         */
+
+        StringBuilder xmlStr = new StringBuilder();
+
+        xmlStr.append(
+                "<pre>\n" +
+                "  <MediaCodecs>\n" +
+                "    <Encoders>\n"
+        );
+
+        // add encoders
+        for (int i = 0 ; i < encoderList.size() ; i++) {
+            Log.d(TAG, "Encoders = " + encoderList.get(i));
+            xmlStr.append("      <MediaCodec name=\"" + encoderList.get(i).getName() + "\" type=\"" + encoderList.get(i).getSupportedTypes()[0] + "\"/>\n");
+        }
+
+        xmlStr.append(
+                "    </Encoders>\n" +
+                "    <Decoders>\n"
+        );
+
+        // add decoders
+        for (int i = 0 ; i < decoderList.size() ; i++) {
+            Log.d(TAG, "decoders = " + decoderList.get(i));
+            xmlStr.append("      <MediaCodec name=\"" + decoderList.get(i).getName() + "\" type=\"" + decoderList.get(i).getSupportedTypes()[0] + "\"/>\n");
+        }
+
+        xmlStr.append(
+                "    </Decoders>\n" +
+                "  </MediaCodecs>\n" +
+                "</pre>\n"
+        );
+        return xmlStr.toString();
+    }
+
 }

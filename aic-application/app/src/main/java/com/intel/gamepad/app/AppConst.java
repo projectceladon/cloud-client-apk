@@ -17,4 +17,5 @@ public class AppConst {
     public static final String EXYNOS_PREFIX = "omx.exynos.";
     public static final String INTEL_PREFIX = "omx.intel.";
     public static final String MTK_PREFIX = "omx.mtk.";
+    public static final String CODEC_WHITELIST_FILENAME = "mediaCodec.xml";
 }
