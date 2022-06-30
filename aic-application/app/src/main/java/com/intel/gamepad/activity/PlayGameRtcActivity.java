@@ -36,6 +36,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -138,6 +139,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     private boolean isOnPause = false;
     private boolean mE2eEnabled = false;
     private LatencyManager mLatencyManager;
+    private TextView mLatencyText;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -162,6 +164,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         setContentView(R.layout.activity_play_game_rtc);
         loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
+        mLatencyText = findViewById(R.id.tv_latency);
 
         fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, ImageManager.getInstance().getBitmapById(IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0), new RendererCommon.RendererEvents() {
             @Override
@@ -1170,11 +1173,12 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                 controller.setE2eEnabled(true);
                 // enable other stuff
                 if (mLatencyManager == null) {
-                    mLatencyManager = new LatencyManager(PlayGameRtcActivity.this.getApplicationContext(), fullRenderer);
+                    mLatencyManager = new LatencyManager(PlayGameRtcActivity.this.getApplicationContext(), fullRenderer, getHandler());
                 }
                 mLatencyManager.setEnable(true);
-
             }
+            mLatencyText.setText("");
+            mLatencyText.setVisibility(View.VISIBLE);
         } else {
             if (mE2eEnabled) {
                 mE2eEnabled = false;
@@ -1184,7 +1188,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     mLatencyManager.setEnable(false);
                 }
             }
-
+            mLatencyText.setVisibility(View.GONE);
         }
     }
 
@@ -1301,6 +1305,10 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         }
     }
 
+    public void updateLatencyMsg(String msg) {
+        mLatencyText.setText(msg);
+    }
+
     public static class GameHandler extends Handler {
         private final WeakReference<PlayGameRtcActivity> activity;
 
@@ -1344,6 +1352,9 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                         LogEx.i(" Get MSG_RECOVERABLE message.");
                         Toast.makeText(actPlay, "Get MSG_RECOVERABLE message.", Toast.LENGTH_LONG).show();
                     }
+                    break;
+                case AppConst.MSG_LATENCY_UPDATED:
+                    actPlay.updateLatencyMsg((String) msg.obj);
                     break;
             }
         }
