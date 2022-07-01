@@ -33,7 +33,7 @@
                     app:layout_collapseMode="pin">
 
                     <!-- toolbar内部布局文件 -->
-                    <include layout="@layout/include_title_with_statusbar" />
+                    <include layout="@layout/include_title_with_status_bar" />
                 </androidx.appcompat.widget.Toolbar>
             </com.google.android.material.appbar.CollapsingToolbarLayout>
 

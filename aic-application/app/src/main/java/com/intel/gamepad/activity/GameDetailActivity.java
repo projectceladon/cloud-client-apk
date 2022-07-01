@@ -1,8 +1,6 @@
 package com.intel.gamepad.activity;
 
 import android.Manifest;
-import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.os.Bundle;
@@ -19,11 +17,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.content.res.AppCompatResources;
-import androidx.core.app.ActivityCompat;
 
-import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
 import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
@@ -46,6 +40,10 @@ import java.util.List;
 
 public class GameDetailActivity extends BaseActivity {
     private static final String PARAM_BEAN = "param_bean";
+    /* This file needs to be placed in "/sdcard/" folder. */
+    private final File codecWhitelistXMLFile = new File(Environment.getExternalStorageDirectory().getAbsoluteFile(),
+            AppConst.CODEC_WHITELIST_FILENAME);
+    private final String TAG = GameDetailActivity.class.toString();
     private GameListBean bean = null;
     PermissionsUtils.IPermissionResult permissionsResult = new PermissionsUtils.IPermissionResult() {
         @Override
@@ -70,13 +68,6 @@ public class GameDetailActivity extends BaseActivity {
             }
         }
     };
-    private MaterialButton btnPlay;
-
-    /* This file needs to be placed in "/sdcard/" folder. */
-    private File codecWhitelistXMLFile = new File(Environment.getExternalStorageDirectory().getAbsoluteFile(),
-                                                AppConst.CODEC_WHITELIST_FILENAME);
-
-    private final String TAG = GameDetailActivity.class.toString();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -250,7 +241,8 @@ public class GameDetailActivity extends BaseActivity {
 
     private void initView() {
         initBackButton(R.id.ibtnBack);
-        btnPlay = findViewById(R.id.btnPlay);
+
+        MaterialButton btnPlay = findViewById(R.id.btnPlay);
         btnPlay.setOnClickListener(v -> {
             String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
             PermissionsUtils.getInstance().checkPermissions(this, permissions, permissionsResult);
@@ -287,11 +279,11 @@ public class GameDetailActivity extends BaseActivity {
     }
 
     private void updateMediacodecXmlFile() {
-        String fileContent = "";
+        String fileContent;
         String referenceXmlStr = prepareCodecWhitelistXmlStr();
 
         // file does not exist, create it
-        if( ! codecWhitelistXMLFile.exists()) {
+        if (!codecWhitelistXMLFile.exists()) {
             Log.d(TAG, "file not found, creating: " + codecWhitelistXMLFile.getName());
 
             try {
@@ -316,7 +308,7 @@ public class GameDetailActivity extends BaseActivity {
 
         int match = fileContent.compareTo(referenceXmlStr);
 
-        if(match != 0) {
+        if (match != 0) {
             // file different than expected, replace content with expected one
             Log.d(TAG, "updating content of " + codecWhitelistXMLFile.getName());
             try {
@@ -345,18 +337,18 @@ public class GameDetailActivity extends BaseActivity {
             encoders.addAll(findMediaCodecs(mime_type, true));
         }
 
-        return codeclist2XmlStr(encoders, decoders);
+        return CodeLite2XmlStr(encoders, decoders);
     }
 
     private ArrayList<MediaCodecInfo> findMediaCodecs(String mimeType, boolean isEncoder) {
-        ArrayList<MediaCodecInfo> codecList = new ArrayList<MediaCodecInfo>();
+        ArrayList<MediaCodecInfo> codecList = new ArrayList<>();
         int numCodecs = MediaCodecList.getCodecCount();
         for (int i = 0; i < numCodecs; i++) {
             MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
             if (codecInfo.isEncoder() == isEncoder) {
                 String[] types = codecInfo.getSupportedTypes();
-                for (int j = 0; j < types.length; j++) {
-                    if (types[j].equalsIgnoreCase(mimeType)) {
+                for (String type : types) {
+                    if (type.equalsIgnoreCase(mimeType)) {
                         codecList.add(codecInfo);
                         break;
                     }
@@ -366,41 +358,44 @@ public class GameDetailActivity extends BaseActivity {
         return codecList;
     }
 
-    String codeclist2XmlStr(ArrayList<MediaCodecInfo> encoderList, ArrayList<MediaCodecInfo> decoderList) {
+    String CodeLite2XmlStr(ArrayList<MediaCodecInfo> encoderList, ArrayList<MediaCodecInfo> decoderList) {
         /* Creates mediacodec.xml content for list of codecs supplied. The XML format is based on format specified at
          * https://github.com/open-webrtc-toolkit/owt-client-android/blob/f2294c55f9d3bdc1de78ab84c9b7d018c3e3a04b/docs/index.md?plain=1#L71.
          */
 
         StringBuilder xmlStr = new StringBuilder();
 
-        xmlStr.append(
-                "<pre>\n" +
-                "  <MediaCodecs>\n" +
-                "    <Encoders>\n"
-        );
+        xmlStr.append("<pre>\n")
+                .append("  <MediaCodecs>\n")
+                .append("    <Encoders>\n");
 
         // add encoders
-        for (int i = 0 ; i < encoderList.size() ; i++) {
+        for (int i = 0; i < encoderList.size(); i++) {
             Log.d(TAG, "Encoders = " + encoderList.get(i));
-            xmlStr.append("      <MediaCodec name=\"" + encoderList.get(i).getName() + "\" type=\"" + encoderList.get(i).getSupportedTypes()[0] + "\"/>\n");
+            xmlStr.append("      <MediaCodec name=\"")
+                    .append(encoderList.get(i).getName())
+                    .append("\" type=\"")
+                    .append(encoderList.get(i).getSupportedTypes()[0])
+                    .append("\"/>\n");
         }
 
-        xmlStr.append(
-                "    </Encoders>\n" +
-                "    <Decoders>\n"
-        );
+        xmlStr.append("    </Encoders>\n")
+                .append("    <Decoders>\n");
 
         // add decoders
-        for (int i = 0 ; i < decoderList.size() ; i++) {
+        for (int i = 0; i < decoderList.size(); i++) {
             Log.d(TAG, "decoders = " + decoderList.get(i));
-            xmlStr.append("      <MediaCodec name=\"" + decoderList.get(i).getName() + "\" type=\"" + decoderList.get(i).getSupportedTypes()[0] + "\"/>\n");
+            xmlStr.append("      <MediaCodec name=\"")
+                    .append(decoderList.get(i).getName())
+                    .append("\" type=\"")
+                    .append(decoderList.get(i).getSupportedTypes()[0])
+                    .append("\"/>\n");
         }
 
-        xmlStr.append(
-                "    </Decoders>\n" +
-                "  </MediaCodecs>\n" +
-                "</pre>\n"
-        );
+        xmlStr.append("    </Decoders>\n")
+                .append("  </MediaCodecs>\n")
+                .append("</pre>\n");
+
         return xmlStr.toString();
     }
 

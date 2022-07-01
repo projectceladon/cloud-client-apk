@@ -1,8 +1,5 @@
 package com.intel.gamepad.owt.p2p;
 
-import static owt.base.MediaCodecs.VideoCodec.H264;
-import static owt.base.MediaCodecs.VideoCodec.H265;
-
 import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,9 +7,7 @@ import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
 
-import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.app.MyApp;
-import com.intel.gamepad.utils.IPUtils;
 
 import org.webrtc.EglBase;
 import org.webrtc.PeerConnection;
@@ -24,7 +19,6 @@ import java.util.regex.Pattern;
 
 import owt.base.ActionCallback;
 import owt.base.ContextInitialization;
-import owt.base.VideoEncodingParameters;
 import owt.p2p.P2PClient;
 import owt.p2p.P2PClientConfiguration;
 
@@ -33,15 +27,15 @@ public class P2PHelper {
     public static String serverIP = "http://153.35.78.77:8095/";
     public static String peerId = "s0";
     public static String clientId = "c0";
-    public static String stunAddr = "stun:153.35.78.77:3478";
-    public static String turnAddrTCP = "turn:153.35.78.77:3478?transport=tcp";
-    public static String turnAddrUDP = "turn:153.35.78.77:3478?transport=udp";
+    public static String stunAddress = "stun:153.35.78.77:3478";
+    public static String turnAddressTCP = "turn:153.35.78.77:3478?transport=tcp";
+    public static String turnAddressUDP = "turn:153.35.78.77:3478?transport=udp";
     public static String strIP = "153.35.78.77";
     public static String strCoturn = "153.35.78.77";
     private P2PClientConfiguration p2pConfig;
     private P2PClient client;
     private EglBase rootEglBase;
-    private boolean inited = false;
+    private boolean initialized = false;
 
     private P2PHelper() {
         initP2PClientConfig();
@@ -71,21 +65,21 @@ public class P2PHelper {
         Matcher mIp = pIp.matcher(serverIP);
         if (mIp.find()) {
             strIP = mIp.group(1);
-            stunAddr = "stun:" + strIP + ":3478";
-            turnAddrTCP = "turn:" + strIP + ":3478?transport=tcp";
-            turnAddrUDP = "turn:" + strIP + ":3478?transport=udp";
+            stunAddress = "stun:" + strIP + ":3478";
+            turnAddressTCP = "turn:" + strIP + ":3478?transport=tcp";
+            turnAddressUDP = "turn:" + strIP + ":3478?transport=udp";
         }
 
     }
 
     public static void updateP2PCoturnIP() {
-        stunAddr = "stun:" + strCoturn + ":3478";
-        turnAddrTCP = "turn:" + strCoturn + ":3478?transport=tcp";
-        turnAddrUDP = "turn:" + strCoturn + ":3478?transport=udp";
+        stunAddress = "stun:" + strCoturn + ":3478";
+        turnAddressTCP = "turn:" + strCoturn + ":3478?transport=tcp";
+        turnAddressUDP = "turn:" + strCoturn + ":3478?transport=udp";
     }
 
     private void initP2PClientConfig() {
-        if (!inited) {
+        if (!initialized) {
             rootEglBase = EglBase.create();
             ContextInitialization.create()
                     .setApplicationContext(MyApp.context)
@@ -93,32 +87,22 @@ public class P2PHelper {
                             rootEglBase.getEglBaseContext(),
                             rootEglBase.getEglBaseContext())
                     .initialize();
-            inited = true;
+            initialized = true;
         }
         updateP2PCoturnIP();
         List<PeerConnection.IceServer> iceServers = new ArrayList<>();
         List<String> urls = new ArrayList<>();
-        urls.add(stunAddr);
-        urls.add(turnAddrTCP);
-        urls.add(turnAddrUDP);
+        urls.add(stunAddress);
+        urls.add(turnAddressTCP);
+        urls.add(turnAddressUDP);
         PeerConnection.IceServer iceServer = PeerConnection.IceServer.builder(urls).setUsername("username").setPassword("password").createIceServer();
         iceServers.add(iceServer);
         PeerConnection.RTCConfiguration rtcConf = new PeerConnection.RTCConfiguration(iceServers);
 
-        String mediaCodec = IPUtils.loadMediaCodec();
-        if (AppConst.HEVC.equals(mediaCodec)) {
-            Log.i(TAG, "Configuring p2pClient with H265.");
-            p2pConfig = P2PClientConfiguration.builder()
-                    .addVideoParameters(new VideoEncodingParameters(H265))
-                    .setRTCConfiguration(rtcConf)
-                    .build();
-        } else if (AppConst.H264.equals(mediaCodec)) {
-            Log.i(TAG, "Configuring p2pClient with H264.");
-            p2pConfig = P2PClientConfiguration.builder()
-                    .addVideoParameters(new VideoEncodingParameters(H264))
-                    .setRTCConfiguration(rtcConf)
-                    .build();
-        }
+        Log.i(TAG, "Configuring p2pClient with default codecs.");
+        p2pConfig = P2PClientConfiguration.builder()
+                .setRTCConfiguration(rtcConf)
+                .build();
     }
 
     private void initP2PClient(AppCompatActivity activity, P2PClient.P2PClientObserver observer) {
@@ -126,7 +110,7 @@ public class P2PHelper {
         client.addObserver(observer);
         activity.getLifecycle().addObserver(new LifecycleObserver() {
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-            public void onDestory() {
+            public void onDestroy() {
                 client.removeObserver(observer);
                 client.stop(P2PHelper.peerId);
                 client.disconnect();
