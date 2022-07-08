@@ -383,6 +383,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                 case "gps-stop":
                                     runOnUiThread(() -> disableLocation());
                                     break;
+                                case "start-audio":
                                 case "start-audio-rec": {
                                     LogEx.d("Received start-audio-rec");
                                     Thread thread = new Thread(() -> {
@@ -408,6 +409,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                     thread.start();
                                     break;
                                 }
+                                case "stop-audio":
                                 case "stop-audio-rec":
                                     LogEx.d("Received stop-audio-rec");
                                     LogEx.d("stopping localAudioStream");
