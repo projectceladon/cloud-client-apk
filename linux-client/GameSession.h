@@ -20,6 +20,8 @@ struct GameP2PParams
   std::string client_id;
   std::string server_ip;
   std::string video_codec;
+  bool dr;
+  bool log;
 };
 
 struct RenderParams {
@@ -27,6 +29,9 @@ struct RenderParams {
   int top;
   int width;
   int height;
+  int video_width;
+  int video_height;
+  Uint32 format;
   SDL_Texture* texture;
 };
 
@@ -46,12 +51,14 @@ public:
   void sendCtrl(const char* event, const char* param);
   void suspendStream(bool suspend, RenderParams* render_params);
   void onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer)override;
+  void freeSession();
 private:
   std::shared_ptr<OwtSignalingChannel> sc_;
   std::shared_ptr<P2PClient> pc_;
   std::unique_ptr<PcObserver> ob_;
   std::string session_desc_;
   std::unique_ptr<GameP2PParams> p2p_params_;
+  RenderParams* render_params_;
 
   std::shared_ptr<VideoRenderer> video_renderer_;
   std::shared_ptr<AudioPlayer> audio_player_;
@@ -70,7 +77,10 @@ private:
   bool suspend_;
   pthread_rwlock_t* render_lock_;
   std::unique_ptr<owt::base::VideoBuffer> video_buffer_;
-  //std::ofstream ouF;
+  std::ofstream ouF;
+  Uint32 render_start_time;
+  Uint32 render_lock_time;
+  Uint32 render_finish_time;
 };
 
 #endif

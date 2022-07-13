@@ -2,7 +2,7 @@
 
 please use Ubuntu 20.04
 
-sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libglew-dev libsdl2-dev libsdl2-image-dev libglm-dev libfreetype6-dev libx11-dev libxext-dev libxtst-dev libxrender-dev libxmu-dev libxmuu-dev libsdl2-ttf-dev libasound2-dev libpulse-dev
+sudo apt-get install build-essential libgl1-mesa-dev libva-dev libdrm-dev libglew-dev libsdl2-dev libsdl2-image-dev libglm-dev libfreetype6-dev libx11-dev libxext-dev libxtst-dev libxrender-dev libxmu-dev libxmuu-dev libsdl2-ttf-dev libasound2-dev libpulse-dev nlohmann-json3-dev
 
 
 

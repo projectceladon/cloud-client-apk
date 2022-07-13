@@ -24,6 +24,8 @@ add_definitions( -DLAST_COMMIT="${LAST_COMMIT}")
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
+find_package(nlohmann_json)
+
 INCLUDE(FindPkgConfig)
 PKG_SEARCH_MODULE(SDL2TTF REQUIRED SDL2_ttf>=2.0.0)
 include_directories(${SDL2TTF_INCLUDE_DIRS})
@@ -54,6 +56,7 @@ set_target_properties(aic_linux_client PROPERTIES COMPILE_DEFINITIONS "WEBRTC_LI
 target_link_libraries(aic_linux_client
   ${SDL2_LIBRARIES}
   ${SDL2TTF_LIBRARIES}
+  nlohmann_json::nlohmann_json
   boost_system
   sioclient
   owt-release

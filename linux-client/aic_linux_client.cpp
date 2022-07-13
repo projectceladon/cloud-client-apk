@@ -27,6 +27,7 @@
 #endif
 
 #include "owt/base/videorendererinterface.h"
+#include <sys/time.h>
 
 using namespace owt::p2p;
 
@@ -86,6 +87,8 @@ static const struct option long_option[] = {
   {"help",        no_argument,       NULL, 'h'},
   {"fps",         required_argument, NULL, 'f'},
   {"audio",       no_argument, NULL, 'a'},
+  {"dynamic_resolution",       no_argument, NULL, 'z'},
+  {"log",       no_argument, NULL, 'l'},
   {NULL,          0,                 NULL,  0 }
 };
 
@@ -147,6 +150,8 @@ void help() {
   std::cout << "--cycle_interval/-i <cycle-interval>: time spaces bewtween a cycle, minitues , default 5 minitues"<< std::endl;
   std::cout << "--fps/-f : fps of the client, default 30"<< std::endl;
   std::cout << "--audio/-a : with audio , defalut no audio"<< std::endl;
+  std::cout << "--dynamic_resolution/-z : dynamic resolution, default false"<< std::endl;
+  std::cout << "--log/-l: dump the log for debug"<< std::endl;
 #ifdef USE_SDL
   std::cout << "--window-x/-x <window_x>: Window postion x, default: in the center" << std::endl;
   std::cout << "--window-y/-y <window_y>: Window postion y, default: in the center" << std::endl;
@@ -164,6 +169,8 @@ int main(int argc, char* argv[]) {
   std::string window_size = "352x288";
   int fps = 30;
   bool playAudio = false;
+  bool dynamicRes = false;
+  bool debug = false;
 #ifdef USE_SDL
   int window_x = SDL_WINDOWPOS_UNDEFINED;
   int window_y = SDL_WINDOWPOS_UNDEFINED;
@@ -171,7 +178,7 @@ int main(int argc, char* argv[]) {
   int cycle_interval = 5;
 #endif
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:h:n:i:f:a", long_option, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:hn:i:f:azl", long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
         client_ids = optarg;
@@ -196,6 +203,12 @@ int main(int argc, char* argv[]) {
         break;
       case 'a':
         playAudio = true;
+        break;
+      case 'z':
+        dynamicRes = true;
+        break;
+      case 'l':
+        debug = true;
         break;
 #ifdef USE_SDL
       case 'x':
@@ -408,6 +421,8 @@ int main(int argc, char* argv[]) {
     p2pParams -> client_id = vector_clients[i];
     p2pParams -> server_ip = ip;
     p2pParams -> video_codec = video_codec;
+    p2pParams -> dr = displays > 1 ? dynamicRes : false;
+    p2pParams -> log = debug;
 
     row = i / sp_num;
     colomn = i % sp_num;
@@ -416,13 +431,18 @@ int main(int argc, char* argv[]) {
     render_params -> top = row * cell_height;
     render_params -> width = cell_with_margin;
     render_params -> height = cell_height_margin;
-    render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING, width, height);
+    render_params -> video_width = width;
+    render_params -> video_height = height;
+    render_params -> format = is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING;
+  
+    //render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING, width, height);
     render_params_.push_back(render_params);
     std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, render_params, font, true, playAudio, &rwlock);
     game_sessions_display_.push_back(game_session);
     game_matrix[row][colomn] = i;
     game_sessions_.push_back(game_session);
   }
+
   playingIndex = displays -1;
   for (int i = displays; i < lines; i++) {
     std::unique_ptr<GameP2PParams> p2pParams = std::make_unique<GameP2PParams>();
@@ -431,6 +451,8 @@ int main(int argc, char* argv[]) {
     p2pParams -> client_id = vector_clients[i];
     p2pParams -> server_ip = ip;
     p2pParams -> video_codec = video_codec;
+    p2pParams -> dr = displays > 1 ? dynamicRes : false;
+    p2pParams -> log = debug;
     std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false, playAudio, &rwlock);
     game_sessions_.push_back(game_session);
   }
@@ -540,9 +562,9 @@ int main(int argc, char* argv[]) {
         break;
     }
   }
-  for (auto rp : render_params_) {
-    SDL_DestroyTexture(rp -> texture);
-    delete rp;
+
+  for (auto session : game_sessions_) {
+    session -> freeSession();
   }
   SDL_DestroyRenderer(sdlRenderer);
   SDL_DestroyWindow(win);

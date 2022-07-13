@@ -1,4 +1,7 @@
 #include "GameSession.h"
+#include "nlohmann/json.hpp"
+
+using json = nlohmann::json;
 
 GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer* sdlRenderer, RenderParams* render_params, TTF_Font* font, bool render, bool play_audio, pthread_rwlock_t* lock) {
   p2p_params_ = std::move(p2p_params);
@@ -33,7 +36,11 @@ void GameSession::setupRenderEnv(RenderParams* render_params) {
   rect_.h = render_params -> height;
   text_rect_.y = rect_.y + render_params -> height / 2 - text_rect_.h / 2;
   text_rect_.x = rect_.x + render_params -> width / 2 - text_rect_.w / 2;
-  texture_ = render_params -> texture;
+  //texture_ = render_params -> texture;
+  render_params_ = render_params;
+  video_width_ = render_params -> video_width;
+  video_height_ = render_params -> video_height;
+  texture_ = SDL_CreateTexture(renderer_, render_params_ -> format, SDL_TEXTUREACCESS_STREAMING, video_width_, video_height_);
   if (text_surface_ == nullptr) {
     SDL_Color textColor = {255, 0, 0};
     text_surface_ = TTF_RenderText_Blended(font_, session_desc_.c_str(), textColor);
@@ -81,6 +88,22 @@ void GameSession::startSession() {
   pc_->AddObserver(*ob_);
   pc_->AddAllowedRemoteId(p2p_params_ -> server_id);
   pc_->Connect(p2p_params_ -> signaling_server_url, p2p_params_ -> client_id, nullptr, nullptr);
+
+  if (p2p_params_ -> dr) {
+    json j;
+    j["type"] = "control";
+    json jdata;
+    jdata["event"] = "sizechange";
+    json jparams;
+    jparams["rendererSize"] = {{"width", rect_.w}, {"height", rect_.h}};
+    //jparams["rendererSize"] = {{"width", 1280}, {"height", 720}};
+    jparams["mode"] = "stretch";
+    jdata["parameters"] = jparams;
+    j["data"] = jdata;
+    std::string jsonstr = j.dump();
+    pc_->Send(p2p_params_ -> server_id, jsonstr.c_str(), nullptr, nullptr);
+    std::cout << "send: " << jsonstr <<std::endl;
+  }
   pc_->Send(p2p_params_ -> server_id, "start", nullptr, nullptr);
 }
 
@@ -126,23 +149,74 @@ bool suspend = true;*/
     //}
 }*/
 
+//int test = 0;
+
 void GameSession::onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer) {
   //std::lock_guard<std::mutex> lock(m_lock);^M
   // video_buffer_ = std::move(video_buffer);^M
+  /*test++;
+  if (test == 100) {
+    json j;
+    j["type"] = "control";
+    json jdata;
+    jdata["event"] = "sizechange";
+    json jparams;
+    jparams["rendererSize"] = {{"width", rect_.w}, {"height", rect_.h}};
+    //jparams["rendererSize"] = {{"width", 1280}, {"height", 720}};
+    jparams["mode"] = "stretch";
+    jdata["parameters"] = jparams;
+    j["data"] = jdata;
+    std::string jsonstr = j.dump();
+    pc_->Send(p2p_params_ -> server_id, jsonstr.c_str(), nullptr, nullptr);
+    std::cout << "send: " << jsonstr <<std::endl;
+  } else if (test == 200) {
+    json j;
+    j["type"] = "control";
+    json jdata;
+    jdata["event"] = "sizechange";
+    json jparams;
+    //jparams["rendererSize"] = {{"width", rect_.w}, {"height", rect_.h}};
+    jparams["rendererSize"] = {{"width", 1280}, {"height", 720}};
+    jparams["mode"] = "stretch";
+    jdata["parameters"] = jparams;
+    j["data"] = jdata;
+    std::string jsonstr = j.dump();
+    pc_->Send(p2p_params_ -> server_id, jsonstr.c_str(), nullptr, nullptr);
+    std::cout << "send: " << jsonstr <<std::endl;
+  }*/
+  if (p2p_params_ -> log) {
+    render_start_time = SDL_GetTicks();
+  }
   video_buffer_ = move(video_buffer);
   if (video_buffer_) {
     uint8_t* buffer = static_cast<uint8_t *>(video_buffer_ -> buffer);
     if (buffer) {
       frame_width_ = video_buffer_ ->resolution.width;
       frame_height_ = video_buffer_ ->resolution.height;
+      //std::cout << "onFrame " << frame_width_ << "-" << frame_height_ << std::endl;
       //memcpy(data, buffer, frame_width_ * frame_height_ * 3 / 2);
+      //ouF.write((const char *)buffer, frame_width_ * frame_height_ * 3/2);
       render_rect_.w = frame_width_;
       render_rect_.h = frame_height_;
       pthread_rwlock_wrlock(render_lock_);
+      if (p2p_params_ -> log) {
+        render_lock_time = SDL_GetTicks();
+      }
+      if (frame_width_ != video_width_ || frame_height_ != video_height_) {
+        SDL_DestroyTexture(texture_);
+        texture_ = SDL_CreateTexture(renderer_, render_params_ -> format , SDL_TEXTUREACCESS_STREAMING, frame_width_, frame_height_);
+        std::cout << "video_size change from  "  << video_width_ << " - " << video_height_ << " to " << frame_width_ << "-" << frame_height_ << std::endl;
+        video_width_ = frame_width_;
+        video_height_ = frame_height_;
+      }
       SDL_SetRenderTarget(renderer_, texture_);
       SDL_UpdateTexture(texture_, &render_rect_, buffer, frame_width_);
       pthread_rwlock_unlock(render_lock_);
     }
+  }
+  if (p2p_params_ -> log) {
+    render_finish_time = SDL_GetTicks();
+    std::cout << p2p_params_ -> server_id << " onFrame cost "<< render_start_time << "-" << render_lock_time << "-" << render_finish_time << ", totally " << render_finish_time - render_start_time << std::endl;
   }
  }
 
@@ -188,11 +262,16 @@ bool GameSession::dispatchEvent(SDL_MouseButtonEvent& e) {
   return dispatch;
 }
 
-GameSession::~GameSession() {
+void GameSession::freeSession() {
   pc_->Stop(p2p_params_ -> server_id, nullptr, nullptr);
   pc_->RemoveObserver(*ob_);
   pc_->Disconnect(nullptr, nullptr);
   video_renderer_ -> reset();
+  SDL_DestroyTexture(texture_);
   SDL_DestroyTexture(text_texture_);
   SDL_FreeSurface(text_surface_);
+}
+
+GameSession::~GameSession() {
+
 }
