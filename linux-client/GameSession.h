@@ -21,6 +21,8 @@ struct GameP2PParams
   std::string server_ip;
   std::string video_codec;
   bool dr;
+  int video_width;
+  int video_height;
   bool log;
 };
 
@@ -29,8 +31,6 @@ struct RenderParams {
   int top;
   int width;
   int height;
-  int video_width;
-  int video_height;
   Uint32 format;
   SDL_Texture* texture;
 };

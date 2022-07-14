@@ -9,6 +9,8 @@ GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params, SDL_Renderer
   suspend_ = !render;
   font_ = font;
   session_desc_ = p2p_params_ -> server_id;
+  video_width_ = p2p_params_ -> video_width;
+  video_height_ = p2p_params_ -> video_height;
   initP2P();
   video_renderer_ = std::make_shared<VideoRenderer>(this);
   if (play_audio) {
@@ -38,8 +40,6 @@ void GameSession::setupRenderEnv(RenderParams* render_params) {
   text_rect_.x = rect_.x + render_params -> width / 2 - text_rect_.w / 2;
   //texture_ = render_params -> texture;
   render_params_ = render_params;
-  video_width_ = render_params -> video_width;
-  video_height_ = render_params -> video_height;
   texture_ = SDL_CreateTexture(renderer_, render_params_ -> format, SDL_TEXTUREACCESS_STREAMING, video_width_, video_height_);
   if (text_surface_ == nullptr) {
     SDL_Color textColor = {255, 0, 0};
@@ -89,21 +89,19 @@ void GameSession::startSession() {
   pc_->AddAllowedRemoteId(p2p_params_ -> server_id);
   pc_->Connect(p2p_params_ -> signaling_server_url, p2p_params_ -> client_id, nullptr, nullptr);
 
-  if (p2p_params_ -> dr) {
-    json j;
-    j["type"] = "control";
-    json jdata;
-    jdata["event"] = "sizechange";
-    json jparams;
-    jparams["rendererSize"] = {{"width", rect_.w}, {"height", rect_.h}};
-    //jparams["rendererSize"] = {{"width", 1280}, {"height", 720}};
-    jparams["mode"] = "stretch";
-    jdata["parameters"] = jparams;
-    j["data"] = jdata;
-    std::string jsonstr = j.dump();
-    pc_->Send(p2p_params_ -> server_id, jsonstr.c_str(), nullptr, nullptr);
-    std::cout << "send: " << jsonstr <<std::endl;
-  }
+  json j;
+  j["type"] = "control";
+  json jdata;
+  jdata["event"] = "sizechange";
+  json jparams;
+  jparams["rendererSize"] = {{"width", p2p_params_ -> video_width}, {"height", p2p_params_ -> video_height}};
+  //jparams["rendererSize"] = {{"width", 1280}, {"height", 720}};
+  jparams["mode"] = "stretch";
+  jdata["parameters"] = jparams;
+  j["data"] = jdata;
+  std::string jsonstr = j.dump();
+  pc_->Send(p2p_params_ -> server_id, jsonstr.c_str(), nullptr, nullptr);
+  std::cout << "send: " << jsonstr <<std::endl;
   pc_->Send(p2p_params_ -> server_id, "start", nullptr, nullptr);
 }
 

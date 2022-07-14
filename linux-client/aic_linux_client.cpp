@@ -423,6 +423,13 @@ int main(int argc, char* argv[]) {
     p2pParams -> video_codec = video_codec;
     p2pParams -> dr = displays > 1 ? dynamicRes : false;
     p2pParams -> log = debug;
+    if (p2pParams -> dr) {
+      p2pParams -> video_width = cell_with_margin;
+      p2pParams -> video_height = cell_height_margin;
+    } else {
+      p2pParams -> video_width = width;
+      p2pParams -> video_height = height;
+    }
 
     row = i / sp_num;
     colomn = i % sp_num;
@@ -431,8 +438,6 @@ int main(int argc, char* argv[]) {
     render_params -> top = row * cell_height;
     render_params -> width = cell_with_margin;
     render_params -> height = cell_height_margin;
-    render_params -> video_width = width;
-    render_params -> video_height = height;
     render_params -> format = is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING;
   
     //render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12, SDL_TEXTUREACCESS_STREAMING, width, height);
@@ -452,6 +457,14 @@ int main(int argc, char* argv[]) {
     p2pParams -> server_ip = ip;
     p2pParams -> video_codec = video_codec;
     p2pParams -> dr = displays > 1 ? dynamicRes : false;
+    if (p2pParams -> dr) {
+      p2pParams -> video_width = cell_with_margin;
+      p2pParams -> video_height = cell_height_margin;
+    } else {
+      p2pParams -> video_width = width;
+      p2pParams -> video_height = height;
+    }
+
     p2pParams -> log = debug;
     std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false, playAudio, &rwlock);
     game_sessions_.push_back(game_session);
