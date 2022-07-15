@@ -521,11 +521,18 @@ int main(int argc, char* argv[]) {
   SDL_Event e;
   Uint32 lastRenderTime = SDL_GetTicks();
   Uint32 renderTime;
+  Uint32 fpsStartTime = lastRenderTime;
+  int frame_count = 0;
   while (running) {
     SDL_WaitEvent(&e);
     switch (e.type) {
       case AIC_REFRESH_EVENT:
         renderTime = SDL_GetTicks();
+        if (renderTime - fpsStartTime > 1000) {  // every seconds
+          std::cout << "fps: " << frame_count << std::endl;
+          frame_count = 0;
+          fpsStartTime = renderTime;
+        }
         if (renderTime - lastRenderTime > 2 * VIDEO_FPS_INTERVAL) {
           std::cout <<"more than 2 frame, skip this frame, consider play with a lower fps, with -f option" << std::endl;
           lastRenderTime = renderTime;
@@ -543,6 +550,7 @@ int main(int argc, char* argv[]) {
 			  SDL_RenderPresent(sdlRenderer);
         pthread_rwlock_unlock(&rwlock);
         lastRenderTime = renderTime;
+        frame_count++;
 		    break;
       case SDL_QUIT:
         exit_thread = 1;
