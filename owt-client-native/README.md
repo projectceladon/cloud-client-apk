@@ -1,5 +1,6 @@
 Note:
-    git clone --recurse-submodules ssh://git@gitlab.devtools.intel.com:29418/android-cloud/aic_application.git
+    git config --global url."https://github.com/".insteadOf git@github.com:
+    git clone --recurse-submodules https://github.com/intel-innersource/os.android.cloud.aic-application.git
 
 Preconditions:
 1. Install Ubuntu (E.g: 14.04, 16.04, 18.04, 19.04, 19.10).

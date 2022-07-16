@@ -1,10 +1,14 @@
 Note:
-    git clone --recurse-submodules ssh://git@gitlab.devtools.intel.com:29418/android-cloud/aic_application.git
+    git config --global url."https://github.com/".insteadOf git@github.com:
+    git clone --recurse-submodules https://github.com/intel-innersource/os.android.cloud.aic-application.git
 
 Preconditions:
 1. Download Android SDK: https://developer.android.com/studio/intro/update#sdk-manager
 2. If local.properties file with the following line doesn't exist in project root directory,  please create local.properties file and add a line
-    >`sdk.dir=/your/android/sdk/location
+    >sdk.dir=/your/android/sdk/location
+
+    Otherwise, the environment variables ANDROID_HOME can be used instead of local.properties file.
+    >export ANDROID_HOME=/your/android/sdk/location
 
 Download owt-client-android source code:
 1. $ cd owt-client-android/src/
@@ -25,6 +29,6 @@ Compile:
 5. $ mv ../../aic-application/app/libs/x64 ../../aic-application/app/libs/x86_64
 
 Upload patches:
-1. cd owt-client-native/src && git reset --hard v5.0 && git clean -f -x -d
-2. Don't upload patch to owt-client-native/src.
+1. cd owt-client-android/src && git reset --hard v5.0 && git clean -f -x -d
+2. Don't upload patch to owt-client-android/src.
 3. Put your patches to aic_application/owt-client-android/patches
