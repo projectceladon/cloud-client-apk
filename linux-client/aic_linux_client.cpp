@@ -88,7 +88,7 @@ static const struct option long_option[] = {
   {"fps",         required_argument, NULL, 'f'},
   {"audio",       no_argument, NULL, 'a'},
   {"dynamic_resolution",       no_argument, NULL, 'z'},
-  {"log",       no_argument, NULL, 'l'},
+  {"log",       required_argument, NULL, 'l'},
   {NULL,          0,                 NULL,  0 }
 };
 
@@ -151,7 +151,7 @@ void help() {
   std::cout << "--fps/-f : fps of the client, default 30"<< std::endl;
   std::cout << "--audio/-a : with audio , defalut no audio"<< std::endl;
   std::cout << "--dynamic_resolution/-z : dynamic resolution, default false"<< std::endl;
-  std::cout << "--log/-l: dump the log for debug"<< std::endl;
+  std::cout << "--log/-l: dump the log for debug, default 0， 1 for render detail, 2 for main thread fps"<< std::endl;
 #ifdef USE_SDL
   std::cout << "--window-x/-x <window_x>: Window postion x, default: in the center" << std::endl;
   std::cout << "--window-y/-y <window_y>: Window postion y, default: in the center" << std::endl;
@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
   int fps = 30;
   bool playAudio = false;
   bool dynamicRes = false;
-  bool debug = false;
+  int debug = 0;
 #ifdef USE_SDL
   int window_x = SDL_WINDOWPOS_UNDEFINED;
   int window_y = SDL_WINDOWPOS_UNDEFINED;
@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
   int cycle_interval = 5;
 #endif
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:hn:i:f:azl", long_option, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:hn:i:f:azl:", long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
         client_ids = optarg;
@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
         dynamicRes = true;
         break;
       case 'l':
-        debug = true;
+        debug = atoi(optarg);
         break;
 #ifdef USE_SDL
       case 'x':
@@ -422,7 +422,7 @@ int main(int argc, char* argv[]) {
     p2pParams -> server_ip = ip;
     p2pParams -> video_codec = video_codec;
     p2pParams -> dr = displays > 1 ? dynamicRes : false;
-    p2pParams -> log = debug;
+    p2pParams -> log = debug&0x1;
     if (p2pParams -> dr) {
       p2pParams -> video_width = cell_with_margin;
       p2pParams -> video_height = cell_height_margin;
@@ -465,7 +465,7 @@ int main(int argc, char* argv[]) {
       p2pParams -> video_height = height;
     }
 
-    p2pParams -> log = debug;
+    p2pParams -> log = debug&0x1;
     std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer, nullptr, font, false, playAudio, &rwlock);
     game_sessions_.push_back(game_session);
   }
@@ -523,15 +523,16 @@ int main(int argc, char* argv[]) {
   Uint32 renderTime;
   Uint32 fpsStartTime = lastRenderTime;
   int frame_count = 0;
+  bool printFps = debug & 0x2;
   while (running) {
     SDL_WaitEvent(&e);
     switch (e.type) {
       case AIC_REFRESH_EVENT:
         renderTime = SDL_GetTicks();
-        if (renderTime - fpsStartTime > 1000) {  // every seconds
-          std::cout << "fps: " << frame_count << std::endl;
+        if (printFps && (renderTime - fpsStartTime >= 1000)) {  // every seconds
+          std::cout << "main thread refersh count: " << frame_count << std::endl;
           frame_count = 0;
-          fpsStartTime = renderTime;
+          fpsStartTime = renderTime;          
         }
         if (renderTime - lastRenderTime > 2 * VIDEO_FPS_INTERVAL) {
           std::cout <<"more than 2 frame, skip this frame, consider play with a lower fps, with -f option" << std::endl;
@@ -587,6 +588,16 @@ int main(int argc, char* argv[]) {
   for (auto session : game_sessions_) {
     session -> freeSession();
   }
+
+  for (auto frame : render_params_) {
+    delete frame;
+  }
+
+  for (int i = 0; i < sp_num; i++) {
+    delete[] game_matrix[i];
+  }
+  delete[] game_matrix;
+
   SDL_DestroyRenderer(sdlRenderer);
   SDL_DestroyWindow(win);
   if (font != nullptr) {
@@ -615,7 +626,7 @@ int main(int argc, char* argv[]) {
 
       std::unique_lock<std::mutex> locker(mutex);
       if (frame_list.size() > 10) {
-	av_frame_free(&frame);
+	      av_frame_free(&frame);
         return;
       }
 

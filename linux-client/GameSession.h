@@ -81,6 +81,8 @@ private:
   Uint32 render_start_time;
   Uint32 render_lock_time;
   Uint32 render_finish_time;
+  int frameCount = 0;
+  int last_fps_time = 0;
 };
 
 #endif

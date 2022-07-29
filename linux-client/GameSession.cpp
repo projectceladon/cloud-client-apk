@@ -212,8 +212,15 @@ void GameSession::onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer) 
       pthread_rwlock_unlock(render_lock_);
     }
   }
+  render_finish_time = SDL_GetTicks();
+  if (frameCount % 30 == 0) {
+    if (last_fps_time != 0) {
+      std::cout << render_finish_time << " fps:" << p2p_params_ -> server_id << " fps: " << 30000 / (render_finish_time - last_fps_time) << std::endl;
+    }
+    last_fps_time = render_finish_time;
+  }
+  frameCount++;
   if (p2p_params_ -> log) {
-    render_finish_time = SDL_GetTicks();
     std::cout << p2p_params_ -> server_id << " onFrame cost "<< render_start_time << "-" << render_lock_time << "-" << render_finish_time << ", totally " << render_finish_time - render_start_time << std::endl;
   }
  }
