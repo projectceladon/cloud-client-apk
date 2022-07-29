@@ -84,7 +84,7 @@ public class DeviceManager {
                 }
             }
             for (Codec codec : codecs) {
-                if(codec.isSupport()){
+                if (codec.isSupport()) {
                     return true;
                 }
             }

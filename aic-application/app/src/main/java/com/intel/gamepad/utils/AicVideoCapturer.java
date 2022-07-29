@@ -1,6 +1,7 @@
 package com.intel.gamepad.utils;
 
-import com.commonlibrary.utils.LogEx;
+
+import android.util.Log;
 
 import org.webrtc.Camera1Capturer;
 import org.webrtc.Camera1Enumerator;
@@ -14,12 +15,13 @@ import owt.base.Stream;
 import owt.base.VideoCapturer;
 
 public final class AicVideoCapturer extends Camera1Capturer implements VideoCapturer {
+    private static final String TAG = "AicVideoCapturer";
     public static String cameraId;
     private int width, height, fps;
 
     private AicVideoCapturer(String deviceName, CameraEventsHandler eventHandler,
-        boolean captureToTexture) {
-          super(deviceName, eventHandler, captureToTexture);
+                             boolean captureToTexture) {
+        super(deviceName, eventHandler, captureToTexture);
     }
 
     public static AicVideoCapturer create(int width, int height, CameraEventsHandler eventHandler) {
@@ -52,7 +54,7 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
         capturer.width = width;
         capturer.height = height;
         capturer.fps = 30;
-        LogEx.d("capturer: " + capturer);
+        Log.d(TAG, "capturer: " + capturer);
         return capturer;
     }
 
@@ -65,19 +67,19 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
         for (String device : enumerator.getDeviceNames()) {
             numOfCamerasAvailable++;
         }
-        LogEx.d("Number of cameras available in the client = " + numOfCamerasAvailable);
+        Log.d(TAG, "Number of cameras available in the client = " + numOfCamerasAvailable);
 
         if (numOfCamerasAvailable >= 2) {
             // Switch between cameras based on user request by using corresponding camera Id.
             deviceName = enumerator.getDeviceNames()[camId];
-        } else if (numOfCamerasAvailable == 1){
-            LogEx.d("Only One camera HW is available in the client device");
+        } else if (numOfCamerasAvailable == 1) {
+            Log.d(TAG, "Only One camera HW is available in the client device");
             deviceName = enumerator.getDeviceNames()[0];
         } else {
-            LogEx.e("[error] No camera HW is available in the client device");
+            Log.e(TAG, "[error] No camera HW is available in the client device");
         }
 
-        LogEx.d("deviceName = " + deviceName);
+        Log.d(TAG, "deviceName = " + deviceName);
         return deviceName;
     }
 

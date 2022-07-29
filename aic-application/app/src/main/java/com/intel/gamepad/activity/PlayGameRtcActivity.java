@@ -47,7 +47,6 @@ import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
 
 import com.commonlibrary.utils.DensityUtils;
-import com.commonlibrary.utils.LogEx;
 import com.commonlibrary.utils.StatusBarUtil;
 import com.google.gson.Gson;
 import com.intel.gamepad.R;
@@ -199,16 +198,16 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             mapParams.put("framestartdelay", 0);
             mapParams.put("packetloss", packetsLost);
             String jsonString = new JSONObject(mapKey).toString();
-            // LogEx.e("setBweStatsEvent data:" + jsonString);
+            // Log.e(TAG, "setBweStatsEvent data:" + jsonString);
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
-                    // LogEx.e("setBweStatsEvent Success");
+                    // Log.e(TAG, "setBweStatsEvent Success");
                 }
 
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e("setBweStatsEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
+                    Log.e(TAG, "setBweStatsEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
                 }
             });
         }));
@@ -247,7 +246,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             remoteStream.attach(bweStatsVideoSink);
             remoteStream.attach(fullRenderer);
         }
-        LogEx.e("RTC Activity onResume called");
+        Log.i(TAG, "RTC Activity onResume called");
     }
 
     @Override
@@ -260,7 +259,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             try {
                 remoteStream.detach(fullRenderer);
             } catch (Exception e) {
-                LogEx.e("remoteStream connect wrong");
+                Log.e(TAG, "remoteStream connect wrong");
                 e.printStackTrace();
             }
         }
@@ -318,9 +317,9 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         P2PHelper.init(this, new P2PClient.P2PClientObserver() {
             @Override
             public void onServerDisconnected() {
-                LogEx.e("Server disconnected");
+                Log.w(TAG, "Server disconnected");
                 if (!isNetworkAvailable()) {
-                    LogEx.e("Network is unavailable. Quit.");
+                    Log.e(TAG, "Network is unavailable. Quit.");
                     Message.obtain(getHandler(), AppConst.MSG_QUIT, AppConst.EXIT_DISCONNECT).sendToTarget();
                 }
                 getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
@@ -328,7 +327,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
             @Override
             public void onStreamAdded(RemoteStream remoteStream) {
-                LogEx.e("onStreamAdded called");
+                Log.i(TAG, "onStreamAdded called");
                 getHandler().removeMessages(AppConst.MSG_NO_STREAM_ADDED);
                 runOnUiThread(() -> {
                     if (!isFirst) fitScreenSize();
@@ -339,10 +338,10 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     public void onEnded() {
                         isStreamAdded = false;
                         if (BaseController.manuallyPressBackButton.get()) {
-                            LogEx.i(" remoteStream onEnded(). Manually press back button. Do not reconnect.");
+                            Log.i(TAG, "remoteStream onEnded(). Manually press back button. Do not reconnect.");
                         } else {
                             getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
-                            LogEx.i(" remoteStream onEnded(). Try to reconnect...");
+                            Log.i(TAG, "remoteStream onEnded(). Try to reconnect...");
                             runOnUiThread(() -> {
                                 initP2PClient();
                                 onConnectRequest(P2PHelper.serverIP, P2PHelper.peerId, P2PHelper.clientId);
@@ -352,7 +351,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
                     @Override
                     public void onUpdated() {
-                        LogEx.e(" remoteStream updated");
+                        Log.i(TAG, " remoteStream updated");
                     }
                 });
                 executor.execute(() -> {
@@ -385,24 +384,24 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                     break;
                                 case "start-audio":
                                 case "start-audio-rec": {
-                                    LogEx.d("Received start-audio-rec");
+                                    Log.d(TAG, "Received start-audio-rec");
                                     Thread thread = new Thread(() -> {
-                                        LogEx.d("publishing localAudioStream");
+                                        Log.d(TAG, "publishing localAudioStream");
                                         audioPublication = null;
                                         localAudioStream = new LocalStream(new MediaConstraints.AudioTrackConstraints());
                                         localAudioStream.enableAudio();
-                                        LogEx.d("localAudioStream id: " + localAudioStream.id());
+                                        Log.d(TAG, "localAudioStream id: " + localAudioStream.id());
                                         P2PHelper.getClient().publish(P2PHelper.peerId, localAudioStream, new ActionCallback<Publication>() {
                                             @Override
                                             public void onSuccess(Publication publication) {
                                                 audioPublication = publication;
-                                                LogEx.d("onSuccess localAudioStream published!!");
-                                                audioPublication.addObserver(() -> LogEx.e("audioPublication onEnded "));
+                                                Log.d(TAG, "onSuccess localAudioStream published!!");
+                                                audioPublication.addObserver(() -> Log.e(TAG, "audioPublication onEnded "));
                                             }
 
                                             @Override
                                             public void onFailure(OwtError owtError) {
-                                                LogEx.e("onFailure: " + owtError.errorMessage);
+                                                Log.e(TAG, "onFailure: " + owtError.errorMessage);
                                             }
                                         });
                                     });
@@ -411,8 +410,8 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                 }
                                 case "stop-audio":
                                 case "stop-audio-rec":
-                                    LogEx.d("Received stop-audio-rec");
-                                    LogEx.d("stopping localAudioStream");
+                                    Log.d(TAG, "Received stop-audio-rec");
+                                    Log.d(TAG, "stopping localAudioStream");
                                     if (localAudioStream != null) {
                                         localAudioStream.disableAudio();
                                     }
@@ -422,17 +421,17 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
                                     break;
                                 case "start-camera-preview": {
-                                    LogEx.d("Received start-camera-preview");
+                                    Log.d(TAG, "Received start-camera-preview");
                                     AicVideoCapturer.cameraId = jsonObject.getString("cameraId");
                                     cameraRes = jsonObject.getString("cameraRes");
-                                    LogEx.d("cameraId = " + AicVideoCapturer.cameraId + ", cameraRes = " + cameraRes);
+                                    Log.d(TAG, "cameraId = " + AicVideoCapturer.cameraId + ", cameraRes = " + cameraRes);
                                     Thread thread = new Thread(() -> publishLocalVideo());
                                     thread.start();
                                     break;
                                 }
                                 case "stop-camera-preview":
-                                    LogEx.d("Received stop-camera-preview");
-                                    LogEx.d("stopping localVideoStream");
+                                    Log.d(TAG, "Received stop-camera-preview");
+                                    Log.d(TAG, "stopping localVideoStream");
                                     if (localVideoStream != null) {
                                         localVideoStream.disableVideo();
                                     }
@@ -444,7 +443,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                     }
                                     break;
                                 case "sensor-start":
-                                    LogEx.d("Received sensor start");
+                                    Log.d(TAG, "Received sensor start");
                                     if (!jsonObject.isNull("type")) {
                                         int type = jsonObject.getInt("type");
                                         int samplingPeriod_ms = jsonObject.getInt("samplingPeriod_ms");
@@ -452,14 +451,14 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                     }
                                     break;
                                 case "sensor-stop":
-                                    LogEx.d("Received sensor stop");
+                                    Log.d(TAG, "Received sensor stop");
                                     if (!jsonObject.isNull("type")) {
                                         int type = jsonObject.getInt("type");
                                         deRegisterSensorEvents(type);
                                     }
                                     break;
                                 case "video-alpha-success":
-                                    LogEx.d("video-alpha-success");
+                                    Log.d(TAG, "video-alpha-success");
                                     runOnUiThread(() -> {
                                         controller.switchAlpha(IPUtils.loadAlphaChannel());
                                         GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
@@ -468,7 +467,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                     });
                                     break;
                                 case "video-alpha-failed":
-                                    LogEx.d("video-alpha-failed");
+                                    Log.d(TAG, "video-alpha-failed");
                                     runOnUiThread(() -> {
                                         IPUtils.savealphachannel(!IPUtils.loadAlphaChannel());
                                         controller.switchAlpha(IPUtils.loadAlphaChannel());
@@ -742,14 +741,14 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     }
 
     private void publishLocalVideo() {
-        LogEx.d("publishing localVideoStream.");
+        Log.d(TAG, "publishing localVideoStream.");
 
         synchronized (CameraEventsHandler.cameraLock) {
             while (!CameraEventsHandler.isCameraSessionClosed) {
                 try {
                     CameraEventsHandler.cameraLock.wait();
                 } catch (InterruptedException e) {
-                    LogEx.e("Error in wait()");
+                    Log.e(TAG, "Error in wait()");
                     e.printStackTrace();
                 }
             }
@@ -760,15 +759,15 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         // Set resolution based on the user request.
         switch (cameraRes) {
             case "1":
-                LogEx.d("Requested for 480p");
+                Log.d(TAG, "Requested for 480p");
                 videoCapture = AicVideoCapturer.create(640, 480, mCameraEventsHandler);
                 break;
             case "2":
-                LogEx.d("Requested for 720p");
+                Log.d(TAG, "Requested for 720p");
                 videoCapture = AicVideoCapturer.create(1280, 720, mCameraEventsHandler);
                 break;
             case "4":
-                LogEx.d("Requested for 1080p");
+                Log.d(TAG, "Requested for 1080p");
                 videoCapture = AicVideoCapturer.create(1920, 1080, mCameraEventsHandler);
                 break;
         }
@@ -778,20 +777,20 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             @Override
             public void onSuccess(Publication publication) {
                 videoPublication = publication;
-                LogEx.d("onSuccess localVideoStream published!!");
-                videoPublication.addObserver(() -> LogEx.e("videoPublication onEnded "));
+                Log.d(TAG, "onSuccess localVideoStream published!!");
+                videoPublication.addObserver(() -> Log.e(TAG, "videoPublication onEnded "));
             }
 
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e("onFailure: " + owtError.errorMessage);
+                Log.e(TAG, "onFailure: " + owtError.errorMessage);
             }
         });
     }
 
     private LocalStream createLocalStream(AicVideoCapturer capture) {
         LocalStream localCameraStream = new LocalStream(capture, null);
-        LogEx.d("localVideoStream id: " + localCameraStream.id() + " hasVideo: " + localCameraStream.hasVideo());
+        Log.d(TAG, "localVideoStream id: " + localCameraStream.id() + " hasVideo: " + localCameraStream.hasVideo());
         return localCameraStream;
     }
 
@@ -834,7 +833,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -864,12 +863,12 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     }
 
     private void onConnectRequest(String server, String peerId, String myId) {
-        LogEx.e("onConnectRequest called");
+        Log.i(TAG, "onConnectRequest called");
         Map<String, String> mapKey = new HashMap<>();
         mapKey.put("host", server);
         mapKey.put("token", myId);
         String jsonLogin = new Gson().toJson(mapKey, mapKey.getClass());
-        LogEx.e("jsonLogin: " + jsonLogin);
+        Log.d(TAG, "jsonLogin: " + jsonLogin);
         P2PClient client = P2PHelper.getClient();
         if (client != null) {
             client.addAllowedRemotePeer(peerId);
@@ -882,7 +881,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                 @Override
                 public void onFailure(OwtError owtError) {
                     runOnUiThread(() -> {
-                        LogEx.e(R.string.connect_failed + owtError.errorMessage);
+                        Log.e(TAG, R.string.connect_failed + owtError.errorMessage);
                         Toast.makeText(PlayGameRtcActivity.this, R.string.connect_failed + owtError.errorMessage, Toast.LENGTH_LONG).show();
                         getHandler().removeMessages(AppConst.MSG_UNRECOVERABLE);
                     });
@@ -892,7 +891,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     }
 
     private void onCallRequest(String peerId) {
-        LogEx.e("onCallRequest called");
+        Log.i(TAG, "onCallRequest called");
         P2PClient client = P2PHelper.getClient();
         if (client != null) {
             client.addAllowedRemotePeer(peerId);
@@ -907,12 +906,12 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     runOnUiThread(() -> getLifecycle().addObserver(new LifecycleObserver() {
                         @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
                         public void onDestroy() {
-                            LogEx.e(" webrtc onDestroy called");
+                            Log.i(TAG, "webrtc onDestroy called");
                         }
 
                         @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
                         public void onPause() {
-                            LogEx.e(" webrtc onPause called");
+                            Log.i(TAG, "webrtc onPause called");
                             if (controller != null && !isOnPause) {
                                 isOnPause = true;
                                 controller.sendAdbCmdEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
@@ -921,7 +920,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
                         @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
                         public void onResume() {
-                            LogEx.e(" webrtc onResume called");
+                            Log.i(TAG, "webrtc onResume called");
                             if (controller != null) {
                                 if (isOnPause) {
                                     isOnPause = false;
@@ -936,7 +935,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                 @Override
                 public void onFailure(OwtError owtError) {
                     getHandler().sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode);
                 }
             });
         }
@@ -950,7 +949,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         // Camera sensor orientation would be zero always for landscape mode.
         int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
 
-        LogEx.d("Number of cameras available in the HW = " + numOfCameras);
+        Log.d(TAG, "Number of cameras available in the HW = " + numOfCameras);
 
         for (int i = 0; i < numOfCameras; i++) {
             Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
@@ -959,10 +958,10 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             // Update the camera sensor orientation based on screen orientation.
             if (isScreenOrientationPortrait) {
                 camOrientation[i] = Integer.toString(cameraInfo.orientation);
-                LogEx.d("set PORTRAIT orientation for camera Id " + i);
+                Log.d(TAG, "set PORTRAIT orientation for camera Id " + i);
             } else {
                 camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
-                LogEx.d("Set LANDSCAPE orientation for camera Id " + i);
+                Log.d(TAG, "Set LANDSCAPE orientation for camera Id " + i);
             }
 
             camFacing[i] = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) ? "front" : "back";
@@ -973,14 +972,14 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             // value at 0th index. Tested and verified with multiple devices.
             int width = cameraParams.getSupportedPictureSizes().get(0).width;
             int height = cameraParams.getSupportedPictureSizes().get(0).height;
-            LogEx.d("width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
+            Log.d(TAG, "width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
 
             if (width >= 7680 && height >= 4320) maxCameraRes[i] = "4320p"; // 8k
             else if (width >= 3840 && height >= 2160) maxCameraRes[i] = "2160p"; // 4k
             else if (width >= 1920 && height >= 1080) maxCameraRes[i] = "1080p";
             else if (width >= 1280 && height >= 720) maxCameraRes[i] = "720p";
             else maxCameraRes[i] = "480p";
-            LogEx.d("Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
+            Log.d(TAG, "Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
 
             camera.release();
         }
@@ -1002,10 +1001,10 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
-        LogEx.d("Sent camera HW capability info to remote server..");
+        Log.d(TAG, "Sent camera HW capability info to remote server..");
     }
 
     private void sensorsInit() {
@@ -1018,13 +1017,13 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + "Failure at sensorsInit");
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + "Failure at sensorsInit");
             }
         });
     }
 
     private void checkPermissions() {
-        LogEx.d("checkPermissions called");
+        Log.d(TAG, "checkPermissions called");
         String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
         ArrayList<String> permissionsToAskFor = new ArrayList<>();
         for (String permission : permissions) {
@@ -1039,7 +1038,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             arrayAskFor = permissionsToAskFor.toArray(arrayAskFor);
             ActivityCompat.requestPermissions(this, arrayAskFor, REQUEST_PERMISSIONS_REQUEST_CODE);
         } else {
-            LogEx.d("No need to request permissions to user, as App already has all the required permissions");
+            Log.d(TAG, "No need to request permissions to user, as App already has all the required permissions");
         }
     }
 
@@ -1112,7 +1111,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         if (joyId != -1) {
             sendJoyStickEvent(BaseController.EV_NON, 0, 0, false, joyId);
         } else {
-            Log.d(TAG, "This is not joystick: " + deviceId);
+            Log.w(TAG, "This is not joystick: " + deviceId);
         }
     }
 
@@ -1153,7 +1152,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     @Override
     public void switchAlpha(CheckBox chkAlpha, boolean state) {
         if (alpha.get()) {
-            LogEx.e("alpha is switching");
+            Log.i(TAG, "alpha is switching");
             return;
         }
         if (isStreamAdded) {
@@ -1239,7 +1238,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -1263,7 +1262,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
         }
@@ -1301,7 +1300,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
         }
@@ -1323,9 +1322,10 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             super.handleMessage(msg);
             PlayGameRtcActivity actPlay = activity.get();
             String RESULT_MSG = "resultMsg";
+            String TAG = "GameHandler";
             switch (msg.what) {
                 case AppConst.MSG_QUIT:
-                    LogEx.i("Exit Result" + msg.arg1);
+                    Log.i(TAG, "Exit Result" + msg.arg1);
                     Intent intent = actPlay.getIntent();
                     intent.putExtra(RESULT_MSG, msg.arg1);
                     actPlay.setResult(Activity.RESULT_OK, intent);
@@ -1339,9 +1339,9 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     break;
                 case AppConst.MSG_NO_STREAM_ADDED:
                     if (BaseController.manuallyPressBackButton.get()) {
-                        LogEx.i(" Stream is not added. Manually press back button. Do not sent 'Start' again.");
+                        Log.i(TAG, " Stream is not added. Manually press back button. Do not sent 'Start' again.");
                     } else {
-                        LogEx.i(" Stream is not added. Sent 'Start' again.");
+                        Log.i(TAG, " Stream is not added. Sent 'Start' again.");
                         Toast.makeText(actPlay, "Stream is not added. Sent 'Start' again.", Toast.LENGTH_LONG).show();
                         actPlay.stopLoadingFlash();
                         this.sendEmptyMessage(AppConst.MSG_UNRECOVERABLE);
@@ -1349,9 +1349,9 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     break;
                 case AppConst.MSG_UNRECOVERABLE:
                     if (BaseController.manuallyPressBackButton.get()) {
-                        LogEx.i(" Get MSG_RECOVERABLE message. Manually press back button. Do not popup.");
+                        Log.i(TAG, " Get MSG_RECOVERABLE message. Manually press back button. Do not popup.");
                     } else {
-                        LogEx.i(" Get MSG_RECOVERABLE message.");
+                        Log.i(TAG, " Get MSG_RECOVERABLE message.");
                         Toast.makeText(actPlay, "Get MSG_RECOVERABLE message.", Toast.LENGTH_LONG).show();
                     }
                     break;
@@ -1370,11 +1370,11 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             String action = intent.getAction();
             if (action.equals("com.intel.gamepad.sendfiletoaic")) {
                 String uri = intent.getStringExtra("uri");
-                Log.e("MyReceiver", "To aic uri = " + uri);
+                Log.i("MyReceiver", "To aic uri = " + uri);
                 sendFileToAIC(uri);
             } else if (action.equals("com.intel.gamepad.sendfiletoapp")) {
                 String uri = intent.getStringExtra("uri");
-                Log.e("MyReceiver", "To app uri = " + uri);
+                Log.i("MyReceiver", "To app uri = " + uri);
                 sendFileToApp(uri);
             }
         }

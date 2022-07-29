@@ -16,7 +16,6 @@ import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
-import com.commonlibrary.utils.LogEx;
 import com.google.gson.Gson;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
@@ -211,7 +210,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
-                    Log.e(TAG, "Send begin success");
+                    Log.d(TAG, "Send begin success");
                     synchronized (sendFileLock) {
                         send_block_success_ = true;
                         sendFileLock.notify();
@@ -220,7 +219,7 @@ public abstract class BaseController implements OnTouchListener {
 
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode);
                     synchronized (sendFileLock) {
                         send_block_failed_ = true;
                         sendFileLock.notify();
@@ -253,7 +252,7 @@ public abstract class BaseController implements OnTouchListener {
 
                     send_block_success_ = false;
 
-                    Log.e(TAG, "read = " + byteRead);
+                    Log.d(TAG, "read = " + byteRead);
                     Map<String, Object> mapDataForFileContent = new HashMap<>();
                     mapData.put("parameters", mapDataForFileContent);
                     mapDataForFileContent.put("file_name", file.getName());
@@ -273,7 +272,7 @@ public abstract class BaseController implements OnTouchListener {
                     P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
                         @Override
                         public void onSuccess(Void unused) {
-                            Log.e(TAG, "Send one of block success");
+                            Log.d(TAG, "Send one of block success");
                             synchronized (sendFileLock) {
                                 send_block_success_ = true;
                                 sendFileLock.notify();
@@ -282,7 +281,7 @@ public abstract class BaseController implements OnTouchListener {
 
                         @Override
                         public void onFailure(OwtError owtError) {
-                            LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                            Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode);
                             synchronized (sendFileLock) {
                                 send_block_failed_ = true;
                                 sendFileLock.notify();
@@ -319,7 +318,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
-                    Log.e(TAG, "Send end success");
+                    Log.d(TAG, "Send end success");
                     synchronized (sendFileLock) {
                         send_block_success_ = true;
                         sendFileLock.notify();
@@ -328,7 +327,7 @@ public abstract class BaseController implements OnTouchListener {
 
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode);
                     synchronized (sendFileLock) {
                         send_block_failed_ = true;
                         sendFileLock.notify();
@@ -392,16 +391,16 @@ public abstract class BaseController implements OnTouchListener {
         mapData.put("parameters", mapParams);
         mapParams.put("action", strCommand);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.e("sendAlphaEvent data:" + jsonString);
+        Log.d(TAG, "sendAlphaEvent data:" + jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onSuccess(Void unused) {
-                LogEx.e("sendAlphaEvent Success");
+                Log.d(TAG, "sendAlphaEvent Success");
             }
 
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e("sendAlphaEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
+                Log.e(TAG, "sendAlphaEvent Failed : " + owtError.errorMessage + " " + owtError.errorCode);
             }
         });
     }
@@ -419,16 +418,16 @@ public abstract class BaseController implements OnTouchListener {
         mapData.put("parameters", mapParams);
         mapParams.put("cmd", strCommand);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.e("sendLifeCycleSyncEvent data: " + jsonString);
+        Log.d(TAG, "sendLifeCycleSyncEvent data: " + jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onSuccess(Void unused) {
-                LogEx.e("sendLifeCycleSyncEvent Success");
+                Log.d(TAG, "sendLifeCycleSyncEvent Success");
             }
 
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e("sendLifeCycleSyncEvent Failed: " + owtError.errorMessage + " " + owtError.errorCode);
+                Log.e(TAG, "sendLifeCycleSyncEvent Failed: " + owtError.errorMessage + " " + owtError.errorCode);
             }
         });
     }
@@ -494,7 +493,7 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public boolean handleJoyKeyTouch(int action, int keyCode, View v) {
-        LogEx.i(">>>>>" + action + " " + keyCode);
+        Log.d(TAG, "action = " + action + " keyCode =" + keyCode);
         switch (action) {
             case MotionEvent.ACTION_DOWN:
             case MotionEvent.ACTION_POINTER_DOWN:
@@ -594,11 +593,11 @@ public abstract class BaseController implements OnTouchListener {
         mapData.put("parameters", mapParams);
         mapParams.put("which", keyCode);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString + " ");
+        Log.i(TAG, jsonString + " ");
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + jsonString);
             }
         });
     }
@@ -619,11 +618,11 @@ public abstract class BaseController implements OnTouchListener {
         mapParams.put("data", data);
         mapParams.put("jID", 0);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString + " ");
+        Log.i(TAG, jsonString + " ");
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + jsonString);
             }
         });
     }
@@ -647,11 +646,11 @@ public abstract class BaseController implements OnTouchListener {
         mapParams.put("x", x - marginWidth);
         mapParams.put("y", y);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString);
+        Log.i(TAG, jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -669,7 +668,7 @@ public abstract class BaseController implements OnTouchListener {
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode);
             }
         });
     }
@@ -690,11 +689,11 @@ public abstract class BaseController implements OnTouchListener {
         mapParams.put("movementX", movementX);
         mapParams.put("movementY", movementY);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(">>>++++" + jsonString);
+        Log.i(TAG, "jsonString = " + jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -718,7 +717,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
         }
@@ -749,7 +748,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
         }
@@ -772,7 +771,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
         }
@@ -793,11 +792,11 @@ public abstract class BaseController implements OnTouchListener {
         mapParams.put("deltaY", dy);
         mapParams.put("daltaZ", dz);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i("mouse_wheel dx:$dx,dy:$dy,dz:$dz");
+        Log.i(TAG, "mouse_wheel dx:$dx,dy:$dy,dz:$dz");
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -812,11 +811,11 @@ public abstract class BaseController implements OnTouchListener {
         mapData.put("parameters", mapParams);
         mapParams.put("trigger", value);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString);
+        Log.i(TAG, jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -831,11 +830,11 @@ public abstract class BaseController implements OnTouchListener {
         mapData.put("parameters", mapParams);
         mapParams.put("trigger", value);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString);
+        Log.i(TAG, jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -853,11 +852,11 @@ public abstract class BaseController implements OnTouchListener {
         mapParams.put("lx", x);
         mapParams.put("ly", y);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString);
+        Log.i(TAG, jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -875,11 +874,11 @@ public abstract class BaseController implements OnTouchListener {
         mapParams.put("rx", x);
         mapParams.put("ry", y);
         String jsonString = new JSONObject(mapKey).toString();
-        LogEx.i(jsonString);
+        Log.i(TAG, jsonString);
         P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }
@@ -925,7 +924,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
 
@@ -959,7 +958,7 @@ public abstract class BaseController implements OnTouchListener {
             P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
                 @Override
                 public void onFailure(OwtError owtError) {
-                    LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
                 }
             });
         }
@@ -978,7 +977,7 @@ public abstract class BaseController implements OnTouchListener {
         P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
             @Override
             public void onFailure(OwtError owtError) {
-                LogEx.e(owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
             }
         });
     }

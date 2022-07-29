@@ -156,22 +156,22 @@ public enum KeyTypeEnum {
         this.value = value;
     }
 
+    public static int findValue(int key) {
+        KeyTypeEnum[] values = KeyTypeEnum.values();
+        for (KeyTypeEnum value : values) {
+            if (value.name == key) {
+                return value.value;
+            }
+        }
+        return -1;
+    }
+
     public int getName() {
         return name;
     }
 
     public int getValue() {
         return value;
-    }
-
-    public static int findValue(int key) {
-        KeyTypeEnum[] values = KeyTypeEnum.values();
-        for (KeyTypeEnum value : values) {
-            if(value.name == key){
-                return value.value;
-            }
-        }
-        return -1;
     }
 
 

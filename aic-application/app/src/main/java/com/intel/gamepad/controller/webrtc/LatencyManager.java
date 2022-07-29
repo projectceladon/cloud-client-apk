@@ -6,10 +6,10 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import com.commonlibrary.utils.LogEx;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.intel.gamepad.app.AppConst;
@@ -32,6 +32,7 @@ import E2ELatency.LatencyMsgOuterClass.LatencyMsg;
 public class LatencyManager implements EglRenderer.RenderCallback {
     private static final int MSG_FRAME_DROPPED = 1;
     private static final int MSG_FRAME_RENDERED = 2;
+    private static final String TAG = "LatencyManager";
     private final SurfaceViewRenderer mRender;
     private final Context mContext;
     private final Handler mainHandler;
@@ -40,6 +41,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
     private FileOutputStream outputStream;
     private Callback mCallback;
     private long timeStampEnable;
+
 
     public LatencyManager(Context context, SurfaceViewRenderer render, Handler handler) {
         mRender = render;
@@ -60,11 +62,11 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                 mHandler = new Handler(handlerThread.getLooper(), mCallback);
             }
             mCallback.resetLatency();
-            LogEx.d("setEnable " + timeStampEnable);
+            Log.d(TAG, "setEnable " + timeStampEnable);
         } else {
             mRender.registerRenderCallback(null);
             LatencyLogger.getInstance().clear();
-            LogEx.d("disable");
+            Log.d(TAG, "disable");
         }
     }
 
@@ -72,14 +74,14 @@ public class LatencyManager implements EglRenderer.RenderCallback {
         boolean exists = Environment.getExternalStorageState().equals(
                 Environment.MEDIA_MOUNTED);
         if (!exists) {
-            LogEx.e("initFilePath but sd not exits, no write");
+            Log.e(TAG, "initFilePath but sd not exits, no write");
         }
         File sdCardFile = mContext.getExternalFilesDir(null);
         File fileDir = new File(sdCardFile, "e2eLatency");
         if (!fileDir.exists()) {
             if (!fileDir.mkdir()) {
                 outputStream = null;
-                LogEx.e("initFilePath mkdir fail");
+                Log.e(TAG, "initFilePath mkdir fail");
                 return;
             }
         }
@@ -89,11 +91,11 @@ public class LatencyManager implements EglRenderer.RenderCallback {
         File file = new File(fileDir, fileName);
         try {
             FileOutputStream fos = new FileOutputStream(file);
-            LogEx.d("initFilePath " + file.getAbsolutePath());
+            Log.d(TAG, "initFilePath " + file.getAbsolutePath());
             outputStream = fos;
         } catch (Exception e) {
             outputStream = null;
-            LogEx.e("initFilePath except", e);
+            Log.e(TAG, "initFilePath except", e);
         }
     }
 
@@ -118,7 +120,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
 
     @Override
     public void onFrameDroped(long timestampNs, long receiveTime) {
-        LogEx.d("onFrameDropped timestampNs " + timestampNs + " - " + receiveTime);
+        Log.d(TAG, "onFrameDropped timestampNs " + timestampNs + " - " + receiveTime);
         if (mHandler != null) {
             Message msg = mHandler.obtainMessage(MSG_FRAME_DROPPED);
             Bundle bundle = new Bundle();
@@ -131,7 +133,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
 
     @Override
     public void onFrameDrawed(long timestampNs, long receiveTime, long drawStartTime, long drawEndTime, boolean draw) {
-        LogEx.e("onFrameDrawn timestampNs " + timestampNs + " - " + receiveTime + " - " + drawStartTime + " - " + drawEndTime + " - " + draw);
+        Log.e(TAG, "onFrameDrawn timestampNs " + timestampNs + " - " + receiveTime + " - " + drawStartTime + " - " + drawEndTime + " - " + draw);
         if (mHandler != null) {
             Message msg = mHandler.obtainMessage(MSG_FRAME_RENDERED);
             Bundle bundle = new Bundle();
@@ -191,20 +193,20 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                             append("Client input timestamp:").append(latencyMsg.getClientInputTime()).
                             append("received timestamp:").append(latencyMsg.getClientReceivedTime()).append("\n").
                             append("Client E2E Latency, ms:").append((latencyMsg.getClientReceivedTime() -
-                            latencyMsg.getClientInputTime()) / (1000 * 1000)).append(", render, ms:").append("-1\n");
-                    LogEx.d("onFrameDropped " + sb);
+                                    latencyMsg.getClientInputTime()) / (1000 * 1000)).append(", render, ms:").append("-1\n");
+                    Log.d(TAG, "onFrameDropped " + sb);
                     if (outputStream != null) {
                         FileOutputStream stream = outputStream;
                         stream.write(sb.toString().getBytes(StandardCharsets.UTF_8));
                     }
                 } catch (InvalidProtocolBufferException e) {
-                    LogEx.e("onFrameDropped InvalidProtocolBufferException ", e);
+                    Log.e(TAG, "onFrameDropped InvalidProtocolBufferException ", e);
                 } catch (IOException e) {
-                    LogEx.e("onFrameDropped write except", e);
+                    Log.e(TAG, "onFrameDropped write except", e);
                 }
                 LatencyLogger.getInstance().removeMessage(timestampNs);
             } else {
-                LogEx.e("onFrameDropped find no receive info");
+                Log.e(TAG, "onFrameDropped find no receive info");
             }
         }
 
@@ -219,7 +221,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                 try {
                     LatencyMsg.Builder builder = LatencyMsg.newBuilder();
                     String latencyJson = new String(msg.geLatencyBuffer());
-                    LogEx.e("onFrameDrawn latencyJson" + latencyJson);
+                    Log.e(TAG, "onFrameDrawn latencyJson" + latencyJson);
                     JsonFormat.parser().ignoringUnknownFields().merge(latencyJson, builder);
                     builder.setClientReceivedTime(receiveTime);
                     builder.setClientRenderTime((drawEndTime - drawStartTime) / (1000 * 1000));  // ms
@@ -230,9 +232,9 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                             append("Client input timestamp:").append(latencyMsg.getClientInputTime()).
                             append("received timestamp:").append(latencyMsg.getClientReceivedTime()).append("\n").
                             append("Client E2E Latency, ms:").append((latencyMsg.getClientReceivedTime() -
-                            latencyMsg.getClientInputTime()) / (1000 * 1000)).append(", render, ms:").
+                                    latencyMsg.getClientInputTime()) / (1000 * 1000)).append(", render, ms:").
                             append(latencyMsg.getClientRenderTime()).append(", draw: ").append(draw).append("\n\n");
-                    LogEx.e("onFrameDrawn " + sb);
+                    Log.d(TAG, "onFrameDrawn " + sb);
                     if (outputStream != null) {
                         FileOutputStream stream = outputStream;
                         stream.write(sb.toString().getBytes(StandardCharsets.UTF_8));
@@ -248,13 +250,13 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                                     "\navgServerLatency:" + avgLatencyServer + "\navgE2ELatency:" +
                                     avgLatencyE2E).sendToTarget();
                 } catch (InvalidProtocolBufferException e) {
-                    LogEx.e("onFrameDrawn InvalidProtocolBufferException ", e);
+                    Log.e(TAG, "onFrameDrawn InvalidProtocolBufferException ", e);
                 } catch (IOException e) {
-                    LogEx.e("onFrameDrawn write except", e);
+                    Log.e(TAG, "onFrameDrawn write except", e);
                 }
                 LatencyLogger.getInstance().removeMessage(timestampNs);
             } else {
-                LogEx.e("onFrameDrawn find no receive info " + timestampNs);
+                Log.i(TAG, "onFrameDrawn find no receive info " + timestampNs);
             }
 
         }

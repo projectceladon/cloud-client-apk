@@ -14,7 +14,6 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.PopupWindow;
 
-import com.commonlibrary.utils.LogEx;
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
@@ -45,7 +44,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     private CheckBox chkAlpha;
     private PopupWindow popupNavigator;
     private PopupWindow popupOrientation;
-    private CheckBox chkE2E;
 
     public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
         super(act, handler, devSwitch);
@@ -117,7 +115,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         initMenuButton(vgRoot.findViewById(R.id.btnMenu));
         chkAlpha = vgRoot.findViewById(R.id.chkAlpha);
         initSwitchAlpha(chkAlpha);
-        chkE2E = vgRoot.findViewById(R.id.chkE2e);
+        CheckBox chkE2E = vgRoot.findViewById(R.id.chkE2e);
         initSwitchE2E(chkE2E);
 
         // 这个控件用于接收物理手柄的事件
@@ -139,7 +137,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
      */
     @Override
     public boolean onTouch(View v, MotionEvent evt) {
-        LogEx.i(">>>>" + v + " " + evt);
+        Log.i(TAG, "v = " + v + " evt = " + evt);
         this.updateLastTouchEvent();
         int index;
         float x;
@@ -205,7 +203,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         }
         if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
             if (strCmd.startsWith("d")) {
-                sendAndroidEventAsString(strCmd, mE2eEnabled ? JniCommon.nativeGetTimeStampNs(): -1);
+                sendAndroidEventAsString(strCmd, mE2eEnabled ? JniCommon.nativeGetTimeStampNs() : -1);
             } else {
                 sendAndroidEventAsString(strCmd, -1);
             }
@@ -275,7 +273,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             axisHatX = BaseController.filterMinValue(axisHatX);
             axisHatY = BaseController.filterMinValue(axisHatY);
 
-            LogEx.i(String.format(Locale.ENGLISH, "%.1f %.1f | %.1f %.1f %.1f %.1f", axisHatX, axisHatY, leftAxisX, leftAsixY, rightAxisX, rightAxisY));
+            Log.i(TAG, String.format(Locale.ENGLISH, "%.1f %.1f | %.1f %.1f %.1f %.1f", axisHatX, axisHatY, leftAxisX, leftAsixY, rightAxisX, rightAxisY));
         }
         return false;
     }
@@ -343,7 +341,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                     keyMapCode = JOY_KEY_CODE_MAP_L_TWO;
                     break;
                 default:
-                    Log.e(TAG, "Bluetooth Event : " + event);
+                    Log.w(TAG, "Bluetooth Event : " + event);
                     break;
             }
             int indexSlot = getDeviceSlotIndex(event.getDeviceId());
@@ -361,13 +359,13 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 }
             }
             return true;
-        }else if ((eventSource & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD) {
-            sendKeyEvent("k "+KeyTypeEnum.findValue(event.getKeyCode())+" "+(event.getAction()==MotionEvent.ACTION_DOWN?1:0)+"\nc\n");
+        } else if ((eventSource & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD) {
+            sendKeyEvent("k " + KeyTypeEnum.findValue(event.getKeyCode()) + " " + (event.getAction() == MotionEvent.ACTION_DOWN ? 1 : 0) + "\nc\n");
             if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
                 onBackPress();
         } else {
             sendAndroidEvent(event.getAction(), event.getKeyCode());
-            LogEx.i(keyCode + " " + event + " " + event.getDevice().getId());
+            Log.i(TAG, keyCode + " " + event + " " + event.getDevice().getId());
             if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
                 onBackPress();
         }

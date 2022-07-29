@@ -1,6 +1,7 @@
 package com.intel.gamepad.utils;
 
-import com.commonlibrary.utils.LogEx;
+import android.util.Log;
+
 import com.intel.gamepad.app.AppConst;
 import com.jeremy.fastsharedpreferences.FastSharedPreferences;
 
@@ -10,7 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class IPUtils {
-    public static final String DEFAULT_IP = "http://10.239.93.183:30000/";
+    public static final String DEFAULT_IP = "http://10.239.93.183:8095/";
     public static final String DEFAULT_COTURN_IP = "10.239.93.183";
     public static final String DEFAULT_PEERID = "s0";
     public static final String DEFAULT_TOKENID = "c0";
@@ -18,6 +19,7 @@ public class IPUtils {
     public static final boolean DEFAULT_FOR_TEST = false;
     public static final boolean DEFAULT_PORTRAIT = false;
     public static final String DEFAULT_CODEC = AppConst.H264;
+    private static final String TAG = "IPUtils";
 
     public static void saveMediaCodec(String codec) {
         FastSharedPreferences.get("ip_file").edit().putString("mediacodec", codec).commit();
@@ -53,31 +55,39 @@ public class IPUtils {
 
     public static String loadIP() {
         String ip = FastSharedPreferences.get("ip_file").getString("ip", DEFAULT_IP);
-        LogEx.i(ip);
+        if (ip != null) {
+            Log.i(TAG, ip);
+        }
         return ip;
     }
 
     public static String loadCoturnIP() {
         String ip = FastSharedPreferences.get("ip_file").getString("coturnip", DEFAULT_COTURN_IP);
-        LogEx.i(ip);
+        if (ip != null) {
+            Log.i(TAG, ip);
+        }
         return ip;
     }
 
     public static String loadPeerID() {
         String peerid = FastSharedPreferences.get("ip_file").getString("peerid", DEFAULT_PEERID);
-        LogEx.i(peerid);
+        if (peerid != null) {
+            Log.i(TAG, peerid);
+        }
         return peerid;
     }
 
     public static String loadTokenID() {
         String token = FastSharedPreferences.get("ip_file").getString("token", DEFAULT_TOKENID);
-        LogEx.i(token);
+        if (token != null) {
+            Log.i(TAG, token);
+        }
         return token;
     }
 
     public static boolean loadAlphaChannel() {
         boolean alphaChannel = FastSharedPreferences.get("ip_file").getBoolean("alphachannel", DEFAULT_ALPHA_CHANNEL);
-        LogEx.i(alphaChannel + "");
+        Log.i(TAG, alphaChannel + "");
         return alphaChannel;
     }
 
@@ -91,7 +101,9 @@ public class IPUtils {
 
     public static String loadMediaCodec() {
         String codec = FastSharedPreferences.get("ip_file").getString("mediacodec", DEFAULT_CODEC);
-        LogEx.i(codec);
+        if (codec != null) {
+            Log.i(TAG, codec);
+        }
         return codec;
     }
 

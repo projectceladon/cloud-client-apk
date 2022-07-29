@@ -35,6 +35,8 @@
         <entry key="app/src/main/res/layout/item_game_image.xml" value="0.19791666666666666" />
         <entry key="app/src/main/res/layout/item_room.xml" value="0.19791666666666666" />
         <entry key="app/src/main/res/layout/popup_orientation_window.xml" value="0.18177083333333333" />
+        <entry key="commonlibrary/src/main/res/layout/activity_calendar.xml" value="0.18177083333333333" />
+        <entry key="commonlibrary/src/main/res/layout/activity_camer_gallery.xml" value="0.18177083333333333" />
       </map>
     </option>
   </component>

@@ -22,7 +22,7 @@ public class BweStatsVideoSink implements VideoSink {
             int iDelay = (int) Math.round(delay);
             if (iDelay > 0) {
                 if (bweStatsEvents != null) {
-                    bweStatsEvents.onBweStats(iDelay,frame.bweStats.frameSize,frame.bweStats.packetsLost);
+                    bweStatsEvents.onBweStats(iDelay, frame.bweStats.frameSize, frame.bweStats.packetsLost);
                 }
             }
         }

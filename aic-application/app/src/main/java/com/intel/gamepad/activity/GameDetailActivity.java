@@ -289,7 +289,7 @@ public class GameDetailActivity extends BaseActivity {
             try {
                 FileUtils.writeStringToFile(codecWhitelistXMLFile, referenceXmlStr, "UTF8");
             } catch (Exception e) {
-                Log.d(TAG, "error creating file: " + codecWhitelistXMLFile.getName());
+                Log.e(TAG, "error creating file: " + codecWhitelistXMLFile.getName());
                 e.printStackTrace();
             }
             return;
@@ -300,7 +300,7 @@ public class GameDetailActivity extends BaseActivity {
             fileContent = FileUtils.readFileToString(codecWhitelistXMLFile, "UTF8");
         } catch (IOException e) {
             // error reading file, probably
-            Log.d(TAG, "cannot update file (" + codecWhitelistXMLFile.getAbsolutePath()
+            Log.e(TAG, "cannot update file (" + codecWhitelistXMLFile.getAbsolutePath()
                     + "), error reading file: " + e.getMessage());
             e.printStackTrace();
             return;
