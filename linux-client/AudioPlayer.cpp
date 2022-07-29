@@ -1,8 +1,6 @@
 #include "AudioPlayer.h"
 
-AudioPlayer::AudioPlayer() {
-  init();
-}
+AudioPlayer::AudioPlayer() { init(); }
 
 AudioPlayer::~AudioPlayer() {
 #ifdef USE_SDL
@@ -26,8 +24,10 @@ void AudioPlayer::init() {
   desired_spec.samples = 480;
   desired_spec.callback = NULL;
 
-  if ((auddev_ = SDL_OpenAudioDevice(NULL, 0, &desired_spec, NULL, SDL_AUDIO_ALLOW_ANY_CHANGE)) < 2) {
-    std::cout << "SDL_OpenAudioDevice with error deviceID: " << auddev_ << std::endl;
+  if ((auddev_ = SDL_OpenAudioDevice(NULL, 0, &desired_spec, NULL,
+                                     SDL_AUDIO_ALLOW_ANY_CHANGE)) < 2) {
+    std::cout << "SDL_OpenAudioDevice with error deviceID: " << auddev_
+              << std::endl;
     return;
   }
 
@@ -71,7 +71,8 @@ void AudioPlayer::OnData(const void *audio_data, int bits_per_sample,
 
 #ifdef USE_SDL
   if (auddev_ > 0) {
-    SDL_QueueAudio(auddev_, audio_data, number_of_frames * number_of_channels * bits_per_sample / 8);
+    SDL_QueueAudio(auddev_, audio_data,
+                   number_of_frames * number_of_channels * bits_per_sample / 8);
   }
 #else
   int rc = snd_pcm_writei(handle_, audio_data, frames_);

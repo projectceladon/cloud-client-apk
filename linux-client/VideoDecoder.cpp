@@ -1,12 +1,14 @@
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "VideoDecoder.h"
+
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <iostream>
-#include "VideoDecoder.h"
 
-enum AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {
+enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
+                                 const enum AVPixelFormat *pix_fmts) {
   return AV_PIX_FMT_VAAPI;
 }
 
@@ -41,8 +43,8 @@ VideoDecoder::~VideoDecoder() {
 
 int VideoDecoder::initDecoder(uint32_t codec_type) {
   AVCodecID codec_id = (codec_type == int(VideoCodecType::kH265))
-                       ? AV_CODEC_ID_H265
-                       : AV_CODEC_ID_H264;
+                           ? AV_CODEC_ID_H265
+                           : AV_CODEC_ID_H264;
 
   mCodec = avcodec_find_decoder(codec_id);
   mCodecContext = avcodec_alloc_context3(mCodec);
@@ -57,7 +59,7 @@ int VideoDecoder::initDecoder(uint32_t codec_type) {
     return -1;
   }
 
-  AVHWDeviceContext *hwctx = (AVHWDeviceContext *) mHWDeviceCtx->data;
+  AVHWDeviceContext *hwctx = (AVHWDeviceContext *)mHWDeviceCtx->data;
   AVVAAPIDeviceContext *vactx = (AVVAAPIDeviceContext *)hwctx->hwctx;
   vactx->display = mVADisplay;
   if (av_hwdevice_ctx_init(mHWDeviceCtx) < 0) {

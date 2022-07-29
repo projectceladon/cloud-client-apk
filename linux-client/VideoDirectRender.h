@@ -1,20 +1,18 @@
 #ifndef VIDEO_DIRECT_RENDER_
 #define VIDEO_DIRECT_RENDER_
 
-#include <va/va_drmcommon.h>
-#include <drm_fourcc.h>
-
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
-#include <X11/Xutil.h>
-
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+#include <X11/Xatom.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <drm_fourcc.h>
+#include <va/va_drmcommon.h>
+
 #include <functional>
 
 #include "Common.h"
@@ -24,7 +22,7 @@
 using EventListener = std::function<void(const char* event, const char* param)>;
 
 class VideoDirectRender {
-public:
+ public:
   VideoDirectRender();
   virtual ~VideoDirectRender();
 
@@ -37,16 +35,12 @@ public:
     mEventListener = event_listener;
   }
 
-  void setVADisplay(VADisplay va_display) {
-    mVADisplay = va_display;
-  }
+  void setVADisplay(VADisplay va_display) { mVADisplay = va_display; }
 
-  void OnFrame(VASurfaceID va_surface) {
-    renderFrame(va_surface);
-  }
+  void OnFrame(VASurfaceID va_surface) { renderFrame(va_surface); }
 
-private:
-  Display *mXDisplay;
+ private:
+  Display* mXDisplay;
   Window mWindow;
   Atom mWMDeleteWindow;
 

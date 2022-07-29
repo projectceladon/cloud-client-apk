@@ -1,28 +1,34 @@
 #ifndef _PC_OBSERVER_H
 #define _PC_OBSERVER_H
 
-#include "owt/base/audioplayerinterface.h"
-#include "owt/p2p/p2pclient.h"
 #include <iostream>
 
+#include "owt/base/audioplayerinterface.h"
+#include "owt/p2p/p2pclient.h"
+
 class PcObserver : public owt::p2p::P2PClientObserver {
-public:
+ public:
   PcObserver() : direct_render(true) {}
 
   PcObserver(std::shared_ptr<AudioPlayer> audio_player)
-   : audio_player_(audio_player), direct_render(true) {}
+      : audio_player_(audio_player), direct_render(true) {}
 
-  PcObserver(std::shared_ptr<VideoRenderer> renderer, std::shared_ptr<AudioPlayer> audio_player)
-   : renderer_(renderer), audio_player_(audio_player), direct_render(false) {}
+  PcObserver(std::shared_ptr<VideoRenderer> renderer,
+             std::shared_ptr<AudioPlayer> audio_player)
+      : renderer_(renderer),
+        audio_player_(audio_player),
+        direct_render(false) {}
 
   virtual ~PcObserver() {}
 
   void OnMessageReceived(const std::string& remote_user_id,
                          const std::string message) {
-    std::cout << __func__ << ":from" << remote_user_id << ", msg:" << message << std::endl;
+    std::cout << __func__ << ":from" << remote_user_id << ", msg:" << message
+              << std::endl;
   }
 
-  virtual void OnStreamAdded(std::shared_ptr<owt::base::RemoteStream> stream) override {
+  virtual void OnStreamAdded(
+      std::shared_ptr<owt::base::RemoteStream> stream) override {
     if (!direct_render) {
       VideoRenderer* render = renderer_.get();
       stream->AttachVideoRenderer(*render);
@@ -34,11 +40,9 @@ public:
     }
   }
 
-  void OnServerDisconnected() {
-    std::cout << __func__ << ":" << std::endl;
-  }
+  void OnServerDisconnected() { std::cout << __func__ << ":" << std::endl; }
 
-private:
+ private:
   std::shared_ptr<VideoRenderer> renderer_;
   std::shared_ptr<AudioPlayer> audio_player_;
   bool direct_render;

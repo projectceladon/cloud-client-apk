@@ -1,7 +1,8 @@
-#include <vector>
-#include <mutex>
 #include "CGCodec.h"
+
 #include <fstream>
+#include <mutex>
+#include <vector>
 
 #define MAX_DEVICE_NAME_SIZE 21
 #define MAX_ALLOWED_PENDING_FRAMES 2
@@ -10,7 +11,7 @@ using namespace std;
 
 //////// @class CGVideoFrame ////////
 
-//std::ofstream ouF;
+// std::ofstream ouF;
 
 CGPixelFormat CGVideoFrame::format() {
   switch (m_avframe->format) {
@@ -28,12 +29,13 @@ int CGVideoFrame::copy_to_buffer(uint8_t *out_buffer, int *size) {
     return -1;
   }
 
-  int buf_size = av_image_get_buffer_size((AVPixelFormat)m_avframe->format, m_avframe->width,
-                                          m_avframe->height, 1);
+  int buf_size = av_image_get_buffer_size(
+      (AVPixelFormat)m_avframe->format, m_avframe->width, m_avframe->height, 1);
 
-  int ret = av_image_copy_to_buffer(out_buffer, buf_size, (const uint8_t *const *)m_avframe->data,
-                                    (const int *)m_avframe->linesize, (AVPixelFormat)m_avframe->format,
-                                    m_avframe->width, m_avframe->height, 1);
+  int ret = av_image_copy_to_buffer(
+      out_buffer, buf_size, (const uint8_t *const *)m_avframe->data,
+      (const int *)m_avframe->linesize, (AVPixelFormat)m_avframe->format,
+      m_avframe->width, m_avframe->height, 1);
   if (ret < 0) {
     std::cout << "Can not copy image to buffer." << std::endl;
     return -1;
@@ -61,7 +63,8 @@ struct DecodeContext {
   int frame_size;
 };
 
-DecodeContext::DecodeContext(int codec_type, int resolution_type) : codec_type(codec_type) {
+DecodeContext::DecodeContext(int codec_type, int resolution_type)
+    : codec_type(codec_type) {
   parser = nullptr;
   avcodec_ctx = nullptr;
   packet = nullptr;
@@ -75,8 +78,9 @@ DecodeContext::DecodeContext(int codec_type, int resolution_type) : codec_type(c
     resolution = std::make_pair(1920, 1080);
   }
   frame_size = resolution.first * resolution.second / 2 * 3;
-  std::cout << "Config decode type:" << codec_type << " width:"
-            << resolution.first << " height:" << resolution.second << std::endl;
+  std::cout << "Config decode type:" << codec_type
+            << " width:" << resolution.first << " height:" << resolution.second
+            << std::endl;
 }
 
 void DecodeContextDeleter::operator()(DecodeContext *p) { delete p; }
@@ -84,25 +88,25 @@ void DecodeContextDeleter::operator()(DecodeContext *p) { delete p; }
 //////// @class HWAccelContext ////////
 
 struct HWAccelContext {
-  HWAccelContext(const AVCodec *decoder,
-                 AVCodecContext *avcodec_ctx,
-                 const char *device_name,
-                 int extra_frames);
+  HWAccelContext(const AVCodec *decoder, AVCodecContext *avcodec_ctx,
+                 const char *device_name, int extra_frames);
   virtual ~HWAccelContext();
 
   AVPixelFormat get_hw_pixel_format() { return m_hw_pix_fmt; }
   bool is_hw_accel_valid() { return m_hw_accel_valid; }
 
-private:
+ private:
   AVPixelFormat m_hw_pix_fmt = AV_PIX_FMT_NONE;
   AVBufferRef *m_hw_dev_ctx = nullptr;
 
   bool m_hw_accel_valid = false;
 };
 
-static enum AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {
+static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
+                                        const enum AVPixelFormat *pix_fmts) {
   const enum AVPixelFormat *p;
-  HWAccelContext *hw_accel_ctx = reinterpret_cast<HWAccelContext *>(ctx->opaque);
+  HWAccelContext *hw_accel_ctx =
+      reinterpret_cast<HWAccelContext *>(ctx->opaque);
   const enum AVPixelFormat hw_pix_fmt = hw_accel_ctx->get_hw_pixel_format();
 
   for (p = pix_fmts; *p != -1; p++) {
@@ -113,11 +117,12 @@ static enum AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelF
   return AV_PIX_FMT_NONE;
 }
 
-HWAccelContext::HWAccelContext(const AVCodec *decoder, AVCodecContext *avcodec_ctx,
+HWAccelContext::HWAccelContext(const AVCodec *decoder,
+                               AVCodecContext *avcodec_ctx,
                                const char *device_name, int extra_frames) {
   const char *device_prefix = "/dev/dri/renderD";
   char device[MAX_DEVICE_NAME_SIZE] = {'\0'};
-  //char prop_val[PROPERTY_VALUE_MAX] = {'\0'};
+  // char prop_val[PROPERTY_VALUE_MAX] = {'\0'};
 
   if (!decoder || !avcodec_ctx || !device_name || extra_frames < 0) {
     std::cout << "Invalid parameters for hw accel context." << std::endl;
@@ -126,19 +131,21 @@ HWAccelContext::HWAccelContext(const AVCodec *decoder, AVCodecContext *avcodec_c
 
   AVHWDeviceType type = av_hwdevice_find_type_by_name(device_name);
   if (type == AV_HWDEVICE_TYPE_NONE) {
-    std::cout << "Device type " << device_name << " is not supported." << std::endl;
+    std::cout << "Device type " << device_name << " is not supported."
+              << std::endl;
     return;
   }
 
   for (int i = 0;; i++) {
     const AVCodecHWConfig *config = avcodec_get_hw_config(decoder, i);
     if (config == nullptr) {
-      std::cout << "Decoder " << decoder->name << " does not support device type "
+      std::cout << "Decoder " << decoder->name
+                << " does not support device type "
                 << av_hwdevice_get_type_name(type) << std::endl;
       return;
     }
     if (config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
-      config->device_type == type) {
+        config->device_type == type) {
       m_hw_pix_fmt = config->pix_fmt;
       break;
     }
@@ -177,25 +184,24 @@ CGVideoDecoder::~CGVideoDecoder() { destroy(); }
 
 bool CGVideoDecoder::can_decode() const { return decoder_ready; }
 
-int CGVideoDecoder::init_impl(FrameResolution resolution,
-                         uint32_t codec_type,
-                         const char *device_name,
-                         int extra_hw_frames) {
+int CGVideoDecoder::init_impl(FrameResolution resolution, uint32_t codec_type,
+                              const char *device_name, int extra_hw_frames) {
   std::lock_guard<std::recursive_mutex> decode_push_lock(push_lock);
   std::lock_guard<std::recursive_mutex> decode_pull_lock(pull_lock);
   decoder_ready = false;
-  //ouF.open("./raw.h264", std::ofstream::binary| std::ofstream::out);
+  // ouF.open("./raw.h264", std::ofstream::binary| std::ofstream::out);
 
   // Update current init parameters which would be used during re-init.
   this->codec_type = codec_type;
   this->resolution = resolution;
   this->device_name = device_name;
 
-  m_decode_ctx = CGDecContex(new DecodeContext(int(codec_type), int(resolution)));
+  m_decode_ctx =
+      CGDecContex(new DecodeContext(int(codec_type), int(resolution)));
 
   AVCodecID codec_id = (codec_type == int(VideoCodecType::kH265))
-                       ? AV_CODEC_ID_H265
-                       : AV_CODEC_ID_H264;
+                           ? AV_CODEC_ID_H265
+                           : AV_CODEC_ID_H264;
 
   const AVCodec *codec = avcodec_find_decoder(codec_id);
   if (codec == nullptr) {
@@ -217,11 +223,14 @@ int CGVideoDecoder::init_impl(FrameResolution resolution,
   }
 
   if (device_name != nullptr) {
-    m_hw_accel_ctx = CGHWAccelContex(new HWAccelContext(codec, c, device_name, extra_hw_frames));
+    m_hw_accel_ctx = CGHWAccelContex(
+        new HWAccelContext(codec, c, device_name, extra_hw_frames));
     if (m_hw_accel_ctx->is_hw_accel_valid()) {
-      std::cout << "Use device " << device_name << " to accelerate decoding!" << std::endl;
+      std::cout << "Use device " << device_name << " to accelerate decoding!"
+                << std::endl;
     } else {
-      std::cout << "System doesn't support VAAPI(Video Acceleration API). Please use SW Decoding."
+      std::cout << "System doesn't support VAAPI(Video Acceleration API). "
+                   "Please use SW Decoding."
                 << std::endl;
       return -1;
     }
@@ -252,20 +261,19 @@ int CGVideoDecoder::init_impl(FrameResolution resolution,
   return 0;
 }
 
-int CGVideoDecoder::init(FrameResolution resolution,
-                         uint32_t codec_type,
-                         int* width, int* height,
-                         const char *device_name,
+int CGVideoDecoder::init(FrameResolution resolution, uint32_t codec_type,
+                         int *width, int *height, const char *device_name,
                          int extra_hw_frames) {
   init_impl(resolution, codec_type, device_name, extra_hw_frames);
   *width = m_decode_ctx->resolution.first;
   *height = m_decode_ctx->resolution.second;
-  std::cout <<"init end" << std::endl;
+  std::cout << "init end" << std::endl;
   return 0;
 }
 
-int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf, int *out_size, int *out_width, int *out_height) {
-  //ouF.write((const char *) data, data_size);
+int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf,
+                           int *out_size, int *out_width, int *out_height) {
+  // ouF.write((const char *) data, data_size);
   std::lock_guard<std::recursive_mutex> decode_access_lock(push_lock);
   if (!can_decode()) {
     std::cout << "Decoder not initialized!" << std::endl;
@@ -317,18 +325,16 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf,
     }
   }
 #else
-  pkt->data = const_cast<uint8_t*>(data);
+  pkt->data = const_cast<uint8_t *>(data);
   pkt->size = data_size;
-  if (pkt->size &&
-      decode_one_frame(pkt, out_buf, out_size, out_width, out_height) == AVERROR_INVALIDDATA) {
+  if (pkt->size && decode_one_frame(pkt, out_buf, out_size, out_width,
+                                    out_height) == AVERROR_INVALIDDATA) {
     std::cout << "re-init" << std::endl;
     flush_decoder();
     destroy();
-    if (init_impl((FrameResolution)this->resolution,
-             this->codec_type,
-             this->device_name, 0) < 0) {
-      std::cout << "re-init failed. "
-                << device_name << " decoding"
+    if (init_impl((FrameResolution)this->resolution, this->codec_type,
+                  this->device_name, 0) < 0) {
+      std::cout << "re-init failed. " << device_name << " decoding"
                 << std::endl;
       return -1;
     }
@@ -338,7 +344,9 @@ int CGVideoDecoder::decode(const uint8_t *data, int data_size, uint8_t *out_buf,
   return 0;
 }
 
-int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int *out_size, int *out_width, int *out_height) {
+int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf,
+                                     int *out_size, int *out_width,
+                                     int *out_height) {
   AVCodecContext *c = m_decode_ctx->avcodec_ctx;
   int sent = avcodec_send_packet(c, pkt);
   if (sent < 0) {
@@ -358,7 +366,8 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
     }
     decode_stat = avcodec_receive_frame(c, frame);
     if (decode_stat == AVERROR(EAGAIN) || decode_stat == AVERROR_EOF) {
-      //std::cout << __func__ << " avcodec_receive_frame returned error" << std::endl;
+      // std::cout << __func__ << " avcodec_receive_frame returned error" <<
+      // std::endl;
       break;
     } else if (decode_stat < 0) {
       std::cout << "Error during decoding" << std::endl;
@@ -366,13 +375,12 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
       return -1;
     }
 
-    if(frame->format != AV_PIX_FMT_YUV420P &&
+    if (frame->format != AV_PIX_FMT_YUV420P &&
         frame->format != AV_PIX_FMT_VAAPI) {
       if (frame->format != AV_PIX_FMT_YUV420P &&
           frame->format != AV_PIX_FMT_VAAPI)
         std::cout << "Input frame format " << frame->format
-                  << " is not matching with Decoder format"
-                  << std::endl;
+                  << " is not matching with Decoder format" << std::endl;
 
       av_frame_free(&frame);
       return -1;
@@ -393,7 +401,8 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
       /* retrieve data from GPU to CPU */
       int ret = av_hwframe_transfer_data(sw_frame, frame, 0);
       if (ret < 0) {
-        std::cout << "Error transferring the data to system memory" << std::endl;
+        std::cout << "Error transferring the data to system memory"
+                  << std::endl;
         return -1;
       }
 
@@ -411,20 +420,16 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
       frame = nullptr;
 #else
       int buf_size = av_image_get_buffer_size((AVPixelFormat)frame->format,
-                                              frame->width,
-                                              frame->height,
-                                              1);
-      int ret = av_image_copy_to_buffer(out_buf,
-                                       //m_decode_ctx->frame_size,
-                                        buf_size,
-                                        (const uint8_t *const *)frame->data,
-                                        (const int *)frame->linesize,
-                                        (AVPixelFormat)frame->format,
-                                        //m_decode_ctx->resolution.first,
-                                        frame->width,
-                                        //m_decode_ctx->resolution.second,
-                                        frame->height,
-                                        1);
+                                              frame->width, frame->height, 1);
+      int ret = av_image_copy_to_buffer(
+          out_buf,
+          // m_decode_ctx->frame_size,
+          buf_size, (const uint8_t *const *)frame->data,
+          (const int *)frame->linesize, (AVPixelFormat)frame->format,
+          // m_decode_ctx->resolution.first,
+          frame->width,
+          // m_decode_ctx->resolution.second,
+          frame->height, 1);
       if (ret < 0) {
         std::cout << "Can not copy image to buffer" << std::endl;
         return -1;
@@ -432,19 +437,22 @@ int CGVideoDecoder::decode_one_frame(const AVPacket *pkt, uint8_t *out_buf, int 
       *out_size = buf_size;
       *out_width = frame->width;
       *out_height = frame->height;
-      std::cout << "frame_size" << frame->width <<  "---" << frame->height <<  std::endl;
-      std::cout << "buffer_size" << buf_size << ", frame_size" << m_decode_ctx -> frame_size << std::endl;
-      //ouF.write((const char*)out_buf, buf_size);
+      std::cout << "frame_size" << frame->width << "---" << frame->height
+                << std::endl;
+      std::cout << "buffer_size" << buf_size << ", frame_size"
+                << m_decode_ctx->frame_size << std::endl;
+      // ouF.write((const char*)out_buf, buf_size);
 
       // untransfer, cause we can get it correctly
       /*if (!nv12buffer_.empty()) {
         // nv12toi420
-        int step = m_decode_ctx->resolution.first * m_decode_ctx->resolution.second;
-        memcpy(&nv12buffer_[0], out_buf, step * 3 / 2);
-        for(int i = 0,j = 0; i < step / 4; i++,j += 2)
+        int step = m_decode_ctx->resolution.first *
+      m_decode_ctx->resolution.second; memcpy(&nv12buffer_[0], out_buf, step * 3
+      / 2); for(int i = 0,j = 0; i < step / 4; i++,j += 2)
         {
            memcpy(out_buf + step + i, &nv12buffer_[0] + step + j, 1);//u
-           memcpy(out_buf + step + step / 4 +i, &nv12buffer_[0]+ step + j + 1,1);// v
+           memcpy(out_buf + step + step / 4 +i, &nv12buffer_[0]+ step + j +
+      1,1);// v
         }
 
         // i420tonv12

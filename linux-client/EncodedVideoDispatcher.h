@@ -2,37 +2,38 @@
 #define ENCODED_VIDEO_DISPATCHER_H
 
 #include <functional>
+
 #include "owt/base/videodecoderinterface.h"
 
 using namespace owt::base;
-using VideoFrameCallback = std::function<void(std::unique_ptr<VideoEncodedFrame> frame)>;
+using VideoFrameCallback =
+    std::function<void(std::unique_ptr<VideoEncodedFrame> frame)>;
 
 class EncodedVideoDispatcher : public owt::base::VideoDecoderInterface {
-public:
+ public:
   EncodedVideoDispatcher(VideoFrameCallback callback);
   virtual ~EncodedVideoDispatcher() {}
 
-  bool InitDecodeContext(VideoCodec video_codec, int* width, int* height) override {
+  bool InitDecodeContext(VideoCodec video_codec, int* width,
+                         int* height) override {
     video_codec_ = video_codec;
     return true;
   }
 
   bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) override;
 
-  uint8_t* getDecodedFrame(int *frame_width, int *frame_height) override;
+  uint8_t* getDecodedFrame(int* frame_width, int* frame_height) override;
 
-  bool Release() override {
-    return true;
-  }
+  bool Release() override { return true; }
 
   VideoDecoderInterface* Copy() override {
     return new EncodedVideoDispatcher(callback_);
   }
 
-private:
+ private:
   int Write(int vhal_sock, const uint8_t* data, size_t size);
 
-private:
+ private:
   VideoCodec video_codec_ = VideoCodec::kH264;
   VideoFrameCallback callback_ = nullptr;
 };

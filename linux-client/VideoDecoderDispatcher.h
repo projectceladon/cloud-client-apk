@@ -1,34 +1,33 @@
 #ifndef VIDEO_DECODER_DISPATCHER_H
 #define VIDEO_DECODER_DISPATCHER_H
 
-#include "owt/base/videodecoderinterface.h"
 #include "CGCodec.h"
+#include "owt/base/videodecoderinterface.h"
 
 using namespace owt::base;
 
-class  VideoDecoderDispatcher : public owt::base::VideoDecoderInterface {
-public:
+class VideoDecoderDispatcher : public owt::base::VideoDecoderInterface {
+ public:
   VideoDecoderDispatcher(CGCodecSettings settings);
-  virtual ~ VideoDecoderDispatcher() {}
+  virtual ~VideoDecoderDispatcher() {}
 
-  bool InitDecodeContext(VideoCodec video_codec, int* width, int* height) override;
+  bool InitDecodeContext(VideoCodec video_codec, int* width,
+                         int* height) override;
 
   bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) override;
 
-  uint8_t* getDecodedFrame(int *frame_width, int *frame_height) override;
+  uint8_t* getDecodedFrame(int* frame_width, int* frame_height) override;
 
-  bool Release() override {
-    return true;
-  }
+  bool Release() override { return true; }
 
   VideoDecoderInterface* Copy() override {
-    return new  VideoDecoderDispatcher(codec_settings_);
+    return new VideoDecoderDispatcher(codec_settings_);
   }
 
-private:
+ private:
   int Write(int vhal_sock, const uint8_t* data, size_t size);
 
-private:
+ private:
   VideoCodec video_codec_ = VideoCodec::kH264;
   std::shared_ptr<CGVideoDecoder> decoder_;
   CGCodecSettings codec_settings_;
@@ -36,7 +35,7 @@ private:
   int out_size;
   int frame_width_;
   int frame_height_;
-  FILE *fid;
+  FILE* fid;
   int count = 0;
 };
 

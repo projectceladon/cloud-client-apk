@@ -17,16 +17,16 @@ extern "C" {
 #include "Common.h"
 
 class VideoDecoder {
-public:
+ public:
   VideoDecoder();
   virtual ~VideoDecoder();
 
   int initDecoder(uint32_t codec_type);
-  int decode(AVPacket *pkt, AVFrame* frame);
+  int decode(AVPacket *pkt, AVFrame *frame);
 
   VADisplay getVADisplay() { return mVADisplay; }
 
-private:
+ private:
   const char *DRM_NODE = "/dev/dri/renderD128";
   int mDrmFd = -1;
   VADisplay mVADisplay = 0;

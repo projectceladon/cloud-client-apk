@@ -1,22 +1,20 @@
 #include "VideoRender.h"
 
-VideoRenderer::VideoRenderer(VideoRendererListener* listener):mListener(listener) {
-}
+VideoRenderer::VideoRenderer(VideoRendererListener* listener)
+    : mListener(listener) {}
 
-VideoRenderer::~VideoRenderer() {
-}
+VideoRenderer::~VideoRenderer() {}
 
-void VideoRenderer::RenderFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer) {
-  //std::lock_guard<std::mutex> lock(m_lock);
-  //video_buffer_ = std::move(video_buffer);
+void VideoRenderer::RenderFrame(
+    std::unique_ptr<owt::base::VideoBuffer> video_buffer) {
+  // std::lock_guard<std::mutex> lock(m_lock);
+  // video_buffer_ = std::move(video_buffer);
   if (mListener) {
-    mListener -> onFrame(std::move(video_buffer));
+    mListener->onFrame(std::move(video_buffer));
   }
 }
 
-void VideoRenderer::reset() {
-  mListener = nullptr;
-}
+void VideoRenderer::reset() { mListener = nullptr; }
 
 /*std::unique_ptr<owt::base::VideoBuffer> VideoRenderer::getFrame() {
   std::lock_guard<std::mutex> lock(m_lock);

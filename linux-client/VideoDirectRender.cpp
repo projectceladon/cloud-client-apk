@@ -1,68 +1,92 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <iostream>
 #include "VideoDirectRender.h"
 
-#define USE_LAYERS       1
-#define REUSE_TEXTURES   1
-#define SWAP_INTERVAL    2
+#include <stdio.h>
+#include <unistd.h>
+
+#include <iostream>
+
+#define USE_LAYERS 1
+#define REUSE_TEXTURES 1
+#define SWAP_INTERVAL 2
 
 #define CORE_PROFILE_MAJOR_VERSION 3
 #define CORE_PROFILE_MINOR_VERSION 3
 #define COMP_PROFILE_MAJOR_VERSION 3
 #define COMP_PROFILE_MINOR_VERSION 0
 
-#define LOOKUP_FUNCTION(type, func) \
-        func = (type) eglGetProcAddress(#func); \
-        if (!func) { printf("eglGetProcAddress(" #func ")\n"); }
+#define LOOKUP_FUNCTION(type, func)           \
+  func = (type)eglGetProcAddress(#func);      \
+  if (!func) {                                \
+    printf("eglGetProcAddress(" #func ")\n"); \
+  }
 
-#define DECLARE_YUV2RGB_MATRIX_GLSL \
-        "const mat4 yuv2rgb = mat4(\n" \
-        "    vec4(  1.1644,  1.1644,  1.1644,  0.0000 ),\n" \
-        "    vec4(  0.0000, -0.2132,  2.1124,  0.0000 ),\n" \
-        "    vec4(  1.7927, -0.5329,  0.0000,  0.0000 ),\n" \
-        "    vec4( -0.9729,  0.3015, -1.1334,  1.0000 ));"
+#define DECLARE_YUV2RGB_MATRIX_GLSL                   \
+  "const mat4 yuv2rgb = mat4(\n"                      \
+  "    vec4(  1.1644,  1.1644,  1.1644,  0.0000 ),\n" \
+  "    vec4(  0.0000, -0.2132,  2.1124,  0.0000 ),\n" \
+  "    vec4(  1.7927, -0.5329,  0.0000,  0.0000 ),\n" \
+  "    vec4( -0.9729,  0.3015, -1.1334,  1.0000 ));"
 
 #if USE_CORE_PROFILE
 static const char *vs_src =
-             "#version 130"
-        "\n" "const vec2 coords[4] = vec2[]( vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), vec2(1.,1.) );"
-        "\n" "uniform vec2 uTexCoordScale;"
-        "\n" "out vec2 vTexCoord;"
-        "\n" "void main() {"
-        "\n" "    vec2 c = coords[gl_VertexID];"
-        "\n" "    vTexCoord = c * uTexCoordScale;"
-        "\n" "    gl_Position = vec4(c * vec2(2.,-2.) + vec2(-1.,1.), 0., 1.);"
-        "\n" "}";
+    "#version 130"
+    "\n"
+    "const vec2 coords[4] = vec2[]( vec2(0.,0.), vec2(1.,0.), vec2(0.,1.), "
+    "vec2(1.,1.) );"
+    "\n"
+    "uniform vec2 uTexCoordScale;"
+    "\n"
+    "out vec2 vTexCoord;"
+    "\n"
+    "void main() {"
+    "\n"
+    "    vec2 c = coords[gl_VertexID];"
+    "\n"
+    "    vTexCoord = c * uTexCoordScale;"
+    "\n"
+    "    gl_Position = vec4(c * vec2(2.,-2.) + vec2(-1.,1.), 0., 1.);"
+    "\n"
+    "}";
 
 static const char *fs_src =
-             "#version 130"
-        "\n" "in vec2 vTexCoord;"
-        "\n" "uniform sampler2D uTexY, uTexC;"
-        "\n" DECLARE_YUV2RGB_MATRIX_GLSL
-        "\n" "out vec4 oColor;"
-        "\n" "void main() {"
-        "\n" "    oColor = yuv2rgb * vec4(texture(uTexY, vTexCoord).x, "
-                                         "texture(uTexC, vTexCoord).xy, 1.);"
-        "\n" "}";
+    "#version 130"
+    "\n"
+    "in vec2 vTexCoord;"
+    "\n"
+    "uniform sampler2D uTexY, uTexC;"
+    "\n" DECLARE_YUV2RGB_MATRIX_GLSL
+    "\n"
+    "out vec4 oColor;"
+    "\n"
+    "void main() {"
+    "\n"
+    "    oColor = yuv2rgb * vec4(texture(uTexY, vTexCoord).x, "
+    "texture(uTexC, vTexCoord).xy, 1.);"
+    "\n"
+    "}";
 #else
 static const char *vs_src =
-             "void main() {"
-        "\n" "    gl_Position = ftransform();"
-        "\n" "    gl_TexCoord[0] = gl_MultiTexCoord0;"
-        "\n" "}";
+    "void main() {"
+    "\n"
+    "    gl_Position = ftransform();"
+    "\n"
+    "    gl_TexCoord[0] = gl_MultiTexCoord0;"
+    "\n"
+    "}";
 
 static const char *fs_src =
-             "uniform sampler2D uTexY, uTexC;"
-        "\n" DECLARE_YUV2RGB_MATRIX_GLSL
-        "\n" "void main() {"
-        "\n" "    gl_FragColor = yuv2rgb * vec4(texture2D(uTexY, gl_TexCoord[0].xy).x, "
-                                               "texture2D(uTexC, gl_TexCoord[0].xy).xy, 1.);"
-        "\n" "}";
+    "uniform sampler2D uTexY, uTexC;"
+    "\n" DECLARE_YUV2RGB_MATRIX_GLSL
+    "\n"
+    "void main() {"
+    "\n"
+    "    gl_FragColor = yuv2rgb * vec4(texture2D(uTexY, gl_TexCoord[0].xy).x, "
+    "texture2D(uTexC, gl_TexCoord[0].xy).xy, 1.);"
+    "\n"
+    "}";
 #endif
 
-VideoDirectRender::VideoDirectRender() {
-}
+VideoDirectRender::VideoDirectRender() {}
 
 VideoDirectRender::~VideoDirectRender() {
   std::cout << "~VideoDirectRender()" << std::endl;
@@ -91,10 +115,10 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   XSetWindowAttributes xattr;
   xattr.override_redirect = False;
   xattr.border_pixel = 0;
-  mWindow = XCreateWindow(mXDisplay, DefaultRootWindow(mXDisplay),
-           0, 0, window_width, window_height,
-           0, CopyFromParent, InputOutput, CopyFromParent,
-           CWOverrideRedirect | CWBorderPixel, &xattr);
+  mWindow =
+      XCreateWindow(mXDisplay, DefaultRootWindow(mXDisplay), 0, 0, window_width,
+                    window_height, 0, CopyFromParent, InputOutput,
+                    CopyFromParent, CWOverrideRedirect | CWBorderPixel, &xattr);
   if (!mWindow) {
     std::cerr << "XCreateWindow failed!" << std::endl;
     return -1;
@@ -102,7 +126,9 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
 
   XStoreName(mXDisplay, mWindow, "AIC Linux Native Client");
   XMapWindow(mXDisplay, mWindow);
-  XSelectInput(mXDisplay, mWindow, ExposureMask | StructureNotifyMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
+  XSelectInput(mXDisplay, mWindow,
+               ExposureMask | StructureNotifyMask | KeyPressMask |
+                   ButtonPressMask | ButtonReleaseMask | PointerMotionMask);
   mWMDeleteWindow = XInternAtom(mXDisplay, "WM_DELETE_WINDOW", True);
   XSetWMProtocols(mXDisplay, mWindow, &mWMDeleteWindow, 1);
 
@@ -120,19 +146,24 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
     return -1;
   }
 
-  EGLint visual_attr[] = {
-        EGL_SURFACE_TYPE,    EGL_WINDOW_BIT,
-        EGL_RED_SIZE,        8,
-        EGL_GREEN_SIZE,      8,
-        EGL_BLUE_SIZE,       8,
-        EGL_ALPHA_SIZE,      8,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_BIT,
-        EGL_NONE
-  };
+  EGLint visual_attr[] = {EGL_SURFACE_TYPE,
+                          EGL_WINDOW_BIT,
+                          EGL_RED_SIZE,
+                          8,
+                          EGL_GREEN_SIZE,
+                          8,
+                          EGL_BLUE_SIZE,
+                          8,
+                          EGL_ALPHA_SIZE,
+                          8,
+                          EGL_RENDERABLE_TYPE,
+                          EGL_OPENGL_BIT,
+                          EGL_NONE};
 
   EGLConfig cfg;
   EGLint cfg_count;
-  if (!eglChooseConfig(egl_display, visual_attr, &cfg, 1, &cfg_count) || (cfg_count < 1)) {
+  if (!eglChooseConfig(egl_display, visual_attr, &cfg, 1, &cfg_count) ||
+      (cfg_count < 1)) {
     std::cerr << "eglChooseConfig failed!" << std::endl;
     return -1;
   }
@@ -144,17 +175,21 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   }
 
   EGLint ctx_attr[] = {
-        EGL_CONTEXT_OPENGL_PROFILE_MASK,
-            #if USE_CORE_PROFILE & 1
-                EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT,
-                EGL_CONTEXT_MAJOR_VERSION, CORE_PROFILE_MAJOR_VERSION,
-                EGL_CONTEXT_MINOR_VERSION, CORE_PROFILE_MINOR_VERSION,
-            #else
-                EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
-                EGL_CONTEXT_MAJOR_VERSION, COMP_PROFILE_MAJOR_VERSION,
-                EGL_CONTEXT_MINOR_VERSION, COMP_PROFILE_MINOR_VERSION,
-            #endif
-        EGL_NONE
+    EGL_CONTEXT_OPENGL_PROFILE_MASK,
+#if USE_CORE_PROFILE & 1
+    EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT,
+    EGL_CONTEXT_MAJOR_VERSION,
+    CORE_PROFILE_MAJOR_VERSION,
+    EGL_CONTEXT_MINOR_VERSION,
+    CORE_PROFILE_MINOR_VERSION,
+#else
+    EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT,
+    EGL_CONTEXT_MAJOR_VERSION,
+    COMP_PROFILE_MAJOR_VERSION,
+    EGL_CONTEXT_MINOR_VERSION,
+    COMP_PROFILE_MINOR_VERSION,
+#endif
+    EGL_NONE
   };
   egl_context = eglCreateContext(egl_display, cfg, EGL_NO_CONTEXT, ctx_attr);
   if (egl_context == EGL_NO_CONTEXT) {
@@ -169,12 +204,13 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   std::cout << "OpenGL renderer: " << glGetString(GL_RENDERER) << std::endl;
   std::cout << "OpenGL version:  " << glGetString(GL_VERSION) << std::endl;
 
-  LOOKUP_FUNCTION(PFNEGLCREATEIMAGEKHRPROC,            eglCreateImageKHR)
-  LOOKUP_FUNCTION(PFNEGLDESTROYIMAGEKHRPROC,           eglDestroyImageKHR)
-  LOOKUP_FUNCTION(PFNGLEGLIMAGETARGETTEXTURE2DOESPROC, glEGLImageTargetTexture2DOES)
+  LOOKUP_FUNCTION(PFNEGLCREATEIMAGEKHRPROC, eglCreateImageKHR)
+  LOOKUP_FUNCTION(PFNEGLDESTROYIMAGEKHRPROC, eglDestroyImageKHR)
+  LOOKUP_FUNCTION(PFNGLEGLIMAGETARGETTEXTURE2DOESPROC,
+                  glEGLImageTargetTexture2DOES)
 #if USE_CORE_PROFILE
-  LOOKUP_FUNCTION(PFNGLGENVERTEXARRAYSPROC,            glGenVertexArrays);
-  LOOKUP_FUNCTION(PFNGLBINDVERTEXARRAYPROC,            glBindVertexArray);
+  LOOKUP_FUNCTION(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays);
+  LOOKUP_FUNCTION(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray);
 #endif
 
 #if USE_CORE_PROFILE
@@ -182,7 +218,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 #else
-  glOrtho(0.0, 1.0,  1.0, 0.0,  -1.0, 1.0);
+  glOrtho(0.0, 1.0, 1.0, 0.0, -1.0, 1.0);
 #endif
 
   prog = glCreateProgram();
@@ -199,7 +235,8 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   glShaderSource(vs, 1, &vs_src, NULL);
   glShaderSource(fs, 1, &fs_src, NULL);
 
-  while (glGetError()) {}
+  while (glGetError()) {
+  }
   glCompileShader(vs);
 
   GLint ok;
@@ -229,7 +266,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
 
 #if REUSE_TEXTURES
   glGenTextures(2, textures);
-  for (int i = 0;  i < 2;  ++i) {
+  for (int i = 0; i < 2; ++i) {
     glBindTexture(GL_TEXTURE_2D, textures[i]);
     setup_texture();
   }
@@ -252,7 +289,7 @@ int VideoDirectRender::handleWindowEvents() {
     XNextEvent(mXDisplay, &ev);
     switch (ev.type) {
       case ClientMessage:
-        if (((Atom) ev.xclient.data.l[0]) == mWMDeleteWindow) {
+        if (((Atom)ev.xclient.data.l[0]) == mWMDeleteWindow) {
           return -1;
         }
         break;
@@ -265,26 +302,28 @@ int VideoDirectRender::handleWindowEvents() {
         }
         break;
       case ConfigureNotify:
-        glViewport(0, 0, ((XConfigureEvent*)&ev)->width, ((XConfigureEvent*)&ev)->height);
+        glViewport(0, 0, ((XConfigureEvent *)&ev)->width,
+                   ((XConfigureEvent *)&ev)->height);
         break;
       case MotionNotify:
-	if (ev.xmotion.state & Button1MotionMask) {
-          snprintf(param, 64, "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }",
-                   ev.xmotion.x * 32767 / attr.width,
-                   ev.xmotion.y * 32767 / attr.height,
-                   ev.xmotion.x_root,
-                   ev.xmotion.y_root);
+        if (ev.xmotion.state & Button1MotionMask) {
+          snprintf(
+              param, 64,
+              "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }",
+              ev.xmotion.x * 32767 / attr.width,
+              ev.xmotion.y * 32767 / attr.height, ev.xmotion.x_root,
+              ev.xmotion.y_root);
           mEventListener("mousemove", param);
         }
-	break;
+        break;
       case ButtonPress:
       case ButtonRelease:
         snprintf(param, 64, "{\"which\": %d, \"x\": %d, \"y\": %d }",
-                 ev.xbutton.button,
-                 ev.xbutton.x * 32767 / attr.width,
+                 ev.xbutton.button, ev.xbutton.x * 32767 / attr.width,
                  ev.xbutton.y * 32767 / attr.height);
-        mEventListener((ev.type == ButtonPress) ? "mousedown" : "mouseup", param);
-	break;
+        mEventListener((ev.type == ButtonPress) ? "mousedown" : "mouseup",
+                       param);
+        break;
       default:
         break;
     }
@@ -296,14 +335,14 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
   fflush(stdout);
   VADRMPRIMESurfaceDescriptor prime;
   if (vaExportSurfaceHandle(mVADisplay, va_surface,
-      VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-      VA_EXPORT_SURFACE_READ_ONLY |
+                            VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                            VA_EXPORT_SURFACE_READ_ONLY |
 #if USE_LAYERS
-      VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+                                VA_EXPORT_SURFACE_SEPARATE_LAYERS,
 #else
-      VA_EXPORT_SURFACE_COMPOSED_LAYERS,
+                                VA_EXPORT_SURFACE_COMPOSED_LAYERS,
 #endif
-      &prime) != VA_STATUS_SUCCESS) {
+                            &prime) != VA_STATUS_SUCCESS) {
     std::cerr << "vaExportSurfaceHandle failed!" << std::endl;
     return -1;
   }
@@ -315,9 +354,11 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
   vaSyncSurface(mVADisplay, va_surface);
 
   if (!texture_size_valid) {
-    std::cout << "prime width: " << prime.width << ", height: " << prime.height << std::endl;
+    std::cout << "prime width: " << prime.width << ", height: " << prime.height
+              << std::endl;
 #if USE_CORE_PROFILE
-    glUniform2f(glGetUniformLocation(prog, "uTexCoordScale"), texcoord_x1, texcoord_y1);
+    glUniform2f(glGetUniformLocation(prog, "uTexCoordScale"), texcoord_x1,
+                texcoord_y1);
 #endif
     texture_size_valid = true;
   }
@@ -327,7 +368,7 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
   glGenTextures(2, textures);
 #endif
   for (int i = 0; i < 2; ++i) {
-    static const uint32_t formats[2] = { DRM_FORMAT_R8, DRM_FORMAT_GR88 };
+    static const uint32_t formats[2] = {DRM_FORMAT_R8, DRM_FORMAT_GR88};
 #if USE_LAYERS
 #define LAYER i
 #define PLANE 0
@@ -341,16 +382,22 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
 #endif
 
     EGLint img_attr[] = {
-      EGL_LINUX_DRM_FOURCC_EXT,      (int)formats[i],
-      EGL_WIDTH,                     (int)(prime.width  / (i + 1)),
-      EGL_HEIGHT,                    (int)(prime.height / (i + 1)),
-      EGL_DMA_BUF_PLANE0_FD_EXT,     prime.objects[prime.layers[LAYER].object_index[PLANE]].fd,
-      EGL_DMA_BUF_PLANE0_OFFSET_EXT, (int)prime.layers[LAYER].offset[PLANE],
-      EGL_DMA_BUF_PLANE0_PITCH_EXT,  (int)prime.layers[LAYER].pitch[PLANE],
-      EGL_NONE
-    };
+        EGL_LINUX_DRM_FOURCC_EXT,
+        (int)formats[i],
+        EGL_WIDTH,
+        (int)(prime.width / (i + 1)),
+        EGL_HEIGHT,
+        (int)(prime.height / (i + 1)),
+        EGL_DMA_BUF_PLANE0_FD_EXT,
+        prime.objects[prime.layers[LAYER].object_index[PLANE]].fd,
+        EGL_DMA_BUF_PLANE0_OFFSET_EXT,
+        (int)prime.layers[LAYER].offset[PLANE],
+        EGL_DMA_BUF_PLANE0_PITCH_EXT,
+        (int)prime.layers[LAYER].pitch[PLANE],
+        EGL_NONE};
 
-    images[i] = eglCreateImageKHR(egl_display, EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, NULL, img_attr);
+    images[i] = eglCreateImageKHR(egl_display, EGL_NO_CONTEXT,
+                                  EGL_LINUX_DMA_BUF_EXT, NULL, img_attr);
     if (!images[i]) {
       std::cerr << "eglCreateImageKHR failed!" << std::endl;
       return -1;
@@ -361,28 +408,34 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
 #if !REUSE_TEXTURES
     setup_texture();
 #endif
-    while (glGetError()) {}
+    while (glGetError()) {
+    }
     glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, images[i]);
     if (glGetError()) {
       std::cerr << "glEGLImageTargetTexture2DOES failed!" << std::endl;
       return -1;
     }
   }
-  for (int i = 0;  i < (int)prime.num_objects;  ++i) {
+  for (int i = 0; i < (int)prime.num_objects; ++i) {
     close(prime.objects[i].fd);
   }
 
   glClear(GL_COLOR_BUFFER_BIT);
-  while (glGetError()) {}
+  while (glGetError()) {
+  }
 #if USE_CORE_PROFILE
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 #else
   glActiveTexture(GL_TEXTURE0);
   glBegin(GL_QUADS);
-  glTexCoord2f(       0.0f, 0.0f);         glVertex2i(0 ,0);
-  glTexCoord2f(texcoord_x1, 0.0f);         glVertex2i(1, 0);
-  glTexCoord2f(texcoord_x1, texcoord_y1);  glVertex2i(1, 1);
-  glTexCoord2f(       0.0f, texcoord_y1);  glVertex2i(0, 1);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex2i(0, 0);
+  glTexCoord2f(texcoord_x1, 0.0f);
+  glVertex2i(1, 0);
+  glTexCoord2f(texcoord_x1, texcoord_y1);
+  glVertex2i(1, 1);
+  glTexCoord2f(0.0f, texcoord_y1);
+  glVertex2i(0, 1);
   glEnd();
 #endif
 
