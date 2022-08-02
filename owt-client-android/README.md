@@ -20,6 +20,7 @@ Download owt-client-android source code:
 6. $ git am ../patches/0002-Fix-the-garbled-message-from-the-streamer-by-getting.patch
 7. $ git am ../patches/0003-Remove-offerToReceiveAudio-and-offerToReceiveVideo.patch
 8. $ git am ../patches/0004-Upgrade-socket.io-client-from-1.0.1-to-2.0.1.patch
+9. $ git am ../patches/0005-Add-getVideoEncoderFactory-and-getVideoDecoderFactor.patch
 
 Compile:
 1. $ python tools/pack.py

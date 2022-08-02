@@ -20,13 +20,8 @@ Download owt-client-native source code:
     $ git checkout v5.0
 3. Fetch dependency projects: $ gclient sync
 4. Apply patch one by one:
-    $ git am -3 ../patches/0001-Add-talk-owt-patches-0015-Adopt-SingletonSurfaceView.patch
     $ git am -3 ../patches/0002-Add-talk-owt-patches-0016-Use-AToU-to-print-trace.pa.patch
-    $ git am -3 ../patches/0003-Add-talk-owt-patches-0017-Support-OMX.Intel.hw_ve.h2.patch
-    $ git am -3 ../patches/0004-Add-talk-owt-patches-0018-Support-OMX.Intel.hw_ve.h2.patch
-    $ git am -3 ../patches/0005-Add-talk-owt-patches-0019-Support-h264-and-hevc-of-M.patch
     $ git am -3 ../patches/0006-Add-talk-owt-patches-0020-Add-atrace-points-for-came.patch
-    $ git am -3 ../patches/0007-Remove-talk-owt-patches-0015-Adopt-SingletonSurfaceV.patch
     $ git am -3 ../patches/0008-Add-and-update-talk-owt-patches-0021-Fix-display-is-.patch
     $ git am -3 ../patches/0009-Add-talk-owt-patches-0022-Implemented-the-new-transp.patch
     $ git am -3 ../patches/0010-Add-talk-owt-patches-0023-Add-atrace-point-that-is-a.patch

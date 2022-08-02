@@ -50,9 +50,6 @@
     <string name="show_log">Show Log Window</string>
     <string name="net_delays">Net Delays：</string>
     <string name="current_net_speed">Net Speed：</string>
-    <string name="no_hevc">Error:HEVC codec is not supported by this device</string>
-    <string name="no_h264">Error:H264 codec is not supported by this device</string>
-    <string name="no_vp9">Error:vp9 codec is not supported by this device</string>
     <string name="connect_failed">Connect server failed: </string>
     <string name="menu">Menu</string>
     <string name="back">Back</string>

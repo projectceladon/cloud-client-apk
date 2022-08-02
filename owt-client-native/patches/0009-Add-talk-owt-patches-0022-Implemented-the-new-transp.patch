@@ -1,4 +1,4 @@
-From 69055281710eced2e1e8cf20ab0ac50f1c3f2b2c Mon Sep 17 00:00:00 2001
+From d4f6c35e7c88df65a21a86918d51c9ae9257acbb Mon Sep 17 00:00:00 2001
 From: shipeigx <peigangx.shi@intel.com>
 Date: Thu, 9 Dec 2021 14:50:39 +0800
 Subject: [PATCH] Add
@@ -13,12 +13,12 @@ Signed-off-by: shipeigx <peigangx.shi@intel.com>
  create mode 100644 talk/owt/patches/0022-Implemented-the-new-transparent-composition-feature.patch
 
 diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
-index b8a0fc4..a0d3c8d 100644
+index e8438b5..09b9135 100644
 --- a/scripts/prepare_dev.py
 +++ b/scripts/prepare_dev.py
-@@ -48,7 +48,8 @@ patchList = [
-     ('0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch', WEBRTC_PATH),
-     ('0019-Support-h264-and-hevc-of-MTK-device-for-application.patch', WEBRTC_PATH),
+@@ -44,7 +44,8 @@ patchList = [
+     ('0014-Fix-missing-ffmpeg-configure-item-for-msvc-build.patch', FFMPEG_PATH),
+     ('0016-Use-AToU-to-print-trace.patch', WEBRTC_PATH),
      ('0020-Add-atrace-points-for-camera-in-apk.patch', WEBRTC_PATH),
 -    ('0021-Fix-display-is-incomplete.patch', WEBRTC_PATH)
 +    ('0021-Fix-display-is-incomplete.patch', WEBRTC_PATH),

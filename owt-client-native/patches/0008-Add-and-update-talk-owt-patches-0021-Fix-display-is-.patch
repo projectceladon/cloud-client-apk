@@ -1,4 +1,4 @@
-From 78d643c4c0a93ab995f9a73a66fbc0c308cc851c Mon Sep 17 00:00:00 2001
+From 2a8359a04ae49e47560787524bbd10cd57d028c7 Mon Sep 17 00:00:00 2001
 From: "Deng, Bing" <bing.deng@intel.com>
 Date: Tue, 16 Nov 2021 16:24:51 +0800
 Subject: [PATCH] Add and update
@@ -17,13 +17,13 @@ Signed-off-by: shipeigx <peigangx.shi@intel.com>
  create mode 100644 talk/owt/patches/0021-Fix-display-is-incomplete.patch
 
 diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
-index 757d006..b8a0fc4 100644
+index b528654..e8438b5 100644
 --- a/scripts/prepare_dev.py
 +++ b/scripts/prepare_dev.py
-@@ -47,7 +47,8 @@ patchList = [
-     ('0017-Support-OMX.Intel.hw_ve.h264-for-android-app.patch', WEBRTC_PATH),
-     ('0018-Support-OMX.Intel.hw_ve.h265-for-android-app.patch', WEBRTC_PATH),
-     ('0019-Support-h264-and-hevc-of-MTK-device-for-application.patch', WEBRTC_PATH),
+@@ -43,7 +43,8 @@ patchList = [
+     ('0013-Remove-unused-gni-for-av1-build.patch', THIRD_PARTY_PATH),
+     ('0014-Fix-missing-ffmpeg-configure-item-for-msvc-build.patch', FFMPEG_PATH),
+     ('0016-Use-AToU-to-print-trace.patch', WEBRTC_PATH),
 -    ('0020-Add-atrace-points-for-camera-in-apk.patch', WEBRTC_PATH)
 +    ('0020-Add-atrace-points-for-camera-in-apk.patch', WEBRTC_PATH),
 +    ('0021-Fix-display-is-incomplete.patch', WEBRTC_PATH)

@@ -1,0 +1,75 @@
+From 54f84c87893a01fe81d384a221efd705bab77875 Mon Sep 17 00:00:00 2001
+From: "Deng, Bing" <bing.deng@intel.com>
+Date: Wed, 27 Jul 2022 13:30:07 +0800
+Subject: [PATCH] Add getVideoEncoderFactory() and getVideoDecoderFactory().
+
+Signed-off-by: Deng, Bing <bing.deng@intel.com>
+---
+ .../java/owt/base/ContextInitialization.java  | 20 +++++++++++++++++++
+ .../main/java/owt/base/PCFactoryProxy.java    | 16 +++++++--------
+ 2 files changed, 28 insertions(+), 8 deletions(-)
+
+diff --git a/src/sdk/base/src/main/java/owt/base/ContextInitialization.java b/src/sdk/base/src/main/java/owt/base/ContextInitialization.java
+index 06ae18b..1c4616f 100644
+--- a/src/sdk/base/src/main/java/owt/base/ContextInitialization.java
++++ b/src/sdk/base/src/main/java/owt/base/ContextInitialization.java
+@@ -146,6 +146,26 @@ public class ContextInitialization {
+         PCFactoryProxy.instance();
+     }
+ 
++    /**
++     * Get the video encoder factory.
++     *
++     * @return VideoEncoderFactory
++     */
++    public VideoEncoderFactory getVideoEncoderFactory() {
++        RCHECK(initialized);
++        return PCFactoryProxy.encoderFactory;
++    }
++
++    /**
++     * Get the video decoder factory.
++     *
++     * @return VideoDecoderFactory
++     */
++    public VideoDecoderFactory getVideoDecoderFactory() {
++        RCHECK(initialized);
++        return PCFactoryProxy.decoderFactory;
++    }
++
+     /**
+      * Network types: Ethernet, wifi, cellular, vpn and loopback.
+      */
+diff --git a/src/sdk/base/src/main/java/owt/base/PCFactoryProxy.java b/src/sdk/base/src/main/java/owt/base/PCFactoryProxy.java
+index b703a84..faaac7f 100644
+--- a/src/sdk/base/src/main/java/owt/base/PCFactoryProxy.java
++++ b/src/sdk/base/src/main/java/owt/base/PCFactoryProxy.java
+@@ -38,17 +38,17 @@ final class PCFactoryProxy {
+             PeerConnectionFactory.initialize(initializationOptions);
+             PeerConnectionFactory.Options options = new PeerConnectionFactory.Options();
+             options.networkIgnoreMask = networkIgnoreMask;
++            if (encoderFactory == null) {
++                encoderFactory = new DefaultVideoEncoderFactory(localContext, true, true);
++            }
++            if (decoderFactory == null) {
++                decoderFactory = new DefaultVideoDecoderFactory(remoteContext);
++            }
+             peerConnectionFactory = PeerConnectionFactory.builder()
+                     .setOptions(options)
+                     .setAudioDeviceModule(adm == null ? JavaAudioDeviceModule.builder(context).createAudioDeviceModule() : adm)
+-                    .setVideoEncoderFactory(
+-                            encoderFactory == null
+-                                    ? new DefaultVideoEncoderFactory(localContext, true, true)
+-                                    : encoderFactory)
+-                    .setVideoDecoderFactory(
+-                            decoderFactory == null
+-                                    ? new DefaultVideoDecoderFactory(remoteContext)
+-                                    : decoderFactory)
++                    .setVideoEncoderFactory(encoderFactory)
++                    .setVideoDecoderFactory(decoderFactory)
+                     .createPeerConnectionFactory();
+         }
+         return peerConnectionFactory;
+-- 
+2.25.1
+

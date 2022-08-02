@@ -71,6 +71,8 @@ import org.json.JSONObject;
 import org.webrtc.GlUtil;
 import org.webrtc.RendererCommon;
 import org.webrtc.SurfaceViewRenderer;
+import org.webrtc.VideoCodecInfo;
+import org.webrtc.VideoDecoderFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -80,6 +82,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -890,13 +893,72 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         }
     }
 
+    private String getCodecProfile() {
+        Map<String, Object> mapKey = new HashMap<>();
+        Map<String, Object> mapData = new HashMap<>();
+        Map<String, Object> mapParams = new HashMap<>();
+        Map<String, Object> mapVersion = new HashMap<>();
+        List<Map<String, Object>> listVideoConfigs = new ArrayList<>();
+        int defaultFps = 30;
+
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        mapData.put("event", "start");
+        mapData.put("parameters", mapParams);
+        mapParams.put("version", mapVersion);
+        mapVersion.put("major", 1);
+        mapVersion.put("minor", 1);
+        mapParams.put("video-configs", listVideoConfigs);
+        //P2PHelper.getVideoEncoderFactory();
+        VideoDecoderFactory vdf = P2PHelper.getVideoDecoderFactory();
+        if (vdf != null) {
+            for (VideoCodecInfo vci : vdf.getSupportedCodecs()) {
+                Log.i(TAG, "vci.name = " + vci.name + " vci.params.toString() = " + vci.params.toString());
+                if (vci.name.equals("H264") || vci.name.equals("H265")) {
+                    Map<String, Object> mapOneVideoConfig = new HashMap<>();
+                    mapOneVideoConfig.put("codec", vci.name);
+                    if (vci.params.containsKey("profile-level-id")) {
+                        String profileLevelId = vci.params.get("profile-level-id");
+                        if (vci.name.equals("H264")) {
+                            if (profileLevelId.startsWith("42e0")) {
+                                mapOneVideoConfig.put("profile", "baseline");
+                            } else if (profileLevelId.startsWith("640c")) {
+                                mapOneVideoConfig.put("profile", "high");
+                            }
+                        }
+                    } else {
+                        if (vci.name.equals("H264")) {
+                            mapOneVideoConfig.put("profile", "baseline");
+                        } else {
+                            mapOneVideoConfig.put("profile", "main"); // H265 default value
+                        }
+                    }
+                    mapOneVideoConfig.put("fps", defaultFps);
+                    listVideoConfigs.add(mapOneVideoConfig);
+                }
+            }
+        } else {
+            Log.w(TAG, "VideoDecoderFactory is null!");
+        }
+
+        String jsonString = new JSONObject(mapKey).toString();
+        Log.i(TAG, "getCodecProfile data: " + jsonString);
+        return jsonString;
+    }
+
     private void onCallRequest(String peerId) {
         Log.i(TAG, "onCallRequest called");
         P2PClient client = P2PHelper.getClient();
         if (client != null) {
             client.addAllowedRemotePeer(peerId);
             client.stop(peerId);
-            client.send(peerId, "start", new ActionCallback<Void>() {
+            String startJsonObject = "start " + getCodecProfile();
+            Log.i(TAG, "startJsonObject = '" + startJsonObject + "'");
+            String legacyStartCommand = "start";
+            Log.i(TAG, "legacyStartCommand = '" + legacyStartCommand + "'");
+            Log.i(TAG, "start Command is '" + legacyStartCommand + "'");
+
+            client.send(peerId, legacyStartCommand, new ActionCallback<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
                     sendSizeChange();

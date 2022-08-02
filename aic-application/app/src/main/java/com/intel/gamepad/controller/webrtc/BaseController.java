@@ -379,7 +379,7 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     /**
-     * 发送alpha开启事件
+     * Send alpha event
      */
     public void sendAlphaEvent(int strCommand) {
         Map<String, Object> mapKey = new HashMap<>();

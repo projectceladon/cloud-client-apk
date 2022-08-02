@@ -11,11 +11,6 @@ public class AppConst {
     public static final int EXIT_NORMAL = 0;
     public static final int EXIT_DISCONNECT = -1;
 
-    public static final String VP9 = "video/x-vnd.on2.vp9";
     public static final String H264 = "video/avc";
-    public static final String HEVC = "video/hevc";
-    public static final String EXYNOS_PREFIX = "omx.exynos.";
-    public static final String INTEL_PREFIX = "omx.intel.";
-    public static final String MTK_PREFIX = "omx.mtk.";
     public static final String CODEC_WHITELIST_FILENAME = "mediaCodec.xml";
 }

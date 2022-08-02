@@ -11,6 +11,8 @@ import com.intel.gamepad.app.MyApp;
 
 import org.webrtc.EglBase;
 import org.webrtc.PeerConnection;
+import org.webrtc.VideoDecoderFactory;
+import org.webrtc.VideoEncoderFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +34,9 @@ public class P2PHelper {
     public static String turnAddressUDP = "turn:153.35.78.77:3478?transport=udp";
     public static String strIP = "153.35.78.77";
     public static String strCoturn = "153.35.78.77";
+    private static ContextInitialization mContextInitialization;
+    private static VideoEncoderFactory mVideoEncoderFactory;
+    private static VideoDecoderFactory mVideoDecoderFactory;
     private P2PClientConfiguration p2pConfig;
     private P2PClient client;
     private EglBase rootEglBase;
@@ -78,15 +83,25 @@ public class P2PHelper {
         turnAddressUDP = "turn:" + strCoturn + ":3478?transport=udp";
     }
 
+    public static VideoEncoderFactory getVideoEncoderFactory() {
+        mVideoEncoderFactory = mContextInitialization.getVideoEncoderFactory();
+        return mVideoEncoderFactory;
+    }
+
+    public static VideoDecoderFactory getVideoDecoderFactory() {
+        mVideoDecoderFactory = mContextInitialization.getVideoDecoderFactory();
+        return mVideoDecoderFactory;
+    }
+
     private void initP2PClientConfig() {
         if (!initialized) {
             rootEglBase = EglBase.create();
-            ContextInitialization.create()
+            mContextInitialization = ContextInitialization.create()
                     .setApplicationContext(MyApp.context)
                     .setVideoHardwareAccelerationOptions(
                             rootEglBase.getEglBaseContext(),
-                            rootEglBase.getEglBaseContext())
-                    .initialize();
+                            rootEglBase.getEglBaseContext());
+            mContextInitialization.initialize();
             initialized = true;
         }
         updateP2PCoturnIP();

@@ -27,7 +27,6 @@ import com.intel.gamepad.bean.GameListBean;
 import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
-import com.intel.gamepad.utils.DeviceManager;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.permission.PermissionsUtils;
 
@@ -181,8 +180,6 @@ public class GameDetailActivity extends BaseActivity {
         chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
 
         checkOrientation();
-        checkMediaCodecSupport();
-
     }
 
     private void checkOrientation() {
@@ -209,19 +206,6 @@ public class GameDetailActivity extends BaseActivity {
 
             }
         });
-    }
-
-    private void checkMediaCodecSupport() {
-        boolean[] result = DeviceManager.getInstance().checkMediaCodecSupport(new String[]{AppConst.H264, AppConst.HEVC, AppConst.VP9});
-        if (!result[0]) {
-            Toast.makeText(this, R.string.no_h264, Toast.LENGTH_LONG).show();
-        }
-        if (!result[1]) {
-            Toast.makeText(this, R.string.no_hevc, Toast.LENGTH_LONG).show();
-        }
-        if (!result[2]) {
-            Toast.makeText(this, R.string.no_vp9, Toast.LENGTH_LONG).show();
-        }
     }
 
     @Override
@@ -354,6 +338,11 @@ public class GameDetailActivity extends BaseActivity {
                     }
                 }
             }
+        }
+        if (codecList.isEmpty()) {
+            String message = isEncoder ? "Encoder " : "Decoder ";
+            message = message + mimeType + " is not supported!";
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show();
         }
         return codecList;
     }
