@@ -74,6 +74,7 @@ class GameSession : public VideoRendererListener {
   SDL_Texture* text_texture_;
   SDL_Rect text_rect_;
   SDL_Surface* text_surface_ = nullptr;
+  SDL_Color text_color = {255, 0, 0};
   SDL_Rect render_rect_;
   int frame_width_;
   int frame_height_;
@@ -86,6 +87,8 @@ class GameSession : public VideoRendererListener {
   Uint32 render_finish_time;
   int frameCount = 0;
   int last_fps_time = 0;
+  float fps_;
+  char fps_buf[10]={0};
 };
 
 #endif

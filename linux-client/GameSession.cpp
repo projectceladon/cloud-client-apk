@@ -21,7 +21,6 @@ GameSession::GameSession(std::unique_ptr<GameP2PParams> p2p_params,
     std::cout << "play_audio " << play_audio << std::endl;
     audio_player_ = std::make_shared<AudioPlayer>();
   }
-
   if (TTF_SizeText(font, session_desc_.c_str(), &text_rect_.w, &text_rect_.h)) {
     std::cout << "GameSession get textsize error" << std::endl;
     text_rect_.h = 30;
@@ -48,9 +47,8 @@ void GameSession::setupRenderEnv(RenderParams* render_params) {
                                SDL_TEXTUREACCESS_STREAMING, video_width_,
                                video_height_);
   if (text_surface_ == nullptr) {
-    SDL_Color textColor = {255, 0, 0};
     text_surface_ =
-        TTF_RenderText_Blended(font_, session_desc_.c_str(), textColor);
+        TTF_RenderText_Blended(font_, session_desc_.c_str(), text_color);
     text_texture_ = SDL_CreateTextureFromSurface(renderer_, text_surface_);
   }
 }
@@ -225,17 +223,39 @@ void GameSession::onFrame(
       }
       SDL_SetRenderTarget(renderer_, texture_);
       SDL_UpdateTexture(texture_, &render_rect_, buffer, frame_width_);
+      if (frameCount == 1) {
+        SDL_DestroyTexture(text_texture_);
+        SDL_FreeSurface(text_surface_);
+        std::string ss;
+        ss.append(session_desc_);
+        ss.append(":");
+        ss.append(fps_buf);
+        if (TTF_SizeText(
+                font_,
+                ss.c_str(),
+                &text_rect_.w, &text_rect_.h)) {
+          std::cout << "GameSession get textsize error" << std::endl;
+          text_rect_.h = 30;
+          text_rect_.w = 30;
+        }
+        text_surface_ =
+            TTF_RenderText_Blended(font_, ss.c_str(), text_color);
+        text_texture_ = SDL_CreateTextureFromSurface(renderer_, text_surface_);
+      }
       pthread_rwlock_unlock(render_lock_);
     }
   }
   render_finish_time = SDL_GetTicks();
   if (frameCount % 30 == 0) {
     if (last_fps_time != 0) {
-      std::cout << render_finish_time << " fps:" << p2p_params_->server_id
-                << " fps: " << 30000 / (render_finish_time - last_fps_time)
-                << std::endl;
+      fps_ = 30000.00 / (render_finish_time - last_fps_time);
+      sprintf(fps_buf, "%.2f", fps_);
+      sscanf(fps_buf, "%f", &fps_);
+      std::cout << render_finish_time << p2p_params_->server_id
+                << " fps:" << fps_ << std::endl;
     }
     last_fps_time = render_finish_time;
+    frameCount = 0;
   }
   frameCount++;
   if (p2p_params_->log) {
