@@ -48,7 +48,7 @@ int video_fps_thread(void* opaque) {
   int count;
   if (opaque != nullptr) {
     space = *((int*)opaque);
-    count = space * 60 * 1000 / (VIDEO_FPS_INTERVAL);
+    count = space * 1000 / (VIDEO_FPS_INTERVAL);
     space = count;
   }
   std::cout << "video_fps_thread space " << space << std::endl;
@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
   int window_x = SDL_WINDOWPOS_UNDEFINED;
   int window_y = SDL_WINDOWPOS_UNDEFINED;
   int cycle_num = 0;
-  int cycle_interval = 5;
+  int cycle_interval = 10;
 #endif
   int opt = 0;
   while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:hn:i:f:azl:",
@@ -258,10 +258,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  VIDEO_FPS_INTERVAL = 1000 / fps;
 
-  std::cout << "LAST_COMMIT: " << LAST_COMMIT << ", internal "
-            << VIDEO_FPS_INTERVAL << std::endl;
+
+  std::cout << "LAST_COMMIT: " << LAST_COMMIT << std::endl;
 
   /***************p2p***********/
   if (signaling_server_url.empty() || server_ids.empty() ||
@@ -329,6 +328,8 @@ int main(int argc, char* argv[]) {
   }
 
 #ifdef USE_SDL
+  VIDEO_FPS_INTERVAL = 1000 / fps;
+
   // parse window_size
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
     std::cout << "SDL could not initialized with error: " << SDL_GetError()
@@ -707,6 +708,7 @@ int main(int argc, char* argv[]) {
   }
   VideoEncodingParameters video_params(videoParam, 0, true);
   configuration.video_encodings.push_back(video_params);
+  configuration.suspend_remote_stream = false;
 
   auto sc = std::make_shared<OwtSignalingChannel>();
   auto pc = std::make_shared<P2PClient>(configuration, sc);
