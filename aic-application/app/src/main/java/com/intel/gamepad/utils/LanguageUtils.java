@@ -19,17 +19,24 @@ public class LanguageUtils {
     private static final String LOCALE_SP_KEY = "LOCALE_SP_KEY";
 
     public static Locale getLocale() {
-        String localeJson = FastSharedPreferences
-                .get(LOCALE_SP)
-                .getString(LOCALE_SP_KEY, "en");
-        return new Gson().fromJson(localeJson, Locale.class);
+        FastSharedPreferences fp = FastSharedPreferences.get(LOCALE_SP);
+        if(fp!=null){
+            String  localeJson = fp.getString(LOCALE_SP_KEY, "en");
+            if(localeJson !=null ){
+                return new Gson().fromJson(localeJson, Locale.class);
+            }
+        }
+        return null;
     }
 
     private static void setLocale(Locale pUserLocale) {
         String json = new Gson().toJson(pUserLocale);
-        SharedPreferences.Editor edit = FastSharedPreferences.get(LOCALE_SP).edit();
-        edit.putString(LOCALE_SP_KEY, json);
-        edit.apply();
+        FastSharedPreferences fp = FastSharedPreferences.get(LOCALE_SP);
+        if(fp!=null){
+            SharedPreferences.Editor edit = fp.edit();
+            edit.putString(LOCALE_SP_KEY, json);
+            edit.apply();
+        }
     }
 
     public static boolean updateLocale(Context context, Locale locale) {
@@ -45,7 +52,7 @@ public class LanguageUtils {
     }
 
     public static boolean needUpdateLocale(Context pContext, Locale newUserLocale) {
-        return newUserLocale != null && !getCurrentLocale(pContext).equals(newUserLocale);
+        return newUserLocale != null && !newUserLocale.equals(getCurrentLocale(pContext));
     }
 
     public static Locale getCurrentLocale(Context context) {

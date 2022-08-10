@@ -34,7 +34,6 @@ public class P2PHelper {
     public static String turnAddressUDP = "turn:153.35.78.77:3478?transport=udp";
     public static String strIP = "153.35.78.77";
     public static String strCoturn = "153.35.78.77";
-    private static ContextInitialization mContextInitialization;
     private static VideoEncoderFactory mVideoEncoderFactory;
     private static VideoDecoderFactory mVideoDecoderFactory;
     private P2PClientConfiguration p2pConfig;
@@ -84,24 +83,24 @@ public class P2PHelper {
     }
 
     public static VideoEncoderFactory getVideoEncoderFactory() {
-        mVideoEncoderFactory = mContextInitialization.getVideoEncoderFactory();
         return mVideoEncoderFactory;
     }
 
     public static VideoDecoderFactory getVideoDecoderFactory() {
-        mVideoDecoderFactory = mContextInitialization.getVideoDecoderFactory();
         return mVideoDecoderFactory;
     }
 
     private void initP2PClientConfig() {
         if (!initialized) {
             rootEglBase = EglBase.create();
-            mContextInitialization = ContextInitialization.create()
+            ContextInitialization mContextInitialization = ContextInitialization.create()
                     .setApplicationContext(MyApp.context)
                     .setVideoHardwareAccelerationOptions(
                             rootEglBase.getEglBaseContext(),
                             rootEglBase.getEglBaseContext());
             mContextInitialization.initialize();
+            mVideoDecoderFactory = mContextInitialization.getVideoDecoderFactory();
+            mVideoEncoderFactory = mContextInitialization.getVideoEncoderFactory();
             initialized = true;
         }
         updateP2PCoturnIP();

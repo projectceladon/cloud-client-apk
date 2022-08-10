@@ -33,7 +33,9 @@ public class CameraEventsHandler implements CameraVideoCapturer.CameraEventsHand
     @Override
     public void onCameraOpening(String cameraName) {
         Log.d(TAG, "CameraEventsHandler.onCameraOpening: cameraName = " + cameraName);
-        isCameraSessionClosed = false;
+        synchronized (cameraLock) {
+            isCameraSessionClosed = false;
+        }
     }
 
     // Callback invoked when first camera frame is available after camera is opened.

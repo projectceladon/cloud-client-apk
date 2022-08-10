@@ -17,8 +17,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -47,8 +45,8 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
     private static final String TAG = "OWT-SocketClient";
     static SSLContext sslContext;
     static HostnameVerifier hostnameVerifier;
-    private final String CLIENT_CHAT_TYPE = "owt-message";
-    private final int MAX_RECONNECT_ATTEMPTS = 5;
+    private final static String CLIENT_CHAT_TYPE = "owt-message";
+    private final static int MAX_RECONNECT_ATTEMPTS = 5;
     private int reconnectAttempts = 0;
     private final Listener onReconnectingCallback = args -> reconnectAttempts++;
     private Socket socketIOClient;
@@ -158,17 +156,19 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
                     socketIOClient.disconnect();
                 }
                 OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-                hostnameVerifier = (hostname, session) -> true;
+                hostnameVerifier = (hostname, session) -> hostname != null && session != null;
 
                 TrustManager[] trustManagers = new TrustManager[]{new X509TrustManager() {
                     @Override
                     public void checkClientTrusted(X509Certificate[] chain, String authType)
                             throws CertificateException {
+                        checkTrusted(chain, authType);
                     }
 
                     @Override
                     public void checkServerTrusted(X509Certificate[] chain, String authType)
                             throws CertificateException {
+                        checkTrusted(chain, authType);
                     }
 
                     @Override
@@ -180,8 +180,10 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
                 try {
                     sslContext = SSLContext.getInstance("TLS");
                     sslContext.init(null, trustManagers, null);
-                } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    if (callback != null) {
+                        callback.onFailure(new OwtError(P2P_CLIENT_ILLEGAL_ARGUMENT.value, e.getMessage()));
+                    }
                 }
 
                 if (sslContext != null) {
@@ -210,6 +212,12 @@ public class SocketSignalingChannel implements SignalingChannelInterface {
             if (callback != null) {
                 callback.onFailure(new OwtError(P2P_CLIENT_ILLEGAL_ARGUMENT.value, e.getMessage()));
             }
+        }
+    }
+
+    private void checkTrusted(X509Certificate[] chain, String authType){
+        if (chain == null || chain.length<=0 || authType==null) {
+            Log.v(TAG,"checkServerTrusted failed");
         }
     }
 

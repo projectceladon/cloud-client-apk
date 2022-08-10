@@ -21,7 +21,7 @@ import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
 import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.MotionEventBean;
-import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
+import com.intel.gamepad.controller.impl.DeviceSwitchListener;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.TimeDelayUtils;
@@ -75,7 +75,7 @@ public abstract class BaseController implements OnTouchListener {
     public static AtomicBoolean manuallyPressBackButton = new AtomicBoolean(false);
     //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
     protected final Context context;
-    private final String TAG = "BaseController";
+    private final static String TAG = "BaseController";
     private final ViewGroup layoutCtrlBox;
     private final Object sendFileLock = new Object();
     private final Executor sendFileExecutor = Executors.newSingleThreadExecutor();
@@ -85,7 +85,7 @@ public abstract class BaseController implements OnTouchListener {
     protected boolean showMouse = false;
     protected int mouseX;
     protected int mouseY;
-    protected DeviceSwitchListtener devSwitch;
+    protected DeviceSwitchListener devSwitch;
     protected WeakReference<Handler> refHandler;
     protected boolean mE2eEnabled = false;
     private int viewWidth = 0;
@@ -94,6 +94,7 @@ public abstract class BaseController implements OnTouchListener {
     private int nCountInput;
     private boolean send_block_success_ = false;
     private boolean send_block_failed_ = false;
+    protected boolean onBack = false;
 
     public BaseController(PlayGameRtcActivity act) {
         this.context = act;
@@ -111,7 +112,7 @@ public abstract class BaseController implements OnTouchListener {
         Message.obtain(refHandler.get(), AppConst.MSG_SHOW_CONTROLLER).sendToTarget();
     }
 
-    public BaseController(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
+    public BaseController(PlayGameRtcActivity act, Handler handler, DeviceSwitchListener devSwitch) {
         this(act, handler);
         this.devSwitch = devSwitch;
     }
@@ -139,6 +140,7 @@ public abstract class BaseController implements OnTouchListener {
     }
 
     public void onBackPress() {
+        onBack = true;
         IPUtils.savealphachannel(false);
         sendAlphaEvent(0);
         BaseController.manuallyPressBackButton.set(true);
@@ -183,9 +185,11 @@ public abstract class BaseController implements OnTouchListener {
             return;
         }
 
-        sendFileExecutor.execute(new Thread(() -> {
-            send_block_success_ = false;
-            send_block_failed_ = false;
+        sendFileExecutor.execute(() -> {
+            synchronized (sendFileLock) {
+                send_block_success_ = false;
+                send_block_failed_ = false;
+            }
 
             File file = new File(fileName);
             if (!file.exists()) {
@@ -245,8 +249,9 @@ public abstract class BaseController implements OnTouchListener {
 
             int size = 32 * 1024;
             byte[] buf = new byte[size];
+            FileInputStream in = null;
             try {
-                FileInputStream in = new FileInputStream(file);
+                in = new FileInputStream(file);
                 int byteRead;
                 while ((byteRead = in.read(buf)) != -1) {
 
@@ -307,6 +312,14 @@ public abstract class BaseController implements OnTouchListener {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+            }finally {
+                if(in!=null){
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
 
             send_block_success_ = false;
@@ -345,7 +358,7 @@ public abstract class BaseController implements OnTouchListener {
                 }
             }
             mWaitingFilesNumber.decrementAndGet();
-        }));
+        });
     }
 
     /**

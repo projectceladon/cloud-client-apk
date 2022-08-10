@@ -80,132 +80,144 @@ public class GameDetailActivity extends BaseActivity {
         EditText etPeerID = findViewById(R.id.etPeerID);
         EditText etClientID = findViewById(R.id.etClientID);
         CheckBox chkTest = findViewById(R.id.chkTest);
+        if(etServerIP!=null){
+            etServerIP.setText(IPUtils.loadIP());
+            P2PHelper.serverIP = IPUtils.loadIP();
+            etServerIP.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-        etServerIP.setText(IPUtils.loadIP());
-        P2PHelper.serverIP = IPUtils.loadIP();
-        etServerIP.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s != null) {
-                    IPUtils.saveip(s.toString());
-                    P2PHelper.serverIP = IPUtils.loadIP();
-                    if (s.toString().startsWith("http") && s.toString().contains(":")) {
-                        List<String> ipInfo = IPUtils.getIp(s.toString());
-                        if (ipInfo.size() > 0) {
-                            etCoturnIP.setText(ipInfo.get(0));
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (s != null) {
+                        IPUtils.saveip(s.toString());
+                        P2PHelper.serverIP = IPUtils.loadIP();
+                        if (s.toString().startsWith("http") && s.toString().contains(":")) {
+                            List<String> ipInfo = IPUtils.getIp(s.toString());
+                            if (ipInfo.size() > 0) {
+                                etCoturnIP.setText(ipInfo.get(0));
+                            }
                         }
+
                     }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
 
                 }
-            }
+            });
+        }
 
-            @Override
-            public void afterTextChanged(Editable s) {
+        if(etCoturnIP!=null){
+            etCoturnIP.setText(IPUtils.loadCoturnIP());
+            P2PHelper.strCoturn = IPUtils.loadCoturnIP();
+            etCoturnIP.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-            }
-        });
-
-        etCoturnIP.setText(IPUtils.loadCoturnIP());
-        P2PHelper.strCoturn = IPUtils.loadCoturnIP();
-        etCoturnIP.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s != null) {
-                    IPUtils.saveCoturn(s.toString());
-                    P2PHelper.strCoturn = IPUtils.loadCoturnIP();
                 }
-            }
 
-            @Override
-            public void afterTextChanged(Editable s) {
-
-            }
-        });
-
-        etPeerID.setText(IPUtils.loadPeerID());
-        P2PHelper.peerId = IPUtils.loadPeerID();
-        etPeerID.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s != null) {
-                    IPUtils.savepeerid(s.toString());
-                    P2PHelper.peerId = IPUtils.loadPeerID();
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (s != null) {
+                        IPUtils.saveCoturn(s.toString());
+                        P2PHelper.strCoturn = IPUtils.loadCoturnIP();
+                    }
                 }
-            }
 
-            @Override
-            public void afterTextChanged(Editable s) {
+                @Override
+                public void afterTextChanged(Editable s) {
 
-            }
-        });
-
-        etClientID.setText(IPUtils.loadTokenID());
-        P2PHelper.clientId = IPUtils.loadTokenID();
-        etClientID.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (s != null) {
-                    IPUtils.savetoken(s.toString());
-                    P2PHelper.clientId = IPUtils.loadTokenID();
                 }
-            }
+            });
 
-            @Override
-            public void afterTextChanged(Editable s) {
+        }
 
-            }
-        });
+        if(etPeerID!=null){
+            etPeerID.setText(IPUtils.loadPeerID());
+            P2PHelper.peerId = IPUtils.loadPeerID();
+            etPeerID.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-        chkTest.setChecked(IPUtils.loadTest());
-        chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (s != null) {
+                        IPUtils.savepeerid(s.toString());
+                        P2PHelper.peerId = IPUtils.loadPeerID();
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+
+                }
+            });
+        }
+
+        if(etClientID!=null){
+            etClientID.setText(IPUtils.loadTokenID());
+            P2PHelper.clientId = IPUtils.loadTokenID();
+            etClientID.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (s != null) {
+                        IPUtils.savetoken(s.toString());
+                        P2PHelper.clientId = IPUtils.loadTokenID();
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+
+                }
+            });
+        }
+
+        if(chkTest!=null){
+            chkTest.setChecked(IPUtils.loadTest());
+            chkTest.setOnCheckedChangeListener((buttonView, isChecked) -> IPUtils.savetest(isChecked));
+        }
 
         checkOrientation();
     }
 
     private void checkOrientation() {
         Spinner orient_sp = findViewById(R.id.orient_sp);
-        List<String> orientList = new ArrayList<>();
-        orientList.add(getResources().getString(R.string.landscape));
-        orientList.add(getResources().getString(R.string.portrait));
-        ArrayAdapter<String> codecAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, orientList);
-        codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        orient_sp.setAdapter(codecAdapter);
-        if (IPUtils.loadPortrait()) {
-            orient_sp.setSelection(1);
-        } else {
-            orient_sp.setSelection(0);
+        if(orient_sp!=null){
+            List<String> orientList = new ArrayList<>();
+            orientList.add(getResources().getString(R.string.landscape));
+            orientList.add(getResources().getString(R.string.portrait));
+            ArrayAdapter<String> codecAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, orientList);
+            codecAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            orient_sp.setAdapter(codecAdapter);
+            if (IPUtils.loadPortrait()) {
+                orient_sp.setSelection(1);
+            } else {
+                orient_sp.setSelection(0);
+            }
+            orient_sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    IPUtils.savePortrait(position != 0);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+
+                }
+            });
         }
-        orient_sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                IPUtils.savePortrait(position != 0);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
     }
 
     @Override
@@ -227,11 +239,13 @@ public class GameDetailActivity extends BaseActivity {
         initBackButton(R.id.ibtnBack);
 
         MaterialButton btnPlay = findViewById(R.id.btnPlay);
-        btnPlay.setOnClickListener(v -> {
-            String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-            PermissionsUtils.getInstance().checkPermissions(this, permissions, permissionsResult);
-        });
-        btnPlay.requestFocus();
+        if(btnPlay!=null){
+            btnPlay.setOnClickListener(v -> {
+                String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+                PermissionsUtils.getInstance().checkPermissions(this, permissions, permissionsResult);
+            });
+            btnPlay.requestFocus();
+        }
     }
 
     @Override

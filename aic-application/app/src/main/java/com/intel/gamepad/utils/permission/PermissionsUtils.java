@@ -17,7 +17,7 @@ import java.util.List;
 
 public class PermissionsUtils {
     private static PermissionsUtils permissionsUtils;
-    private final int mRequestCode = 100;
+    private final static int mRequestCode = 100;
     private IPermissionResult mPermissionsResult;
     private AlertDialog mPermissionDialog;
 

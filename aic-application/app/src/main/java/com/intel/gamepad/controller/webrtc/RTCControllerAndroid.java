@@ -16,7 +16,7 @@ import android.widget.PopupWindow;
 
 import com.intel.gamepad.R;
 import com.intel.gamepad.activity.PlayGameRtcActivity;
-import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
+import com.intel.gamepad.controller.impl.DeviceSwitchListener;
 import com.intel.gamepad.utils.KeyTypeEnum;
 import com.intel.gamepad.utils.PopupUtil;
 
@@ -45,7 +45,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     private PopupWindow popupNavigator;
     private PopupWindow popupOrientation;
 
-    public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListtener devSwitch) {
+    public RTCControllerAndroid(PlayGameRtcActivity act, Handler handler, DeviceSwitchListener devSwitch) {
         super(act, handler, devSwitch);
         initRightAxisMotion();
     }
@@ -217,7 +217,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
      */
     private void initRightAxisMotion() {
         new Thread(() -> {
-            while (true) {
+            while (!onBack) {
                 if ((rightAxisX + rightAxisY) != 0) {
                     if (showMouse) {
                         float offx = rightAxisX * 5;
@@ -284,6 +284,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         int eventSource = event.getSource();
+        int eventAction = event.getAction();
         if (((eventSource & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK)
                 || ((eventSource & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
             int keyMapCode = -1;
@@ -345,7 +346,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                     break;
             }
             int indexSlot = getDeviceSlotIndex(event.getDeviceId());
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+            if (eventAction  == MotionEvent.ACTION_DOWN) {
                 if (bDpad) {
                     sendJoyStickEvent(RTCControllerAndroid.EV_ABS, keyMapCode, actionDown, true, indexSlot);
                 } else {
@@ -360,14 +361,16 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             }
             return true;
         } else if ((eventSource & InputDevice.SOURCE_KEYBOARD) == InputDevice.SOURCE_KEYBOARD) {
-            sendKeyEvent("k " + KeyTypeEnum.findValue(event.getKeyCode()) + " " + (event.getAction() == MotionEvent.ACTION_DOWN ? 1 : 0) + "\nc\n");
+            sendKeyEvent("k " + KeyTypeEnum.findValue(event.getKeyCode()) + " " + (eventAction == MotionEvent.ACTION_DOWN ? 1 : 0) + "\nc\n");
             if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
                 onBackPress();
         } else {
-            sendAndroidEvent(event.getAction(), event.getKeyCode());
-            Log.i(TAG, keyCode + " " + event + " " + event.getDevice().getId());
-            if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
-                onBackPress();
+            sendAndroidEvent(eventAction, event.getKeyCode());
+            if(event.getDevice()!=null){
+                Log.i(TAG, keyCode + " " + event + " " + event.getDevice().getId());
+                if (event.getDeviceId() == 7 && event.getSource() == 0x301 && keyCode == KeyEvent.KEYCODE_BACK)
+                    onBackPress();
+            }
         }
 
         return false;
@@ -383,30 +386,32 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         // manually.
 
         InputDevice mInputDevice = event.getDevice();
-        int typeX = AXIS_LEFT_X;
-        int x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos) * 128);
-        if (x == 0) {
-            x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_X, historyPos));
-            typeX = AXIS_HAT_X;
-        }
-        if (x == 0) {
-            x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos) * 128);
-            typeX = AXIS_RIGHT_X;
-        }
+        if(mInputDevice!=null){
+            int typeX = AXIS_LEFT_X;
+            int x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_X, historyPos) * 128);
+            if (x == 0) {
+                x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_X, historyPos));
+                typeX = AXIS_HAT_X;
+            }
+            if (x == 0) {
+                x = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Z, historyPos) * 128);
+                typeX = AXIS_RIGHT_X;
+            }
 
-        sendJoyStickEvent(BaseController.EV_ABS, typeX, x, true, indexDeviceSlot);
+            sendJoyStickEvent(BaseController.EV_ABS, typeX, x, true, indexDeviceSlot);
 
-        int typeY = BaseController.AXIS_LEFT_Y;
-        int y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos) * 128);
-        if (y == 0) {
-            y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_Y, historyPos));
-            typeY = BaseController.AXIS_HAT_Y;
+            int typeY = BaseController.AXIS_LEFT_Y;
+            int y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_Y, historyPos) * 128);
+            if (y == 0) {
+                y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_HAT_Y, historyPos));
+                typeY = BaseController.AXIS_HAT_Y;
+            }
+            if (y == 0) {
+                y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos) * 128);
+                typeY = BaseController.AXIS_RIGHT_Y;
+            }
+            sendJoyStickEvent(BaseController.EV_ABS, typeY, y, true, indexDeviceSlot);
         }
-        if (y == 0) {
-            y = Math.round(getCenteredAxis(event, mInputDevice, MotionEvent.AXIS_RZ, historyPos) * 128);
-            typeY = BaseController.AXIS_RIGHT_Y;
-        }
-        sendJoyStickEvent(BaseController.EV_ABS, typeY, y, true, indexDeviceSlot);
     }
 
     @Override
@@ -417,10 +422,18 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         View popView = getView().inflate(getContext(), R.layout.popup_window, null);
         popView.setAlpha(0.8f);
         popupNavigator = PopupUtil.createPopup(parent, popView, -1);
-        popView.findViewById(R.id.back).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_BACK"));
-        popView.findViewById(R.id.home).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_HOME"));
-        popView.findViewById(R.id.app_switch).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_APP_SWITCH"));
-        popView.findViewById(R.id.close).setOnClickListener(v -> popupNavigator.dismiss());
+        if(popView.findViewById(R.id.back)!=null){
+            popView.findViewById(R.id.back).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_BACK"));
+        }
+        if(popView.findViewById(R.id.home)!=null){
+            popView.findViewById(R.id.home).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_HOME"));
+        }
+        if(popView.findViewById(R.id.app_switch)!=null){
+            popView.findViewById(R.id.app_switch).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_APP_SWITCH"));
+        }
+        if(popView.findViewById(R.id.close)!=null){
+            popView.findViewById(R.id.close).setOnClickListener(v -> popupNavigator.dismiss());
+        }
         popView.setOnTouchListener(new View.OnTouchListener() {
             int orgX, orgY;
             int offsetX, offsetY;
@@ -456,41 +469,45 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             popupOrientation = PopupUtil.createPopup(parent, popView, -1);
             CheckBox chkLandscape = popView.findViewById(R.id.chk_landscape);
             CheckBox chkPortrait = popView.findViewById(R.id.chk_portrait);
-            popView.findViewById(R.id.close).setOnClickListener(v -> {
-                if (popupOrientation != null) {
-                    popupOrientation.dismiss();
-                }
-            });
-            if (((Activity) context).getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
-                chkLandscape.setChecked(false);
-                chkPortrait.setChecked(true);
-                chkPortrait.setClickable(false);
-            } else {
-                chkLandscape.setChecked(true);
-                chkPortrait.setChecked(false);
-                chkLandscape.setClickable(false);
+            if(popView.findViewById(R.id.close)!=null){
+                popView.findViewById(R.id.close).setOnClickListener(v -> {
+                    if (popupOrientation != null) {
+                        popupOrientation.dismiss();
+                    }
+                });
             }
-            chkLandscape.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                updateLastTouchEvent();
-                if (isChecked) {
-                    chkPortrait.setChecked(false);
-                    chkPortrait.setClickable(true);
-                    devSwitch.switchAlphaOrientation(false);
-                } else {
+            if(chkLandscape!=null && chkPortrait!=null){
+                if (((Activity) context).getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+                    chkLandscape.setChecked(false);
                     chkPortrait.setChecked(true);
                     chkPortrait.setClickable(false);
-                    devSwitch.switchAlphaOrientation(true);
-                }
-            });
-            chkPortrait.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    chkLandscape.setChecked(false);
-                    chkLandscape.setClickable(true);
                 } else {
                     chkLandscape.setChecked(true);
+                    chkPortrait.setChecked(false);
                     chkLandscape.setClickable(false);
                 }
-            });
+                chkLandscape.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    updateLastTouchEvent();
+                    if (isChecked) {
+                        chkPortrait.setChecked(false);
+                        chkPortrait.setClickable(true);
+                        devSwitch.switchAlphaOrientation(false);
+                    } else {
+                        chkPortrait.setChecked(true);
+                        chkPortrait.setClickable(false);
+                        devSwitch.switchAlphaOrientation(true);
+                    }
+                });
+                chkPortrait.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (isChecked) {
+                        chkLandscape.setChecked(false);
+                        chkLandscape.setClickable(true);
+                    } else {
+                        chkLandscape.setChecked(true);
+                        chkLandscape.setClickable(false);
+                    }
+                });
+            }
         } else {
             if (popupOrientation != null) {
                 popupOrientation.dismiss();

@@ -22,89 +22,139 @@ public class IPUtils {
     private static final String TAG = "IPUtils";
 
     public static void saveMediaCodec(String codec) {
-        FastSharedPreferences.get("ip_file").edit().putString("mediacodec", codec).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putString("mediacodec", codec).commit();
+        }
     }
 
     public static void savePortrait(boolean portrait) {
-        FastSharedPreferences.get("ip_file").edit().putBoolean("portrait", portrait).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putBoolean("portrait", portrait).commit();
+        }
     }
 
     public static void savetest(boolean test) {
-        FastSharedPreferences.get("ip_file").edit().putBoolean("fortest", test).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putBoolean("fortest", test).commit();
+        }
     }
 
     public static void savealphachannel(boolean alphaChannel) {
-        FastSharedPreferences.get("ip_file").edit().putBoolean("alphachannel", alphaChannel).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putBoolean("alphachannel", alphaChannel).commit();
+        }
     }
 
     public static void saveip(String IP) {
-        FastSharedPreferences.get("ip_file").edit().putString("ip", IP).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putString("ip", IP).commit();
+        }
     }
 
     public static void saveCoturn(String IP) {
-        FastSharedPreferences.get("ip_file").edit().putString("coturnip", IP).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putString("coturnip", IP).commit();
+        }
     }
 
     public static void savepeerid(String peerid) {
-        FastSharedPreferences.get("ip_file").edit().putString("peerid", peerid).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putString("peerid", peerid).commit();
+        }
     }
 
     public static void savetoken(String token) {
-        FastSharedPreferences.get("ip_file").edit().putString("token", token).commit();
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            fp.edit().putString("token", token).commit();
+        }
     }
 
     public static String loadIP() {
-        String ip = FastSharedPreferences.get("ip_file").getString("ip", DEFAULT_IP);
-        if (ip != null) {
-            Log.i(TAG, ip);
+        String ip = "";
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            ip = fp.getString("ip", DEFAULT_IP);
         }
+        Log.i(TAG, ip);
         return ip;
     }
 
     public static String loadCoturnIP() {
-        String ip = FastSharedPreferences.get("ip_file").getString("coturnip", DEFAULT_COTURN_IP);
-        if (ip != null) {
-            Log.i(TAG, ip);
+        String ip = "";
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            ip = fp.getString("coturnip", DEFAULT_COTURN_IP);
         }
+        Log.i(TAG, ip);
         return ip;
     }
 
     public static String loadPeerID() {
-        String peerid = FastSharedPreferences.get("ip_file").getString("peerid", DEFAULT_PEERID);
-        if (peerid != null) {
-            Log.i(TAG, peerid);
+        String peerid = "";
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            peerid = fp.getString("peerid", DEFAULT_PEERID);
         }
+        Log.i(TAG, peerid);
         return peerid;
     }
 
     public static String loadTokenID() {
-        String token = FastSharedPreferences.get("ip_file").getString("token", DEFAULT_TOKENID);
-        if (token != null) {
-            Log.i(TAG, token);
+        String token = "";
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            token = fp.getString("token", DEFAULT_TOKENID);
         }
+        Log.i(TAG, token);
         return token;
     }
 
     public static boolean loadAlphaChannel() {
-        boolean alphaChannel = FastSharedPreferences.get("ip_file").getBoolean("alphachannel", DEFAULT_ALPHA_CHANNEL);
+        boolean alphaChannel = DEFAULT_ALPHA_CHANNEL;
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            alphaChannel = fp.getBoolean("alphachannel", DEFAULT_ALPHA_CHANNEL);
+        }
         Log.i(TAG, alphaChannel + "");
         return alphaChannel;
     }
 
     public static boolean loadTest() {
-        return FastSharedPreferences.get("ip_file").getBoolean("fortest", DEFAULT_FOR_TEST);
+        boolean value = DEFAULT_FOR_TEST;
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            value = fp.getBoolean("fortest", DEFAULT_FOR_TEST);
+        }
+        Log.i(TAG, value + "");
+        return value;
     }
 
     public static boolean loadPortrait() {
-        return FastSharedPreferences.get("ip_file").getBoolean("portrait", DEFAULT_PORTRAIT);
+        boolean value = DEFAULT_PORTRAIT;
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            value = fp.getBoolean("portrait", DEFAULT_PORTRAIT);
+        }
+        Log.i(TAG, value + "");
+        return value;
     }
 
     public static String loadMediaCodec() {
-        String codec = FastSharedPreferences.get("ip_file").getString("mediacodec", DEFAULT_CODEC);
-        if (codec != null) {
-            Log.i(TAG, codec);
+        String token = "";
+        FastSharedPreferences fp= FastSharedPreferences.get("ip_file");
+        if(fp!=null){
+            token = fp.getString("mediacodec", DEFAULT_CODEC);
         }
-        return codec;
+        Log.i(TAG, token);
+        return token;
     }
 
 

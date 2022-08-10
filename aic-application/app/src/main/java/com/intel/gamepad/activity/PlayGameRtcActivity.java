@@ -52,7 +52,7 @@ import com.google.gson.Gson;
 import com.intel.gamepad.R;
 import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.MotionEventBean;
-import com.intel.gamepad.controller.impl.DeviceSwitchListtener;
+import com.intel.gamepad.controller.impl.DeviceSwitchListener;
 import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.LatencyManager;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
@@ -97,7 +97,7 @@ import owt.p2p.Publication;
 import owt.p2p.RemoteStream;
 
 
-public class PlayGameRtcActivity extends AppCompatActivity implements InputManager.InputDeviceListener, DeviceSwitchListtener, SensorEventListener {
+public class PlayGameRtcActivity extends AppCompatActivity implements InputManager.InputDeviceListener, DeviceSwitchListener, SensorEventListener {
     public static AtomicBoolean alpha = new AtomicBoolean(false);
     private static String cameraRes;
     private final String TAG = "PlayGameRtcActivity";
@@ -167,25 +167,27 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
         mLatencyText = findViewById(R.id.tv_latency);
+        if(fullRenderer!=null){
+            fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, ImageManager.getInstance().getBitmapById(IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0), new RendererCommon.RendererEvents() {
+                @Override
+                public void onFirstFrameRendered() {
 
-        fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, ImageManager.getInstance().getBitmapById(IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0), new RendererCommon.RendererEvents() {
-            @Override
-            public void onFirstFrameRendered() {
-
-            }
-
-            @Override
-            public void onFrameResolutionChanged(int width, int height, int rotation) {
-                if (loading != null) {
-                    loading.setVisibility(View.GONE);
                 }
-                if (fullRenderer.getVisibility() != View.VISIBLE)
-                    fullRenderer.setVisibility(View.VISIBLE);
-            }
-        });
-        fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
-        fullRenderer.setEnableHardwareScaler(true);
-        fullRenderer.setZOrderMediaOverlay(true);
+
+                @Override
+                public void onFrameResolutionChanged(int width, int height, int rotation) {
+                    if (loading != null) {
+                        loading.setVisibility(View.GONE);
+                    }
+                    if (fullRenderer.getVisibility() != View.VISIBLE)
+                        fullRenderer.setVisibility(View.VISIBLE);
+                }
+            });
+            fullRenderer.setScalingType(RendererCommon.ScalingType.SCALE_ASPECT_FIT);
+            fullRenderer.setEnableHardwareScaler(true);
+            fullRenderer.setZOrderMediaOverlay(true);
+        }
+
         bweStatsVideoSink = new BweStatsVideoSink();
         bweStatsVideoSink.setBweStatsEvent((frameDelay, frameSize, packetsLost) -> executor.execute(() -> {
             Map<String, Object> mapKey = new HashMap<>();
@@ -307,7 +309,9 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         }
         window.setAttributes(lp);
         View v = window.getDecorView();
-        v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        if(v!=null){
+            v.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
 
     }
 
@@ -853,11 +857,13 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     }
 
     private void updateControllerStatus() {
-        if ((System.currentTimeMillis() - BaseController.lastTouchMillis) > 10000) {
-            controller.getView().setAlpha(0f);
-            controller.hide();
-        } else {
-            controller.getView().setAlpha(1f);
+        if(controller!=null && controller.getView()!=null){
+            if ((System.currentTimeMillis() - BaseController.lastTouchMillis) > 10000) {
+                controller.getView().setAlpha(0f);
+                controller.hide();
+            } else {
+                controller.getView().setAlpha(1f);
+            }
         }
     }
 
@@ -1032,16 +1038,19 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             Camera.Parameters cameraParams = camera.getParameters();
             // getSupportedPictureSizes() API would give maximum resolution info and it lists its maximum
             // value at 0th index. Tested and verified with multiple devices.
-            int width = cameraParams.getSupportedPictureSizes().get(0).width;
-            int height = cameraParams.getSupportedPictureSizes().get(0).height;
-            Log.d(TAG, "width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
+            List<Camera.Size> sizeList = cameraParams.getSupportedPictureSizes();
+            if(sizeList!=null){
+                int width = sizeList.get(0).width;
+                int height = sizeList.get(0).height;
+                Log.d(TAG, "width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
 
-            if (width >= 7680 && height >= 4320) maxCameraRes[i] = "4320p"; // 8k
-            else if (width >= 3840 && height >= 2160) maxCameraRes[i] = "2160p"; // 4k
-            else if (width >= 1920 && height >= 1080) maxCameraRes[i] = "1080p";
-            else if (width >= 1280 && height >= 720) maxCameraRes[i] = "720p";
-            else maxCameraRes[i] = "480p";
-            Log.d(TAG, "Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
+                if (width >= 7680 && height >= 4320) maxCameraRes[i] = "4320p"; // 8k
+                else if (width >= 3840 && height >= 2160) maxCameraRes[i] = "2160p"; // 4k
+                else if (width >= 1920 && height >= 1080) maxCameraRes[i] = "1080p";
+                else if (width >= 1280 && height >= 720) maxCameraRes[i] = "720p";
+                else maxCameraRes[i] = "480p";
+                Log.d(TAG, "Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
+            }
 
             camera.release();
         }
@@ -1158,12 +1167,14 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     @Override
     public void onInputDeviceAdded(int deviceId) {
         InputDevice device = InputDevice.getDevice(deviceId);
-        int source = device.getSources();
-        if ((source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK || ((source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
-            int joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId);
-            sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId);
-        } else {
-            Log.d(TAG, "Bluetooth Device source:  " + source);
+        if (device != null) {
+            int source = device.getSources();
+            if ((source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK || ((source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD)) {
+                int joyId = RTCControllerAndroid.getDeviceSlotIndex(deviceId);
+                sendJoyStickEvent(BaseController.EV_NON, 0, 0, true, joyId);
+            } else {
+                Log.d(TAG, "Bluetooth Device source:  " + source);
+            }
         }
     }
 
@@ -1418,7 +1429,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     }
                     break;
                 case AppConst.MSG_LATENCY_UPDATED:
-                    actPlay.updateLatencyMsg((String) msg.obj);
+                    actPlay.updateLatencyMsg(msg.obj.toString());
                     break;
             }
         }
@@ -1430,14 +1441,15 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             // TODO: This method is called when the BroadcastReceiver is receiving
             // an Intent broadcast.
             String action = intent.getAction();
-            if (action.equals("com.intel.gamepad.sendfiletoaic")) {
-                String uri = intent.getStringExtra("uri");
-                Log.i("MyReceiver", "To aic uri = " + uri);
-                sendFileToAIC(uri);
-            } else if (action.equals("com.intel.gamepad.sendfiletoapp")) {
-                String uri = intent.getStringExtra("uri");
-                Log.i("MyReceiver", "To app uri = " + uri);
-                sendFileToApp(uri);
+            String uri = intent.getStringExtra("uri");
+            if(action!=null && uri != null){
+                if (action.equals("com.intel.gamepad.sendfiletoaic")) {
+                    Log.i("MyReceiver", "To aic uri = " + uri);
+                    sendFileToAIC(uri);
+                } else if (action.equals("com.intel.gamepad.sendfiletoapp")) {
+                    Log.i("MyReceiver", "To app uri = " + uri);
+                    sendFileToApp(uri);
+                }
             }
         }
 

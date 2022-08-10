@@ -13,7 +13,9 @@ public class BweStatsVideoSink implements VideoSink {
     }
 
     public void setBweStatsEvent(BweStatsEvents events) {
-        bweStatsEvents = events;
+        synchronized (layoutLock) {
+            bweStatsEvents = events;
+        }
     }
 
     private void UpdateBweStats(VideoFrame frame) {

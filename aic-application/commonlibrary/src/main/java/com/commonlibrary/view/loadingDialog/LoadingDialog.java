@@ -43,11 +43,14 @@ public class LoadingDialog extends Dialog {
     }
 
     public void setInfo(String info) {
-        if (!TextUtils.isEmpty(info) && info.length() <= 6) {
-            contentView.findViewById(R.id.tv_info).setVisibility(View.VISIBLE);
-            ((TextView) contentView.findViewById(R.id.tv_info)).setText(info);
-        } else {
-            contentView.findViewById(R.id.tv_info).setVisibility(View.GONE);
+        View tvInfo=contentView.findViewById(R.id.tv_info);
+        if(tvInfo!=null){
+            if (!TextUtils.isEmpty(info) && info.length() <= 6) {
+                tvInfo.setVisibility(View.VISIBLE);
+                ((TextView) tvInfo).setText(info);
+            } else {
+                tvInfo.setVisibility(View.GONE);
+            }
         }
     }
 

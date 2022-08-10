@@ -94,10 +94,11 @@ public class LVCircularRing extends View {
         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator valueAnimator) {
-
-                float value = (float) valueAnimator.getAnimatedValue();
-                startAngle = 360 * value;
-
+                Object obj = valueAnimator.getAnimatedValue();
+                if(obj instanceof  Float){
+                    float value = ((Float)obj).floatValue();
+                    startAngle = 360 * value;
+                }
                 invalidate();
             }
         });

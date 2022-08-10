@@ -38,8 +38,10 @@ public class MyApp extends UtilsApplication {
 
         try {
             PackageManager pm = context.getPackageManager();
-            PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
-            Log.i("AIC-APPLICATION", "versionName = " + pi.versionName + " Branch = " + BuildConfig.BUILD_BRANCH + " Commit = " + BuildConfig.BUILD_COMMIT + " Build Time = " + BuildConfig.BUILD_TIME);
+            if(pm!=null){
+                PackageInfo pi = pm.getPackageInfo(context.getPackageName(), 0);
+                Log.i("AIC-APPLICATION", "versionName = " + pi.versionName + " Branch = " + BuildConfig.BUILD_BRANCH + " Commit = " + BuildConfig.BUILD_COMMIT + " Build Time = " + BuildConfig.BUILD_TIME);
+            }
         } catch (Exception e) {
             Log.e("VersionInfo", "Exception", e);
         }

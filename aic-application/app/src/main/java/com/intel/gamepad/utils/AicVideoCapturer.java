@@ -10,6 +10,7 @@ import org.webrtc.CameraEnumerator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 import owt.base.Stream;
 import owt.base.VideoCapturer;
@@ -31,7 +32,7 @@ public final class AicVideoCapturer extends Camera1Capturer implements VideoCapt
         BufferedReader input = null;
         try {
             Process p = Runtime.getRuntime().exec("getprop camera.latency.debug");
-            input = new BufferedReader(new InputStreamReader(p.getInputStream()), 1024);
+            input = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8), 1024);
             cameraLatencyDebugEnabled = input.readLine();
             input.close();
         } catch (IOException ex) {

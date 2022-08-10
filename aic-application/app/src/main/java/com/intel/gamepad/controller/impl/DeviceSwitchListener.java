@@ -2,7 +2,7 @@ package com.intel.gamepad.controller.impl;
 
 import android.widget.CheckBox;
 
-public interface DeviceSwitchListtener {
+public interface DeviceSwitchListener {
     void switchKeyBoard();
 
     void switchMapperPad();

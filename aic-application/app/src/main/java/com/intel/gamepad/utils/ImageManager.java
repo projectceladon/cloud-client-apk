@@ -88,7 +88,9 @@ public class ImageManager {
 
         m.postTranslate(targetX - x1, targetY - y1);
 
-        Bitmap bm1 = Bitmap.createBitmap(bitmap.getHeight(), bitmap.getWidth(), Bitmap.Config.ARGB_8888);
+        int w = bitmap.getHeight();
+        int h = bitmap.getWidth();
+        Bitmap bm1 = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
 
         Paint paint = new Paint();
         Canvas canvas = new Canvas(bm1);

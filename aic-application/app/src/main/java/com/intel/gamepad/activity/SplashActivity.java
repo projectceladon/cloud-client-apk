@@ -11,7 +11,9 @@ import com.intel.gamepad.R;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class SplashActivity extends BaseActivity {
     public static boolean isDeviceRooted() {
@@ -34,15 +36,25 @@ public class SplashActivity extends BaseActivity {
 
     private static boolean checkRootMethodThree() {
         Process process = null;
+        String line;
+        BufferedReader in = null;
         try {
             process = Runtime.getRuntime().exec(new String[]{"/system/xbin/which", "su"});
-            BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            return in.readLine() != null;
+            in = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+            line=in.readLine();
         } catch (Throwable t) {
             return false;
         } finally {
+            if(in !=null){
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
             if (process != null) process.destroy();
         }
+        return line != null;
     }
 
     @Override
@@ -70,12 +82,14 @@ public class SplashActivity extends BaseActivity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
         View decorView = window.getDecorView();
-        decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LOW_PROFILE
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        if(decorView!=null){
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LOW_PROFILE
+                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        }
     }
 }

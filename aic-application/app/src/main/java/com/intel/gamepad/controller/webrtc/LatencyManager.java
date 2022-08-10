@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
@@ -59,7 +60,10 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                 handlerThread = new HandlerThread("LatencyManager");
                 handlerThread.start();
                 mCallback = new Callback(outputStream, mainHandler);
-                mHandler = new Handler(handlerThread.getLooper(), mCallback);
+                Looper looper = handlerThread.getLooper();
+                if(looper!=null){
+                    mHandler = new Handler(looper, mCallback);
+                }
             }
             mCallback.resetLatency();
             Log.d(TAG, "setEnable " + timeStampEnable);
@@ -184,7 +188,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
             if (msg != null) {
                 try {
                     LatencyMsg.Builder builder = LatencyMsg.newBuilder();
-                    String latencyJson = new String(msg.geLatencyBuffer());
+                    String latencyJson = new String(msg.geLatencyBuffer(), StandardCharsets.UTF_8);
                     JsonFormat.parser().ignoringUnknownFields().merge(latencyJson, builder);
                     builder.setClientReceivedTime(receiveTime);
                     LatencyMsg latencyMsg = builder.build();
@@ -220,7 +224,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
             if (msg != null) {
                 try {
                     LatencyMsg.Builder builder = LatencyMsg.newBuilder();
-                    String latencyJson = new String(msg.geLatencyBuffer());
+                    String latencyJson = new String(msg.geLatencyBuffer(), StandardCharsets.UTF_8);
                     Log.e(TAG, "onFrameDrawn latencyJson" + latencyJson);
                     JsonFormat.parser().ignoringUnknownFields().merge(latencyJson, builder);
                     builder.setClientReceivedTime(receiveTime);

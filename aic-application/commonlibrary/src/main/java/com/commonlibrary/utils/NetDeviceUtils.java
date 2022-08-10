@@ -203,7 +203,11 @@ public class NetDeviceUtils {
      */
     public static long getIPAddress() {
         WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        return wifi.getConnectionInfo().getIpAddress();
+        WifiInfo info = wifi.getConnectionInfo();
+        if(info != null){
+            return info.getIpAddress();
+        }
+        return -1;
     }
 
     /**
@@ -214,13 +218,17 @@ public class NetDeviceUtils {
     public static String getWifiInformation() {
         WifiManager wifi = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         WifiInfo info = wifi.getConnectionInfo();
-        return "HiddenSSID=" + info.getHiddenSSID() + "\n" +
-                "IpAddress=" + formatIP4(info.getIpAddress()) + "\n" +
-                "LinkSpeed=" + info.getLinkSpeed() + "\n" +
-                "NetworkId=" + info.getNetworkId() + "\n" +
-                "Rssi=" + info.getRssi() + "\n" +
-                "SSID=" + info.getSSID() + "\n" +
-                "MacAddress=" + info.getMacAddress() + "\n";
+        if(info!=null){
+            return "HiddenSSID=" + info.getHiddenSSID() + "\n" +
+                    "IpAddress=" + formatIP4(info.getIpAddress()) + "\n" +
+                    "LinkSpeed=" + info.getLinkSpeed() + "\n" +
+                    "NetworkId=" + info.getNetworkId() + "\n" +
+                    "Rssi=" + info.getRssi() + "\n" +
+                    "SSID=" + info.getSSID() + "\n" +
+                    "MacAddress=" + info.getMacAddress() + "\n";
+        }else{
+            return "";
+        }
     }
 
     /**
