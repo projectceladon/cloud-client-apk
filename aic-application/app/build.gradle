@@ -34,13 +34,13 @@ android {
             keyAlias = 'key0'
         }
     }
-    buildToolsVersion "29.0.2"
+    buildToolsVersion rootProject.ext.buildToolsVersion
     defaultConfig {
-        applicationId "com.intel.cloudgame"
-        minSdkVersion 19
-        targetSdkVersion 29
+        applicationId rootProject.ext.applicationId
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "0.24"
+        versionName "0.25"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
         renderscriptTargetApi 18
@@ -85,7 +85,7 @@ android {
         }
 
     }
-    compileSdkVersion = 29
+    compileSdkVersion = rootProject.ext.compileSdkVersion
     repositories {
         flatDir {
             dirs 'libs'
