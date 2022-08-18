@@ -1,0 +1,73 @@
+From 05a73d3c8bbe28a55ad1652838227952d58af783 Mon Sep 17 00:00:00 2001
+From: Some One <someone@somewhere.com>
+Date: Wed, 24 Aug 2022 10:18:39 +0800
+Subject: [PATCH] Update Android SDK to 31
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ DEPS | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/DEPS b/DEPS
+index e32deb8..5cc7b28 100644
+--- a/DEPS
++++ b/DEPS
+@@ -403,12 +403,12 @@ deps = {
+   'src/third_party/android_sdk/public': {
+       'packages': [
+           {
+-              'package': 'chromium/third_party/android_sdk/public/build-tools/29.0.2',
+-              'version': 'n-b1Qd7iFb8qzHlr1C_jIeu070UDgO_BwePtH42UqGcC',
++              'package': 'chromium/third_party/android_sdk/public/build-tools/31.0.0',
++              'version': 'tRoD45SCi7UleQqSV7MrMQO1_e5P8ysphkCcj6z_cCQC',
+           },
+           {
+               'package': 'chromium/third_party/android_sdk/public/emulator',
+-              'version': 'f4WdgkPvDdVCE8zBWPzcSIj4N9WFhKp3CSKDWylXuLEC',
++              'version': 'gMHhUuoQRKfxr-MBn3fNNXZtkAVXtOwMwT7kfx8jkIgC',
+           },
+           {
+               'package': 'chromium/third_party/android_sdk/public/extras',
+@@ -420,15 +420,15 @@ deps = {
+           },
+           {
+               'package': 'chromium/third_party/android_sdk/public/platform-tools',
+-              'version': 'Jxtur3_L9RzY4q79K-AwIahwFW4oi5uYVD5URx9h62wC',
++              'version': 'g7n_-r6yJd_SGRklujGB1wEt8iyr77FZTUJVS9w6O34C',
+           },
+           {
+-              'package': 'chromium/third_party/android_sdk/public/platforms/android-29',
+-              'version': 'yb33klKQV9UzzB-lDSsq36vzhTXOUZ2aRONBvPGwvdcC',
+-          },
++                'package': 'chromium/third_party/android_sdk/public/platforms/android-31',
++                'version': 'lL3IGexKjYlwjO_1Ga-xwxgwbE_w-lmi2Zi1uOlWUIAC',
++            },
+           {
+-              'package': 'chromium/third_party/android_sdk/public/sources/android-29',
+-              'version': '4gxhM8E62bvZpQs7Q3d0DinQaW0RLCIefhXrQBFkNy8C',
++              'package': 'chromium/third_party/android_sdk/public/sources/android-31',
++              'version': '_a_BcnANjPYw5mSKlNHa7GFY8yc1kdqj2rmQgac7yUcC',
+           },
+           {
+               'package': 'chromium/third_party/android_sdk/public/tools-lint',
+@@ -436,7 +436,7 @@ deps = {
+           },
+           {
+               'package': 'chromium/third_party/android_sdk/public/cmdline-tools',
+-              'version': 'CR25ixsRhwuRnhdgDpGFyl9S0C_0HO9SUgFrwX46zq8C',
++              'version': 'IPzAG-uU5zVMxohpg9-7-N0tQC1TCSW1VbrBFw7Ld04C',
+           },
+       ],
+       'condition': 'checkout_android',
+@@ -480,7 +480,7 @@ deps = {
+       'packages': [
+           {
+               'package': 'chromium/third_party/androidx',
+-              'version': 'BgU0HKOH7unGo87kXkIKJlPMmaSOCFhvUKcIr9aborwC',
++              'version': 'gAsD4l8EoP_W0IH5vzedZ1tyN3-wAP8-fqkaS_mX6rcC',
+           },
+       ],
+       'condition': 'checkout_android',
+-- 
+2.25.1
+

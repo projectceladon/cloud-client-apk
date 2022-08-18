@@ -1,0 +1,151 @@
+From a4df029d95e433e35e32f0ebb8057868d1c808f0 Mon Sep 17 00:00:00 2001
+From: shipeigx <peigangx.shi@intel.com>
+Date: Thu, 18 Aug 2022 16:28:20 +0800
+Subject: [PATCH] Update owt Android SDK to 31
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ build.gradle                             | 21 ++++++++++++-----
+ gradle/wrapper/gradle-wrapper.properties |  2 +-
+ src/sdk/base/build.gradle                |  4 ++--
+ test/base/build.gradle                   |  4 ++--
+ tools/pack.py                            | 29 ++++++++++++++----------
+ 5 files changed, 37 insertions(+), 23 deletions(-)
+
+diff --git a/build.gradle b/build.gradle
+index d145d04..69f8d4b 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -2,20 +2,29 @@
+ 
+ buildscript {
+     repositories {
+-        jcenter()
++        mavenCentral()
+         google()
+     }
+     dependencies {
+-        classpath 'com.android.tools.build:gradle:4.1.2'
++        classpath 'com.android.tools.build:gradle:7.0.4'
+ 
+         // NOTE: Do not place your application dependencies here; they belong
+         // in the individual module build.gradle files
+     }
+     ext {
+-        compileSdkVersion = 26
+-        buildToolsVersion = "28.0.3"
+-        minSdkVersion = 16
++//        compileSdkVersion = 26
++//        buildToolsVersion = "28.0.3"
++//        minSdkVersion = 16
++//        targetSdkVersion = 26
++//        sourceCompatibility = JavaVersion.VERSION_11
++//        targetCompatibility = JavaVersion.VERSION_11
++
++        compileSdkVersion = 31
++        buildToolsVersion = "31.0.0"
++        minSdkVersion = 22
+         targetSdkVersion = 26
++        sourceCompatibility = JavaVersion.VERSION_11
++        targetCompatibility = JavaVersion.VERSION_11
+ 
+         // TODO(hank): remove after QA finishes setting up environment for building libwebrtc.
+         stackVersion = "18.11.1315"
+@@ -24,8 +33,8 @@ buildscript {
+ 
+ allprojects {
+     repositories {
+-        jcenter()
+         google()
++        mavenCentral()
+     }
+ }
+ 
+diff --git a/gradle/wrapper/gradle-wrapper.properties b/gradle/wrapper/gradle-wrapper.properties
+index e2e8e44..cc7b3c8 100644
+--- a/gradle/wrapper/gradle-wrapper.properties
++++ b/gradle/wrapper/gradle-wrapper.properties
+@@ -3,4 +3,4 @@ distributionBase=GRADLE_USER_HOME
+ distributionPath=wrapper/dists
+ zipStoreBase=GRADLE_USER_HOME
+ zipStorePath=wrapper/dists
+-distributionUrl=https\://services.gradle.org/distributions/gradle-6.5-all.zip
++distributionUrl=https\://services.gradle.org/distributions/gradle-7.0.2-bin.zip
+diff --git a/src/sdk/base/build.gradle b/src/sdk/base/build.gradle
+index 7c913c9..3b778c0 100644
+--- a/src/sdk/base/build.gradle
++++ b/src/sdk/base/build.gradle
+@@ -18,8 +18,8 @@ android {
+         }
+     }
+     compileOptions {
+-        sourceCompatibility JavaVersion.VERSION_1_8
+-        targetCompatibility JavaVersion.VERSION_1_8
++        sourceCompatibility rootProject.ext.sourceCompatibility
++        targetCompatibility rootProject.ext.targetCompatibility
+     }
+ }
+ 
+diff --git a/test/base/build.gradle b/test/base/build.gradle
+index 204023f..5a56a1d 100644
+--- a/test/base/build.gradle
++++ b/test/base/build.gradle
+@@ -23,8 +23,8 @@ android {
+     }
+ 
+     compileOptions {
+-        sourceCompatibility JavaVersion.VERSION_1_8
+-        targetCompatibility JavaVersion.VERSION_1_8
++        sourceCompatibility rootProject.ext.sourceCompatibility
++        targetCompatibility rootProject.ext.targetCompatibility
+     }
+ }
+ 
+diff --git a/tools/pack.py b/tools/pack.py
+index e33402d..f07f4c4 100755
+--- a/tools/pack.py
++++ b/tools/pack.py
+@@ -165,23 +165,28 @@ def copy_deps():
+ 
+ 
+ def run_lint():
++    print('\n> run lint')
+     cmd = [GRADLEW_PATH, '-p', SDK_PATH, 'lint']
++    print(cmd)
+     subprocess.call(cmd)
+-
+     has_error = False
+     names = ['base', 'conference', 'p2p']
+     for name in names:
+-        report_root = minidom.parse(
+-            SDK_PATH + '/' + name + '/build/reports/lint-results.xml').documentElement
+-        issue_nodes = report_root.getElementsByTagName('issue') if report_root else []
+-        for node in issue_nodes:
+-            severity = node.getAttribute('severity') if node else ''
+-            if severity == 'Warning' or severity == 'Error' or severity == 'Fatal':
+-                print('\nThere are some errors in ' + SDK_PATH + '/' + name + ',')
+-                print('Please go to ' + SDK_PATH + '/' + name \
+-                      + '/build/reports/lint-results.html to get more information.')
+-                has_error = True
+-                break
++        lint_report = SDK_PATH + '/' + name + '/build/reports/lint-results-debug.xml'
++        print('\n> lint report addr:'+lint_report)
++        if os.path.exists(lint_report):
++            report_root = minidom.parse(lint_report).documentElement
++            issue_nodes = report_root.getElementsByTagName('issue') if report_root else []
++            for node in issue_nodes:
++                severity = node.getAttribute('severity') if node else ''
++                if severity == 'Warning' or severity == 'Error' or severity == 'Fatal':
++                    print('\nThere are some errors in ' + SDK_PATH + '/' + name + ',')
++                    print('Please go to ' + SDK_PATH + '/' + name \
++                          + '/build/reports/lint-results.html to get more information.')
++                    has_error = True
++                    break
++        else:
++            print('\n> lint report is not exist!')
+ 
+     if has_error:
+         sys.exit(1)
+-- 
+2.25.1
+

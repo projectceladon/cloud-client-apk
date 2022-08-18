@@ -18,8 +18,10 @@ Download owt-client-native source code:
 1. $ cd owt-client-native/src
 2. Checkout v5.0:
     $ git checkout v5.0
-3. Fetch dependency projects: $ gclient sync
-4. Apply patch one by one:
+3. Apply prebuild patch:
+    $ git am -3 ../prebuild/0001-Update-Android-SDK-to-31.patch.patch
+4. Fetch dependency projects: $ gclient sync
+5. Apply patch one by one:
     $ git am -3 ../patches/0002-Add-talk-owt-patches-0016-Use-AToU-to-print-trace.pa.patch
     $ git am -3 ../patches/0006-Add-talk-owt-patches-0020-Add-atrace-points-for-came.patch
     $ git am -3 ../patches/0008-Add-and-update-talk-owt-patches-0021-Fix-display-is-.patch
@@ -30,7 +32,8 @@ Download owt-client-native source code:
     $ git am -3 ../patches/0014-Add-talk-owt-patches-0027-Dynamic-switch-the-orienta.patch
     $ git am -3 ../patches/0015-Add-talk-owt-patches-0028-enable-e2e-latency-telemet.patch
     $ git am -3 ../patches/0016-Add-talk-owt-patches-0029-JNI-pass-a-tcae-object-to-.patch
-5. Patch the third_party project: $ gclient sync
+    $ git am -3 ../patches/0017-Add-talk-owt-patches-Update-Android-SDK-to-31-in-src.patch
+6. Patch the third_party project: $ gclient sync
 
 Compile:
 1. Install dependency: $ sudo ./build/install-build-deps-android.sh

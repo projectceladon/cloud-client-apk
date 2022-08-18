@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameListBean implements Parcelable {
-    public static final Creator<GameListBean> CREATOR = new Creator<GameListBean>() {
+    public static final Creator<GameListBean> CREATOR = new Creator<>() {
         @Override
         public GameListBean createFromParcel(Parcel source) {
             return new GameListBean(source);

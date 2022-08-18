@@ -4,8 +4,7 @@ import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Lifecycle;
-import androidx.lifecycle.LifecycleObserver;
-import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.LifecycleEventObserver;
 
 import com.intel.gamepad.app.MyApp;
 
@@ -122,9 +121,8 @@ public class P2PHelper {
     private void initP2PClient(AppCompatActivity activity, P2PClient.P2PClientObserver observer) {
         client = new P2PClient(p2pConfig, new SocketSignalingChannel());
         client.addObserver(observer);
-        activity.getLifecycle().addObserver(new LifecycleObserver() {
-            @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-            public void onDestroy() {
+        activity.getLifecycle().addObserver((LifecycleEventObserver) (source, event) -> {
+            if(event == Lifecycle.Event.ON_DESTROY){
                 client.removeObserver(observer);
                 client.stop(P2PHelper.peerId);
                 client.disconnect();

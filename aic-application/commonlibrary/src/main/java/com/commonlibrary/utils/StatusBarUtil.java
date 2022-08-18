@@ -13,6 +13,8 @@ import android.view.WindowManager;
 
 import androidx.annotation.IntDef;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
@@ -213,7 +215,7 @@ public class StatusBarUtil {
     @IntDef({TYPE_MIUI,
             TYPE_FLYME,
             TYPE_M})
-//    @Retention(RetentionPolicy.SOURCE)
+    @Retention(RetentionPolicy.SOURCE)
     @interface ViewType {
     }
 }

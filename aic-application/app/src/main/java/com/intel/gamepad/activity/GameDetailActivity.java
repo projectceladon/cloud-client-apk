@@ -340,9 +340,9 @@ public class GameDetailActivity extends BaseActivity {
 
     private ArrayList<MediaCodecInfo> findMediaCodecs(String mimeType, boolean isEncoder) {
         ArrayList<MediaCodecInfo> codecList = new ArrayList<>();
-        int numCodecs = MediaCodecList.getCodecCount();
-        for (int i = 0; i < numCodecs; i++) {
-            MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
+        MediaCodecList list = new MediaCodecList(MediaCodecList.ALL_CODECS);
+        MediaCodecInfo[] codecInfos = list.getCodecInfos();
+        for (MediaCodecInfo codecInfo : codecInfos) {
             if (codecInfo.isEncoder() == isEncoder) {
                 String[] types = codecInfo.getSupportedTypes();
                 for (String type : types) {

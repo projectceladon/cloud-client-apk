@@ -1,7 +1,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.anko_version = '0.10.8'
+
     repositories {
         google()
         jcenter()
@@ -9,10 +9,11 @@ buildscript {
         maven { url 'https://maven.google.com' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath 'com.android.tools.build:gradle:7.0.4'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
         classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.18'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.6.10"
     }
 }
 
@@ -34,9 +35,57 @@ task clean(type: Delete) {
 ext {
     // Sdk and tools
     minSdkVersion = 22
-    targetSdkVersion = 29
-    compileSdkVersion = 29
-    buildToolsVersion = '29.0.2'
+    targetSdkVersion = 31
+    compileSdkVersion = 31
+    buildToolsVersion = '31.0.0'
     ndkVersion = '21.1.6352462'
     applicationId = "com.intel.cloudgame"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+    support_version = "1.4.2"
+    anko_version = '0.10.8'
+    kotlin_version = "1.6.10"
+    protobuf = "3.2.0"
+
+    support = [
+            "appcompat"            : "androidx.appcompat:appcompat:${support_version}",
+            "constraint_layout"       : "androidx.constraintlayout:constraintlayout:2.1.4",
+            "lifecycle"            : "androidx.lifecycle:lifecycle-extensions:2.1.0",
+            "material"            : "com.google.android.material:material:1.6.1",
+            "cardview"            : "androidx.cardview:cardview:1.0.0",
+            "recyclerview"            : "androidx.recyclerview:recyclerview:1.2.1",
+            "test_runner"            : "androidx.test:runner:1.4.0",
+            "espresso"            : "androidx.test.espresso:espresso-core:3.2.0",
+            "annotation"            : "androidx.annotation:annotation:1.4.0",
+            "junit"            : "junit:junit:4.13.1",
+    ]
+
+    //3rd party libs
+    dependencies = [
+            "anko"            : "org.jetbrains.anko:anko:${anko_version}",
+            "anko_commons"            : "org.jetbrains.anko:anko-commons:${anko_version}",
+            "anko_support_v4_commons"            : "org.jetbrains.anko:anko-support-v4-commons:${anko_version}",
+            "anko_support_v4"            : "org.jetbrains.anko:anko-support-v4:${anko_version}",
+            "anko_sdk25_coroutines"            : "org.jetbrains.anko:anko-sdk25-coroutines:${anko_version}",
+            "anko_appcompat_v7_coroutines"            : "org.jetbrains.anko:anko-appcompat-v7-coroutines:${anko_version}",
+
+            "kotlin_stdlib"            : "org.jetbrains.kotlin:kotlin-stdlib:${kotlin_version}",
+            "kotlin_stdlib_jdk7"            : "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${kotlin_version}",
+            "kotlin_stdlib_jdk8"            : "org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlin_version}",
+
+            "gson"            : "com.google.code.gson:gson:2.8.6",
+            "guava"            : "com.google.guava:guava:31.1-android",
+            "commons_text"            : "org.apache.commons:commons-text:1.7",
+            "glide"            : "com.github.bumptech.glide:glide:4.9.0",
+            "glide_compiler"            : "com.github.bumptech.glide:compiler:4.9.0",
+            "commons_io"            : "commons-io:commons-io:2.11.0",
+            "socket_io_client"            : "io.socket:socket.io-client:1.0.0",
+            "fast_sharedpreferences"            : "com.jeremyliao:fast-sharedpreferences:0.0.1",
+            "live_event_bus_x"            : "com.jeremyliao:live-event-bus-x:1.5.2",
+
+            "protobuf_java"            : "com.google.protobuf:protobuf-java:${protobuf}",
+            "protoc"            : "com.google.protobuf:protoc:${protobuf}",
+            "protobuf_java_util"            : "com.google.protobuf:protobuf-java-util:${protobuf}",
+
+    ]
 }

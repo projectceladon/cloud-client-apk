@@ -26,6 +26,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -42,9 +43,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.lifecycle.Lifecycle;
-import androidx.lifecycle.LifecycleObserver;
-import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.LifecycleEventObserver;
 
 import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
@@ -204,7 +203,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             mapParams.put("packetloss", packetsLost);
             String jsonString = new JSONObject(mapKey).toString();
             // Log.e(TAG, "setBweStatsEvent data:" + jsonString);
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
                 @Override
                 public void onSuccess(Void unused) {
                     // Log.e(TAG, "setBweStatsEvent Success");
@@ -398,7 +397,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                         localAudioStream = new LocalStream(new MediaConstraints.AudioTrackConstraints());
                                         localAudioStream.enableAudio();
                                         Log.d(TAG, "localAudioStream id: " + localAudioStream.id());
-                                        P2PHelper.getClient().publish(P2PHelper.peerId, localAudioStream, new ActionCallback<Publication>() {
+                                        P2PHelper.getClient().publish(P2PHelper.peerId, localAudioStream, new ActionCallback<>() {
                                             @Override
                                             public void onSuccess(Publication publication) {
                                                 audioPublication = publication;
@@ -606,7 +605,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                         mapData.put("parameters", mapDataForFileBegin);
                         mapDataForFileBegin.put("file_name", file_name);
                         String jsonString = new JSONObject(mapKey).toString();
-                        P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<Void>() {
+                        P2PHelper.getClient().send2(P2PHelper.peerId, jsonString, new ActionCallback<>() {
                             @Override
                             public void onSuccess(Void unused) {
                             }
@@ -780,7 +779,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         }
 
         localVideoStream = createLocalStream(videoCapture);
-        P2PHelper.getClient().publish(P2PHelper.peerId, localVideoStream, new ActionCallback<Publication>() {
+        P2PHelper.getClient().publish(P2PHelper.peerId, localVideoStream, new ActionCallback<>() {
             @Override
             public void onSuccess(Publication publication) {
                 videoPublication = publication;
@@ -837,7 +836,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         mapKey.put("data", mapData);
         JSONObject json = new JSONObject(mapKey);
         String jsonString = json.toString();
-        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
             @Override
             public void onFailure(OwtError owtError) {
                 Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
@@ -846,7 +845,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     }
 
     private Handler getHandler() {
-        if (handler == null) handler = new GameHandler(this);
+        if (handler == null) handler = new GameHandler(Looper.getMainLooper(),this);
         return handler;
     }
 
@@ -881,7 +880,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         P2PClient client = P2PHelper.getClient();
         if (client != null) {
             client.addAllowedRemotePeer(peerId);
-            client.connect(jsonLogin, new ActionCallback<String>() {
+            client.connect(jsonLogin, new ActionCallback<>() {
                 @Override
                 public void onSuccess(String s) {
                     runOnUiThread(() -> onCallRequest(P2PHelper.peerId));
@@ -926,10 +925,12 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                     if (vci.params.containsKey("profile-level-id")) {
                         String profileLevelId = vci.params.get("profile-level-id");
                         if (vci.name.equals("H264")) {
-                            if (profileLevelId.startsWith("42e0")) {
-                                mapOneVideoConfig.put("profile", "baseline");
-                            } else if (profileLevelId.startsWith("640c")) {
-                                mapOneVideoConfig.put("profile", "high");
+                            if (profileLevelId != null) {
+                                if (profileLevelId.startsWith("42e0")) {
+                                    mapOneVideoConfig.put("profile", "baseline");
+                                } else if (profileLevelId.startsWith("640c")) {
+                                    mapOneVideoConfig.put("profile", "high");
+                                }
                             }
                         }
                     } else {
@@ -964,40 +965,38 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             Log.i(TAG, "legacyStartCommand = '" + legacyStartCommand + "'");
             Log.i(TAG, "start Command is '" + legacyStartCommand + "'");
 
-            client.send(peerId, legacyStartCommand, new ActionCallback<Void>() {
+            client.send(peerId, legacyStartCommand, new ActionCallback<>() {
                 @Override
                 public void onSuccess(Void unused) {
                     sendSizeChange();
                     getCameraHwCapability();
                     initJoyStickDevices();
                     sensorsInit();
-                    runOnUiThread(() -> getLifecycle().addObserver(new LifecycleObserver() {
-                        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-                        public void onDestroy() {
-                            Log.i(TAG, "webrtc onDestroy called");
-                        }
-
-                        @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
-                        public void onPause() {
-                            Log.i(TAG, "webrtc onPause called");
-                            if (controller != null && !isOnPause) {
-                                isOnPause = true;
-                                controller.sendAdbCmdEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
-                            }
-                        }
-
-                        @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
-                        public void onResume() {
-                            Log.i(TAG, "webrtc onResume called");
-                            if (controller != null) {
-                                if (isOnPause) {
-                                    isOnPause = false;
-                                    controller.sendAdbCmdEvent("input keyevent KEYCODE_BACK && pm clear com.intel.aic.lifecyclesync");
+                    runOnUiThread(() -> getLifecycle().addObserver((LifecycleEventObserver) (source, event) -> {
+                        switch (event) {
+                            case ON_RESUME:
+                                Log.i(TAG, "webrtc onResume called");
+                                if (controller != null) {
+                                    if (isOnPause) {
+                                        isOnPause = false;
+                                        controller.sendAdbCmdEvent("input keyevent KEYCODE_BACK && pm clear com.intel.aic.lifecyclesync");
+                                    }
                                 }
-                            }
+                                break;
+                            case ON_PAUSE:
+                                Log.i(TAG, "webrtc onPause called");
+                                if (controller != null && !isOnPause) {
+                                    isOnPause = true;
+                                    controller.sendAdbCmdEvent("am start com.intel.aic.lifecyclesync/com.intel.aic.lifecyclesync.MainActivity");
+                                }
+                                break;
+                            case ON_DESTROY:
+                                Log.i(TAG, "webrtc onDestroy called");
+                                break;
                         }
-
                     }));
+
+
                 }
 
                 @Override
@@ -1069,7 +1068,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         mapKey.put("data", mapData);
         JSONObject json = new JSONObject(mapKey);
         String jsonString = json.toString();
-        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
             @Override
             public void onFailure(OwtError owtError) {
                 Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
@@ -1085,7 +1084,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         mapKey.put("data", mapData);
         mapData.put("event", "sensorcheck");
         String jsonString = new JSONObject(mapKey).toString();
-        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
             @Override
             public void onFailure(OwtError owtError) {
                 Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + "Failure at sensorsInit");
@@ -1308,7 +1307,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         }
         sensorInfo.put("data", data);
         String jsonString = new JSONObject(mapKey).toString();
-        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
             @Override
             public void onFailure(OwtError owtError) {
                 Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
@@ -1332,7 +1331,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         if (parameters != null) {
             parameters.setData(strNMEA);
             String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
                 @Override
                 public void onFailure(OwtError owtError) {
                     Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
@@ -1370,7 +1369,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             }
 
             String jsonString = new Gson().toJson(meb, MotionEventBean.class);
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<Void>() {
+            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
                 @Override
                 public void onFailure(OwtError owtError) {
                     Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
@@ -1386,7 +1385,8 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     public static class GameHandler extends Handler {
         private final WeakReference<PlayGameRtcActivity> activity;
 
-        public GameHandler(PlayGameRtcActivity act) {
+        public GameHandler(@NonNull Looper looper, PlayGameRtcActivity act) {
+            super(looper);
             activity = new WeakReference<>(act);
         }
 

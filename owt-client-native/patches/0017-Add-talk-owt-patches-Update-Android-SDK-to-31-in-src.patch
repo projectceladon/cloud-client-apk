@@ -1,0 +1,98 @@
+From b905f9626dddf0d70e6e01bbeec4732860cc9010 Mon Sep 17 00:00:00 2001
+From: shipeigx <peigangx.shi@intel.com>
+Date: Wed, 24 Aug 2022 14:29:01 +0800
+Subject: [PATCH] Update Android SDK to 31 in src patch
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ scripts/build_android.py                      |  0
+ scripts/prepare_dev.py                        |  1 +
+ .../0030-Update-Android-SDK-to-31-build.patch | 60 +++++++++++++++++++
+ 3 files changed, 61 insertions(+)
+ mode change 100644 => 100755 scripts/build_android.py
+ create mode 100644 talk/owt/patches/0030-Update-Android-SDK-to-31-build.patch
+
+diff --git a/scripts/build_android.py b/scripts/build_android.py
+old mode 100644
+new mode 100755
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index b933696..28f5ec1 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -53,6 +53,7 @@ patchList = [
+     ('0027-Dynamic-switch-the-orientation-of-the-background-of-.patch', WEBRTC_PATH),
+     ('0028-enable-e2e-latency-telemotry.patch', WEBRTC_PATH),
+     ('0029-JNI-pass-a-tcae-object-to-java-layer.patch', WEBRTC_PATH),
++    ('0030-Update-Android-SDK-to-31-build.patch', BUILD_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0030-Update-Android-SDK-to-31-build.patch b/talk/owt/patches/0030-Update-Android-SDK-to-31-build.patch
+new file mode 100644
+index 0000000..44bb3b3
+--- /dev/null
++++ b/talk/owt/patches/0030-Update-Android-SDK-to-31-build.patch
+@@ -0,0 +1,60 @@
++From 0706f4fcef7a5f9c59080c3b4d116590dbcee014 Mon Sep 17 00:00:00 2001
++From: shipeigx <peigangx.shi@intel.com>
++Date: Wed, 24 Aug 2022 10:22:02 +0800
++Subject: [PATCH] Update Android SDK to 31(build)
++
++Signed-off-by: shipeigx <peigangx.shi@intel.com>
++---
++ android/pylib/constants/__init__.py | 2 +-
++ config/android/config.gni           | 6 +++---
++ config/android/sdk.gni              | 4 ++--
++ 3 files changed, 6 insertions(+), 6 deletions(-)
++
++diff --git a/android/pylib/constants/__init__.py b/android/pylib/constants/__init__.py
++index 5daecb6d..1b69a2c9 100644
++--- a/android/pylib/constants/__init__.py
+++++ b/android/pylib/constants/__init__.py
++@@ -115,7 +115,7 @@ DEVICE_PERF_OUTPUT_DIR = (
++ SCREENSHOTS_DIR = os.path.join(DIR_SOURCE_ROOT, 'out_screenshots')
++ 
++ ANDROID_SDK_VERSION = version_codes.OREO_MR1
++-ANDROID_SDK_BUILD_TOOLS_VERSION = '29.0.2'
+++ANDROID_SDK_BUILD_TOOLS_VERSION = '31.0.0'
++ ANDROID_SDK_ROOT = os.path.join(DIR_SOURCE_ROOT, 'third_party', 'android_sdk',
++                                 'public')
++ ANDROID_SDK_TOOLS = os.path.join(ANDROID_SDK_ROOT,
++diff --git a/config/android/config.gni b/config/android/config.gni
++index 0df2b57d..8aa99c63 100644
++--- a/config/android/config.gni
+++++ b/config/android/config.gni
++@@ -78,10 +78,10 @@ if (is_android || is_chromeos) {
++   }
++ 
++   public_android_sdk_root = "//third_party/android_sdk/public"
++-  if (android_sdk_release == "q") {
+++  if (android_sdk_release == "s") {
++     default_android_sdk_root = public_android_sdk_root
++-    default_android_sdk_version = 29
++-    default_android_sdk_build_tools_version = "29.0.2"
+++    default_android_sdk_version = 31
+++    default_android_sdk_build_tools_version = "31.0.0"
++     public_android_sdk = true
++   }
++ 
++diff --git a/config/android/sdk.gni b/config/android/sdk.gni
++index 8b1d3999..85471701 100644
++--- a/config/android/sdk.gni
+++++ b/config/android/sdk.gni
++@@ -4,7 +4,7 @@
++ 
++ # The default SDK release used by public builds. Value may differ in
++ # internal builds.
++-default_android_sdk_release = "q"
+++default_android_sdk_release = "s"
++ 
++ # SDK releases against which public builds are supported.
++-public_sdk_releases = [ "q" ]
+++public_sdk_releases = [ "s" ]
++-- 
++2.25.1
++
+-- 
+2.25.1
+

@@ -38,6 +38,7 @@ public class SystemBarTintManager {
         // See https://github.com/android/platform_frameworks_base/blob/master/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java#L1076
         try {
             Class c = Class.forName("android.os.SystemProperties");
+            @SuppressWarnings("unchecked")
             Method m = c.getDeclaredMethod("get", String.class);
             m.setAccessible(true);
             sNavBarOverride = (String) m.invoke(null, "qemu.hw.mainkeys");
@@ -321,7 +322,7 @@ public class SystemBarTintManager {
             params.gravity = Gravity.BOTTOM;
         } else {
             params = new LayoutParams(mConfig.getNavigationBarWidth(), LayoutParams.MATCH_PARENT);
-            params.gravity = Gravity.RIGHT;
+            params.gravity = Gravity.END;
         }
         mNavBarTintView.setLayoutParams(params);
         mNavBarTintView.setBackgroundColor(DEFAULT_TINT_COLOR);

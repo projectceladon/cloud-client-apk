@@ -7,7 +7,6 @@ import android.os.Trace;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -109,7 +108,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
     }
 
     private void initView() {
-        this.vgRoot = (ViewGroup) LayoutInflater.from(getContext()).inflate(R.layout.game_pad_android, null, false);
+        this.vgRoot = (ViewGroup) View.inflate(getContext(),R.layout.game_pad_android,null);
         addControllerView(vgRoot);
         initBackButton(vgRoot.findViewById(R.id.btnBack));
         initMenuButton(vgRoot.findViewById(R.id.btnMenu));
