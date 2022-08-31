@@ -42,7 +42,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -58,7 +57,7 @@ import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.MotionEventBean;
 import com.intel.gamepad.controller.impl.DeviceSwitchListener;
 import com.intel.gamepad.controller.webrtc.BaseController;
-import com.intel.gamepad.controller.webrtc.LatencyManager;
+import com.intel.gamepad.controller.webrtc.LatencyTextView;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.AicVideoCapturer;
@@ -143,9 +142,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     private boolean isScreenOrientationPortrait = false;
     private boolean isStreamAdded = false;
     private boolean isOnPause = false;
-    private boolean mE2eEnabled = false;
-    private LatencyManager mLatencyManager;
-    private TextView mLatencyText;
+    private LatencyTextView mLatencyTextView;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -170,7 +167,6 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         setContentView(R.layout.activity_play_game_rtc);
         loading = findViewById(R.id.loading);
         fullRenderer = findViewById(R.id.fullRenderer);
-        mLatencyText = findViewById(R.id.tv_latency);
         if(fullRenderer!=null){
             fullRenderer.init(P2PHelper.getInst().getRootEglBase().getEglBaseContext(), false, ImageManager.getInstance().getBitmapById(IPUtils.loadPortrait() ? R.mipmap.bg_alpha_portrait : R.mipmap.bg_alpha, getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT ? 90 : 0), new RendererCommon.RendererEvents() {
                 @Override
@@ -192,8 +188,12 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             fullRenderer.setZOrderMediaOverlay(true);
         }
 
+        mLatencyTextView = findViewById(R.id.tv_latency);
+        mLatencyTextView.init(fullRenderer, getHandler());
+
         bweStatsVideoSink = new BweStatsVideoSink();
         bweStatsVideoSink.setBweStatsEvent((frameDelay, frameSize, packetsLost) -> executor.execute(() -> {
+            mLatencyTextView.addBweStream(frameSize);
             Map<String, Object> mapKey = new HashMap<>();
             Map<String, Object> mapData = new HashMap<>();
             Map<String, Object> mapParams = new HashMap<>();
@@ -281,8 +281,8 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         ImageManager.getInstance().clear();
         mSensorManager.unregisterListener(this);
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
-        if (mLatencyManager != null) {
-            mLatencyManager.onStreamExit();
+        if (mLatencyTextView != null) {
+            mLatencyTextView.onStreamExit();
         }
     }
 
@@ -1246,29 +1246,15 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
     @Override
     public void switchE2E(boolean on) {
-        Log.d(TAG, "switchE2E " + on + ", mE2eEnabled" + mE2eEnabled);
+        Log.d(TAG, "switchE2E " + on );
         if (on) {
-            if (!mE2eEnabled) {
-                mE2eEnabled = true;
-                controller.setE2eEnabled(true);
-                // enable other stuff
-                if (mLatencyManager == null) {
-                    mLatencyManager = new LatencyManager(PlayGameRtcActivity.this.getApplicationContext(), fullRenderer, getHandler());
-                }
-                mLatencyManager.setEnable(true);
-            }
-            mLatencyText.setText("");
-            mLatencyText.setVisibility(View.VISIBLE);
+            controller.setE2eEnabled(true);
+            mLatencyTextView.open();
         } else {
-            if (mE2eEnabled) {
-                mE2eEnabled = false;
-                controller.setE2eEnabled(false);
-                //disable other stuff
-                if (mLatencyManager != null) {
-                    mLatencyManager.setEnable(false);
-                }
+            controller.setE2eEnabled(false);
+            if(mLatencyTextView!=null){
+                mLatencyTextView.close();
             }
-            mLatencyText.setVisibility(View.GONE);
         }
     }
 
@@ -1385,10 +1371,6 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         }
     }
 
-    public void updateLatencyMsg(String msg) {
-        mLatencyText.setText(msg);
-    }
-
     public static class GameHandler extends Handler {
         private final WeakReference<PlayGameRtcActivity> activity;
 
@@ -1434,9 +1416,6 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                         Log.i(TAG, " Get MSG_RECOVERABLE message.");
                         Toast.makeText(actPlay, "Get MSG_RECOVERABLE message.", Toast.LENGTH_LONG).show();
                     }
-                    break;
-                case AppConst.MSG_LATENCY_UPDATED:
-                    actPlay.updateLatencyMsg(msg.obj.toString());
                     break;
             }
         }

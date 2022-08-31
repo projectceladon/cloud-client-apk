@@ -1,5 +1,6 @@
 package com.intel.gamepad.controller.webrtc;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
@@ -7,13 +8,17 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.util.AttributeSet;
 import android.util.Log;
+import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatTextView;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.intel.gamepad.app.AppConst;
+import com.intel.gamepad.utils.TimingTaskUtil;
 
 import org.webrtc.EglRenderer;
 import org.webrtc.LatencyLogger;
@@ -30,24 +35,74 @@ import java.util.Locale;
 
 import E2ELatency.LatencyMsgOuterClass.LatencyMsg;
 
-public class LatencyManager implements EglRenderer.RenderCallback {
+public class LatencyTextView extends AppCompatTextView implements EglRenderer.RenderCallback {
     private static final int MSG_FRAME_DROPPED = 1;
     private static final int MSG_FRAME_RENDERED = 2;
     private static final String TAG = "LatencyManager";
-    private final SurfaceViewRenderer mRender;
-    private final Context mContext;
-    private final Handler mainHandler;
+    private SurfaceViewRenderer mRender;
+    private Handler mainHandler;
     private HandlerThread handlerThread;
     private Handler mHandler;
     private FileOutputStream outputStream;
     private Callback mCallback;
     private long timeStampEnable;
 
+    private boolean mE2eEnabled = false;
+    private TimingTaskUtil bweTaskUtil;
+    private String latencyMsg;
+    private String bweStreamMsg;
+    private final Object bweLock = new Object();
+    private int bweStream;
+    final Runnable timingTaskRunnable = () -> {
+        synchronized (bweLock) {
+            bweStreamMsg = "bweStream:"+bweStream+"/10s\n";
+            String data = bweStreamMsg+(latencyMsg!=null?latencyMsg:"");
+            setText(data);
+            bweStream = 0;
+        }
+    };
 
-    public LatencyManager(Context context, SurfaceViewRenderer render, Handler handler) {
+
+    public LatencyTextView(Context context) {
+        super(context);
+    }
+
+    public LatencyTextView(Context context, @Nullable AttributeSet attrs) {
+        super(context, attrs);
+    }
+
+    public void init( SurfaceViewRenderer render, Handler handler) {
         mRender = render;
-        mContext = context;
         mainHandler = handler;
+    }
+
+    public void open(){
+        if (!mE2eEnabled) {
+            mE2eEnabled = true;
+            setEnable(true);
+        }
+        setText("");
+        setVisibility(View.VISIBLE);
+        if(bweTaskUtil==null){
+            bweTaskUtil = new TimingTaskUtil(new Handler(getContext().getMainLooper()));
+        }
+        bweTaskUtil.startTask(timingTaskRunnable, 10000, true);
+    }
+
+    public void close(){
+        if (mE2eEnabled) {
+            mE2eEnabled = false;
+            setEnable(false);
+        }
+        setVisibility(View.GONE);
+        bweTaskUtil.endTask(timingTaskRunnable);
+    }
+
+    public void addBweStream(int frameSize){
+        synchronized (bweLock) {
+            bweStream += frameSize;
+            Log.e(TAG,"frameSize:"+frameSize+";bweStream: "+bweStream);
+        }
     }
 
     public void setEnable(boolean enable) {
@@ -80,7 +135,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
         if (!exists) {
             Log.e(TAG, "initFilePath but sd not exits, no write");
         }
-        File sdCardFile = mContext.getExternalFilesDir(null);
+        File sdCardFile = getContext().getExternalFilesDir(null);
         File fileDir = new File(sdCardFile, "e2eLatency");
         if (!fileDir.exists()) {
             if (!fileDir.mkdir()) {
@@ -120,6 +175,20 @@ public class LatencyManager implements EglRenderer.RenderCallback {
             } catch (Exception ignored) {
             }
         }
+
+        if(bweTaskUtil!=null){
+            bweTaskUtil.endTask(timingTaskRunnable);
+        }
+    }
+
+    public void updateLatencyMsg(final String msg) {
+        if(getContext() instanceof Activity){
+            ((Activity)getContext()).runOnUiThread(() -> {
+                latencyMsg = msg;
+                String newStr = bweStreamMsg + msg;
+                setText(newStr);
+            });
+        }
     }
 
     @Override
@@ -151,7 +220,7 @@ public class LatencyManager implements EglRenderer.RenderCallback {
         }
     }
 
-    static class Callback implements Handler.Callback {
+    class Callback implements Handler.Callback {
         FileOutputStream outputStream;
         Handler mHandler;
         private int tick = 0;
@@ -249,10 +318,12 @@ public class LatencyManager implements EglRenderer.RenderCallback {
                     updateAverageLatency(latencyServer, true);
                     updateAverageLatency(latencyE2E, false);
                     tick++;
-                    mHandler.obtainMessage(AppConst.MSG_LATENCY_UPDATED,
-                            "serverLatency:" + latencyServer + "\nE2Elatency:" + latencyE2E +
-                                    "\navgServerLatency:" + avgLatencyServer + "\navgE2ELatency:" +
-                                    avgLatencyE2E).sendToTarget();
+
+                    String data = "serverLatency:" + latencyServer + "\nE2Elatency:" + latencyE2E +
+                            "\navgServerLatency:" + avgLatencyServer + "\navgE2ELatency:" +
+                            avgLatencyE2E;
+                    updateLatencyMsg(data);
+
                 } catch (InvalidProtocolBufferException e) {
                     Log.e(TAG, "onFrameDrawn InvalidProtocolBufferException ", e);
                 } catch (IOException e) {

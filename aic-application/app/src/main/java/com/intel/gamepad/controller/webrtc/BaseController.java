@@ -174,6 +174,7 @@ public abstract class BaseController implements OnTouchListener {
 
 
     public void setE2eEnabled(boolean enabled) {
+        Log.d(TAG,  "mE2eEnabled" + mE2eEnabled);
         mE2eEnabled = enabled;
     }
 
