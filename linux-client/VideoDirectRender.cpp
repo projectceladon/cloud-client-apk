@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-#define USE_LAYERS 1
+#define USE_LAYERS 0
 #define REUSE_TEXTURES 1
 #define SWAP_INTERVAL 2
 
@@ -36,15 +36,17 @@ static const char *vs_src =
     "\n"
     "uniform vec2 uTexCoordScale;"
     "\n"
+    "uniform vec2 offset;"
+    "\n"
     "out vec2 vTexCoord;"
     "\n"
     "void main() {"
     "\n"
     "    vec2 c = coords[gl_VertexID];"
     "\n"
-    "    vTexCoord = c * uTexCoordScale;"
+    "    vTexCoord = c;"
     "\n"
-    "    gl_Position = vec4(c * vec2(2.,-2.) + vec2(-1.,1.), 0., 1.);"
+    "    gl_Position = vec4((c * vec2(2.,-2.) + vec2(-1.,1.)) / uTexCoordScale + offset, 0., 1.);"
     "\n"
     "}";
 
@@ -64,6 +66,7 @@ static const char *fs_src =
     "texture(uTexC, vTexCoord).xy, 1.);"
     "\n"
     "}";
+  
 #else
 static const char *vs_src =
     "void main() {"
@@ -99,10 +102,10 @@ VideoDirectRender::~VideoDirectRender() {
 }
 
 void VideoDirectRender::setup_texture() {
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  /*glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
 }
 
 int VideoDirectRender::initRender(int window_width, int window_height) {
@@ -359,6 +362,10 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
 #if USE_CORE_PROFILE
     glUniform2f(glGetUniformLocation(prog, "uTexCoordScale"), texcoord_x1,
                 texcoord_y1);
+    offset = glGetUniformLocation(prog, "offset");
+    //glUniform2f(offset, 1 - 1 / texcoord_x1, -1 + 1 / texcoord_y1);
+    //glUniform2f(offset,  2 / texcoord_x1 * 0 , - 2 / texcoord_y1 * 0); // *i
+    //glUniform2f(0, 0);
 #endif
     texture_size_valid = true;
   }
@@ -381,6 +388,7 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
 #define PLANE i
 #endif
 
+   std::cout << "img_attr LAYER: " <<  LAYER << ",PLANE "<<PLANE << std::endl;
     EGLint img_attr[] = {
         EGL_LINUX_DRM_FOURCC_EXT,
         (int)formats[i],
@@ -424,7 +432,16 @@ int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
   while (glGetError()) {
   }
 #if USE_CORE_PROFILE
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  for (int i = 0; i < 9; i++) {
+      glUniform2f(glGetUniformLocation(prog, "uTexCoordScale"), texcoord_x1,
+                texcoord_y1);
+      offset = glGetUniformLocation(prog, "offset");
+      //glUniform2f(offset, 1 - 1 / texcoord_x1, -1 + 1 / texcoord_y1);
+      glUniform2f(offset,  -1 + 1 / texcoord_x1  + 2 / texcoord_x1 * ( i % 3) , 1 - 1 / texcoord_y1 - 2 / texcoord_y1 *(i / 3)); // *i
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  }
+  //glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+ 
 #else
   glActiveTexture(GL_TEXTURE0);
   glBegin(GL_QUADS);

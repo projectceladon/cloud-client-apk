@@ -5,7 +5,6 @@
 
 #include "owt/base/audioplayerinterface.h"
 #include "owt/p2p/p2pclient.h"
-#include "VideoRender.h"
 
 class PcObserver : public owt::p2p::P2PClientObserver {
  public:

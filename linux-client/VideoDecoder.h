@@ -6,6 +6,9 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/hwcontext.h>
 #include <libavutil/hwcontext_vaapi.h>
+
+#include "libavutil/frame.h"
+#include "libavutil/imgutils.h"
 }
 
 #include <va/va.h>
@@ -34,6 +37,8 @@ class VideoDecoder {
   AVCodec *mCodec = nullptr;
   AVCodecContext *mCodecContext = nullptr;
   AVBufferRef *mHWDeviceCtx = nullptr;
+
+  AVFrame *hw_frame = av_frame_alloc();
 };
 
 #endif

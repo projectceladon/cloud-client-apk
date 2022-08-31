@@ -35,7 +35,7 @@ class VideoDecoderInterface {
    @param video_codec Video codec of the encoded video stream
    @return true if successful or false if failed
    */
-  virtual bool InitDecodeContext(VideoCodec video_codec, int* width, int* height) = 0;
+  virtual bool InitDecodeContext(VideoCodec video_codec, int* width, int* height, const std::string& identifier) = 0;
   /**
    @brief This function releases the customized video decoder
    @return true if successful or false if failed

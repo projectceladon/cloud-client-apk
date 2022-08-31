@@ -11,8 +11,8 @@ class VideoDecoderDispatcher : public owt::base::VideoDecoderInterface {
   VideoDecoderDispatcher(CGCodecSettings settings);
   virtual ~VideoDecoderDispatcher() {}
 
-  bool InitDecodeContext(VideoCodec video_codec, int* width,
-                         int* height) override;
+  bool InitDecodeContext(VideoCodec video_codec, int* width, int* height,
+                         const std::string& identifier) override;
 
   bool OnEncodedFrame(std::unique_ptr<VideoEncodedFrame> frame) override;
 
@@ -37,6 +37,7 @@ class VideoDecoderDispatcher : public owt::base::VideoDecoderInterface {
   int frame_height_;
   FILE* fid;
   int count = 0;
+  std::string identifier_;
 };
 
 #endif /* VIDEO_DECODER_DISPATCHER_H */

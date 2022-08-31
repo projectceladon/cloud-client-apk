@@ -28,13 +28,14 @@ VideoDecoder::VideoDecoder() {
   if (vaInitialize(mVADisplay, &major, &minor) != VA_STATUS_SUCCESS) {
     std::cerr << "vaInitialize failed!" << std::endl;
   }
+  std::cout << "VideoDecoder " << major << ", " << minor << std::endl;
 }
 
 VideoDecoder::~VideoDecoder() {
   std::cout << "~VideoDecoder()" << std::endl;
   avcodec_free_context(&mCodecContext);
   av_buffer_unref(&mHWDeviceCtx);
-
+  av_frame_free(&hw_frame);
   vaTerminate(mVADisplay);
   if (mDrmFd >= 0) {
     close(mDrmFd);
@@ -73,6 +74,7 @@ int VideoDecoder::initDecoder(uint32_t codec_type) {
     std::cerr << "avcodec_open2 failed!" << std::endl;
     return -1;
   }
+  std::cout << "VideoDecoder initDecoder success" << std::endl;
   return 0;
 }
 
@@ -84,8 +86,6 @@ int VideoDecoder::decode(AVPacket *pkt, AVFrame *frame) {
   }
 
   int decode_stat = 0;
-  AVFrame *hw_frame = av_frame_alloc();
-
   while (decode_stat >= 0) {
     decode_stat = avcodec_receive_frame(mCodecContext, frame);
     if (decode_stat == AVERROR(EAGAIN) || decode_stat == AVERROR_EOF) {
@@ -97,6 +97,6 @@ int VideoDecoder::decode(AVPacket *pkt, AVFrame *frame) {
     frame = hw_frame;
   }
 
-  av_frame_free(&hw_frame);
+  av_frame_unref(hw_frame);
   return 0;
 }

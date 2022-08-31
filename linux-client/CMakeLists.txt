@@ -24,6 +24,10 @@ add_definitions( -DLAST_COMMIT="${LAST_COMMIT}")
 find_package(SDL2 REQUIRED)
 include_directories(${SDL2_INCLUDE_DIRS})
 
+find_package(Freetype REQUIRED)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+
+
 find_package(nlohmann_json)
 
 INCLUDE(FindPkgConfig)
@@ -32,8 +36,9 @@ include_directories(${SDL2TTF_INCLUDE_DIRS})
 
 INCLUDE(FindPkgConfig)
 include_directories(
-  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/include/
   ${CMAKE_SOURCE_DIR}/include/ffmpeg/include
+  ${CMAKE_SOURCE_DIR}/include/webrtc
   /usr/include/libdrm
 )
 
@@ -45,17 +50,20 @@ add_executable(aic_linux_client
   owt_signalingchannel.cpp
   EncodedVideoDispatcher.cpp
   VideoDecoderDispatcher.cpp
+  VideoDispatcher.cpp
   CGCodec.cpp
   VideoRender.cpp
   VideoDecoder.cpp
   VideoDirectRender.cpp
   AudioPlayer.cpp
+  aic_client_render.cpp
 )
 
 set_target_properties(aic_linux_client PROPERTIES COMPILE_DEFINITIONS "WEBRTC_LINUX;WEBRTC_POSIX;USE_X11=1;")
 target_link_libraries(aic_linux_client
   ${SDL2_LIBRARIES}
   ${SDL2TTF_LIBRARIES}
+  ${FREETYPE_LIBRARIES}
   nlohmann_json::nlohmann_json
   boost_system
   sioclient

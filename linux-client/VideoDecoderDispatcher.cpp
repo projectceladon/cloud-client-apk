@@ -6,9 +6,12 @@ VideoDecoderDispatcher::VideoDecoderDispatcher(CGCodecSettings settings) {
 }
 
 bool VideoDecoderDispatcher::InitDecodeContext(VideoCodec video_codec,
-                                               int* width, int* height) {
+                                               int* width, int* height,
+                                               const std::string& identifier) {
   std::cout << "InitDecodeContext begin." << std::endl;
   video_codec_ = video_codec;
+  identifier_ = identifier;
+  std::cout << "InitDecodeContext begin. " << identifier_ << std::endl;
   if (decoder_->init(codec_settings_.resolution, codec_settings_.codec_type,
                      width, height, codec_settings_.device_name, 0) < 0) {
     std::cout << "VideoDecoder init failed. " << std::endl;

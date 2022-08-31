@@ -38,6 +38,7 @@ struct OWT_EXPORT P2PClientConfiguration : owt::base::ClientConfiguration {
   std::vector<AudioEncodingParameters> audio_encodings;
   std::vector<VideoEncodingParameters> video_encodings;
   bool suspend_remote_stream;
+  std::string identifier;
 };
 class P2PPeerConnectionChannelObserverCppImpl;
 class P2PPeerConnectionChannel;

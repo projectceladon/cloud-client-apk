@@ -60,8 +60,9 @@ class VideoDirectRender {
   GLuint textures[2];
 
   bool texture_size_valid = false;
-  float texcoord_x1 = 1.0f;
-  float texcoord_y1 = 1.0f;
+  float texcoord_x1 = 3.0f;
+  float texcoord_y1 = 3.0f;
+  GLuint offset;
 
   VADisplay mVADisplay = 0;
   EventListener mEventListener = nullptr;

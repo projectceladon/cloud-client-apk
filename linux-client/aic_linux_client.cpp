@@ -13,8 +13,13 @@
 #include <pthread.h>
 
 #include "GameSession.h"
+#include "VideoDecoder.h"
 #include "VideoDecoderDispatcher.h"
+#include "VideoDispatcher.h"
+#include "aic_client_render.h"
 #include "owt/base/logging.h"
+#include "webrtc/api/task_queue/default_task_queue_factory.h"
+#include "webrtc/rtc_base/task_queue.h"
 #else
 #include "AudioPlayer.h"
 #include "EncodedVideoDispatcher.h"
@@ -29,10 +34,12 @@
 
 #include <sys/time.h>
 
+#include <atomic>
+
 #include "owt/base/videorendererinterface.h"
 
 using namespace owt::p2p;
-
+int VIDEO_FPS_INTERVAL;
 #ifdef USE_SDL
 #define AIC_REFRESH_EVENT (SDL_USEREVENT + 1)
 
@@ -40,9 +47,30 @@ using namespace owt::p2p;
 
 #define AIC_SWAP_EVENT (SDL_USEREVENT + 3)
 
-//#define VIDEO_FPS_INTERVAL 1000 / 30
-int VIDEO_FPS_INTERVAL;
+#define AIC_FRAME_EVENT (SDL_USEREVENT + 4)
+
+#define AIC_ANIM_EVENT (SDL_USEREVENT + 5)
+
+#define SAVED_FRAME_COUNT 6
+typedef struct SessionDescriptor {
+  std::vector<AVFrame*> decode_frames;
+  int readIndex = 0;
+  int writeIndex = 0;
+  bool active;
+  GLuint textures[2];
+  EGLImage images[2];
+  string identifier;
+  std::mutex mutex;
+  std::shared_ptr<VideoDecoder> decoder;
+  char fps_buf[10];
+  float frame_count = 0;
+  long last_render_time = 0;
+} SessionDescriptor;
+
 int exit_thread = 0;
+
+int anim_interval = 0;
+int anim_state = -1;
 int video_fps_thread(void* opaque) {
   int space = 0;
   int count;
@@ -51,8 +79,14 @@ int video_fps_thread(void* opaque) {
     count = space * 1000 / (VIDEO_FPS_INTERVAL);
     space = count;
   }
-  std::cout << "video_fps_thread space " << space << std::endl;
+
+  int anim_frames = 0;
+  if (anim_interval > 0) {
+    anim_frames = anim_interval * 1000 / (VIDEO_FPS_INTERVAL);
+  }
+
   count = 0;
+  int anim_tick = 0;
   while (!exit_thread) {
     SDL_Event event;
     event.type = AIC_REFRESH_EVENT;
@@ -65,6 +99,13 @@ int video_fps_thread(void* opaque) {
         SDL_Event event1;
         event1.type = AIC_SWAP_EVENT;
         SDL_PushEvent(&event1);
+      }
+    }
+    if (anim_frames != 0 && anim_state > 0) {
+      anim_tick++;
+      if (anim_tick == anim_frames) {
+        anim_state = anim_state + 1001;
+        anim_tick = 0;
       }
     }
   }
@@ -91,6 +132,7 @@ static const struct option long_option[] = {
     {"audio", no_argument, NULL, 'a'},
     {"dynamic_resolution", no_argument, NULL, 'z'},
     {"log", required_argument, NULL, 'l'},
+    {"movie", required_argument, NULL, 'm'},
     {NULL, 0, NULL, 0}};
 
 void resolveIds(std::string& ids, std::vector<std::string>& vector_ids) {
@@ -168,6 +210,7 @@ void help() {
   std::cout << "--log/-l: dump the log for debug, default 0， 1 for render "
                "detail, 2 for main thread fps"
             << std::endl;
+  std::cout << "--movie/-m: streams presents an anim" << std::endl;
 #ifdef USE_SDL
   std::cout
       << "--window-x/-x <window_x>: Window postion x, default: in the center"
@@ -198,7 +241,7 @@ int main(int argc, char* argv[]) {
   int cycle_interval = 10;
 #endif
   int opt = 0;
-  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:hn:i:f:azl:",
+  while ((opt = getopt_long(argc, argv, "c:d:r:s:u:v:w:x:y:hn:i:f:azl:m:",
                             long_option, NULL)) != -1) {
     switch (opt) {
       case 'c':
@@ -247,6 +290,9 @@ int main(int argc, char* argv[]) {
       case 'f':
         fps = atoi(optarg);
         break;
+      case 'm':
+        anim_interval = atoi(optarg);
+        break;
 #endif
       case 'h':
         help();
@@ -258,9 +304,10 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  VIDEO_FPS_INTERVAL = 1000 / fps;
 
-
-  std::cout << "LAST_COMMIT: " << LAST_COMMIT << std::endl;
+  std::cout << "LAST_COMMIT: " << LAST_COMMIT << ", internal "
+            << VIDEO_FPS_INTERVAL << std::endl;
 
   /***************p2p***********/
   if (signaling_server_url.empty() || server_ids.empty() ||
@@ -310,16 +357,14 @@ int main(int argc, char* argv[]) {
   // parse window_size
   int window_width = 0;
   int window_height = 0;
-  if (lines == 1) {
-    pos = window_size.find("x");
-    if (pos == std::string::npos) {
-      std::cout << "window size is not correct!" << std::endl;
-      exit(0);
-    }
-
-    window_width = atoi(window_size.substr(0, pos).c_str());
-    window_height = atoi(window_size.substr(pos + 1).c_str());
+  pos = window_size.find("x");
+  if (pos == std::string::npos) {
+    std::cout << "window size is not correct!" << std::endl;
+    exit(0);
   }
+
+  window_width = atoi(window_size.substr(0, pos).c_str());
+  window_height = atoi(window_size.substr(pos + 1).c_str());
 
   // codec type
   uint32_t codec_type = (uint32_t)VideoCodecType::kH264;
@@ -328,59 +373,8 @@ int main(int argc, char* argv[]) {
   }
 
 #ifdef USE_SDL
-  VIDEO_FPS_INTERVAL = 1000 / fps;
-
   // parse window_size
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
-    std::cout << "SDL could not initialized with error: " << SDL_GetError()
-              << endl;
-  }
-  if (lines > 1 && TTF_Init() == -1) {
-    std::cout << "ttf init error" << TTF_GetError() << std::endl;
-    exit(0);
-  }
   atexit(SDL_Quit);
-
-  SDL_Window* win;
-  if (lines > 1) {
-    std::string title = "multi-stream player";
-    win = SDL_CreateWindow(title.c_str(), 0, 0, 0, 0, SDL_WINDOW_MAXIMIZED);
-  } else {
-    std::string title =
-        ip + "    android-" + vector_servers[0] + "    " + video_codec;
-    win = SDL_CreateWindow(title.c_str(), window_x, window_y, window_width,
-                           window_height, SDL_WINDOW_RESIZABLE);
-  }
-
-  if (!win) {
-    std::cout << "Failed to create SDL window!" << std::endl;
-    exit(0);
-  }
-  SDL_Renderer* sdlRenderer = SDL_CreateRenderer(win, -1, 0);
-  SDL_Event ev;
-  SDL_PollEvent(&ev);
-  SDL_GL_GetDrawableSize(win, &window_width, &window_height);
-  std::cout << "window details: [" << window_width << ", " << window_height
-            << "]" << std::endl;
-
-  TTF_Font* font = nullptr;
-  if (lines > 1) {
-    font = TTF_OpenFont("SourceSansPro-Regular.ttf", 30);
-    if (font == NULL) {
-      std::cout << "font open failure " << SDL_GetError() << std::endl;
-      exit(0);
-    }
-  }
-
-  bool is_sw_decoding;
-  if (device == "hw") {
-    is_sw_decoding = false;
-  } else if (device == "sw") {
-    is_sw_decoding = true;
-  } else {
-    std::cout << "Device parameter is not correct!" << std::endl;
-    exit(0);
-  }
   /***************decoder***********/
   // parse resolution
   pos = resolution.find("x");
@@ -388,36 +382,10 @@ int main(int argc, char* argv[]) {
     std::cout << "Resolution is not correct!" << std::endl;
     exit(0);
   }
+
+  // *********fix me !!! delete it
   int width = atoi(resolution.substr(0, pos).c_str());
   int height = atoi(resolution.substr(pos + 1).c_str());
-  FrameResolution frame_resolution = FrameResolution::k480p;
-  if (height == 600) {
-    frame_resolution = FrameResolution::k600p;
-  } else if (height == 720) {
-    frame_resolution = FrameResolution::k720p;
-  } else if (height == 1080) {
-    frame_resolution = FrameResolution::k1080p;
-  }
-
-  CGCodecSettings codecSettings;
-  codecSettings.resolution = frame_resolution;
-  codecSettings.codec_type = codec_type;
-  codecSettings.device_name = is_sw_decoding ? nullptr : "vaapi";
-  codecSettings.frame_size = width * height * 3 / 2;
-
-  // owt::base::Logging::LogToConsole(owt::base::LoggingSeverity::kInfo);
-  GlobalConfiguration::SetEncodedVideoFrameEnabled(true);
-  std::unique_ptr<owt::base::VideoDecoderInterface> mVideoDecoderDispatcher =
-      std::make_unique<VideoDecoderDispatcher>(codecSettings);
-  GlobalConfiguration::SetCustomizedVideoDecoderEnabled(
-      std::move(mVideoDecoderDispatcher));
-
-  /***************render 2***********/
-  pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
-  std::vector<std::shared_ptr<GameSession>> game_sessions_display_;
-  std::vector<std::shared_ptr<GameSession>> game_sessions_;
-  std::vector<RenderParams*> render_params_;
-  int playingIndex = 0;
 
   int sp_num;
   int displays;
@@ -429,86 +397,185 @@ int main(int argc, char* argv[]) {
     sp_num = ceilSqrt(lines);
     displays = lines;
   }
+  AicClientRender*
+      aicRender;  //(window_x, window_y, &window_width, &window_height, sp_num);
+  auto task_queue_factory = webrtc::CreateDefaultTaskQueueFactory();
+  auto event_queue_ =
+      std::make_unique<rtc::TaskQueue>(task_queue_factory->CreateTaskQueue(
+          "aic_linux_render", webrtc::TaskQueueFactory::Priority::HIGH));
+
+  // owt::base::Logging::LogToConsole(owt::base::LoggingSeverity::kInfo);
+  std::vector<std::shared_ptr<GameSession>> game_sessions_display_;
+  std::vector<std::shared_ptr<GameSession>> game_sessions_;
+  std::vector<RenderParams*> render_params_;
+  std::map<std::string, std::shared_ptr<SessionDescriptor>> session_des_;
+  /***************render 2***********/
+  int playingIndex = 0;
+
   int row;
   int column;
-  int margin = displays > 1 ? 10 : 0;
-  int cell_width = window_width / sp_num;
-  int cell_height = window_height / sp_num;
-  int cell_with_margin = cell_width - margin;
-  int cell_height_margin = cell_height - margin;
+  int margin = 0;  // displays > 1 ? 10 : 0;
+  int cell_width;
+  int cell_height;
+  int cell_with_margin;
+  int cell_height_margin;
   int** game_matrix;
   game_matrix = new int*[sp_num];
   for (int i = 0; i < sp_num; i++) game_matrix[i] = new int[sp_num];
-
-  for (int i = 0; i < displays; i++) {
-    std::unique_ptr<GameP2PParams> p2pParams =
-        std::make_unique<GameP2PParams>();
-    p2pParams->signaling_server_url = signaling_server_url;
-    p2pParams->server_id = vector_servers[i];
-    p2pParams->client_id = vector_clients[i];
-    p2pParams->server_ip = ip;
-    p2pParams->video_codec = video_codec;
-    p2pParams->dr = displays > 1 ? dynamicRes : false;
-    p2pParams->log = debug & 0x1;
-    if (p2pParams->dr) {
-      p2pParams->video_width = cell_with_margin;
-      p2pParams->video_height = cell_height_margin;
+  event_queue_->PostTask([&] {
+    if (anim_interval > 0) {
+      aicRender = new AicClientRender(window_x, window_y, &window_width,
+                                      &window_height, 1);
     } else {
-      p2pParams->video_width = width;
-      p2pParams->video_height = height;
+      aicRender = new AicClientRender(window_x, window_y, &window_width,
+                                      &window_height, sp_num);
     }
 
-    row = i / sp_num;
-    column = i % sp_num;
-    RenderParams* render_params = new RenderParams();
-    render_params->left = column * cell_width;
-    render_params->top = row * cell_height;
-    render_params->width = cell_with_margin;
-    render_params->height = cell_height_margin;
-    render_params->format =
-        is_sw_decoding ? SDL_PIXELFORMAT_IYUV : SDL_PIXELFORMAT_NV12,
-    SDL_TEXTUREACCESS_STREAMING;
+    cell_width = window_width / sp_num;
+    cell_height = window_height / sp_num;
+    cell_with_margin = cell_width - margin;
+    cell_height_margin = cell_height - margin;
 
-    // render_params -> texture = SDL_CreateTexture(sdlRenderer, is_sw_decoding
-    // ? SDL_PIXELFORMAT_IYUV: SDL_PIXELFORMAT_NV12,
-    // SDL_TEXTUREACCESS_STREAMING, width, height);
-    render_params_.push_back(render_params);
-    std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(
-        std::move(p2pParams), sdlRenderer, render_params, font, true, playAudio,
-        &rwlock);
-    game_sessions_display_.push_back(game_session);
-    game_matrix[row][column] = i;
-    game_sessions_.push_back(game_session);
-  }
+    for (int i = 0; i < displays; i++) {
+      std::unique_ptr<GameP2PParams> p2pParams =
+          std::make_unique<GameP2PParams>();
+      p2pParams->signaling_server_url = signaling_server_url;
+      p2pParams->server_id = vector_servers[i];
+      p2pParams->client_id = vector_clients[i];
+      p2pParams->server_ip = ip;
+      p2pParams->video_codec = video_codec;
+      p2pParams->dr = displays > 1 ? dynamicRes : false;
+      p2pParams->log = debug & 0x1;
+      if (p2pParams->dr) {
+        p2pParams->video_width = cell_with_margin;
+        p2pParams->video_height = cell_height_margin;
+      } else {
+        p2pParams->video_width = width;
+        p2pParams->video_height = height;
+      }
 
-  playingIndex = displays - 1;
-  for (int i = displays; i < lines; i++) {
-    std::unique_ptr<GameP2PParams> p2pParams =
-        std::make_unique<GameP2PParams>();
-    p2pParams->signaling_server_url = signaling_server_url;
-    p2pParams->server_id = vector_servers[i];
-    p2pParams->client_id = vector_clients[i];
-    p2pParams->server_ip = ip;
-    p2pParams->video_codec = video_codec;
-    p2pParams->dr = displays > 1 ? dynamicRes : false;
-    if (p2pParams->dr) {
-      p2pParams->video_width = cell_with_margin;
-      p2pParams->video_height = cell_height_margin;
-    } else {
-      p2pParams->video_width = width;
-      p2pParams->video_height = height;
+      row = i / sp_num;
+      column = i % sp_num;
+      RenderParams* render_params = new RenderParams();
+      render_params->left = column * cell_width;
+      render_params->top = row * cell_height;
+      render_params->width = cell_with_margin;
+      render_params->height = cell_height_margin;
+      render_params_.push_back(render_params);
+      std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(
+          std::move(p2pParams), render_params, true, playAudio);
+      game_sessions_display_.push_back(game_session);
+      game_matrix[row][column] = i;
+      game_sessions_.push_back(game_session);
+
+      std::shared_ptr<SessionDescriptor> desc_ =
+          std::make_shared<SessionDescriptor>();
+      desc_->active = true;
+      desc_->identifier = vector_servers[i];
+      desc_->decoder = std::make_shared<VideoDecoder>();
+      desc_->decoder->initDecoder(codec_type);
+      desc_->decode_frames.resize(SAVED_FRAME_COUNT - 1);
+      glGenTextures(2, desc_->textures);
+      for (int j = 0; j < 2; ++j) {
+        glBindTexture(GL_TEXTURE_2D, desc_->textures[j]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      }
+      session_des_[vector_servers[i]] = desc_;
     }
+    playingIndex = displays - 1;
+    for (int i = displays; i < lines; i++) {
+      std::unique_ptr<GameP2PParams> p2pParams =
+          std::make_unique<GameP2PParams>();
+      p2pParams->signaling_server_url = signaling_server_url;
+      p2pParams->server_id = vector_servers[i];
+      p2pParams->client_id = vector_clients[i];
+      p2pParams->server_ip = ip;
+      p2pParams->video_codec = video_codec;
+      p2pParams->dr = displays > 1 ? dynamicRes : false;
+      if (p2pParams->dr) {
+        p2pParams->video_width = cell_with_margin;
+        p2pParams->video_height = cell_height_margin;
+      } else {
+        p2pParams->video_width = width;
+        p2pParams->video_height = height;
+      }
 
-    p2pParams->log = debug & 0x1;
-    std::shared_ptr<GameSession> game_session =
-        std::make_shared<GameSession>(std::move(p2pParams), sdlRenderer,
-                                      nullptr, font, false, playAudio, &rwlock);
-    game_sessions_.push_back(game_session);
-  }
+      p2pParams->log = debug & 0x1;
+      std::shared_ptr<GameSession> game_session = std::make_shared<GameSession>(
+          std::move(p2pParams), nullptr, false, playAudio);
+      game_sessions_.push_back(game_session);
 
-  for (auto session : game_sessions_) {
-    session->startSession();  // pull all the stream
-  }
+      std::shared_ptr<SessionDescriptor> desc_ =
+          std::make_shared<SessionDescriptor>();
+      desc_->active = false;
+      desc_->identifier = vector_servers[i];
+      desc_->decoder = std::make_shared<VideoDecoder>();
+      desc_->decoder->initDecoder(codec_type);
+      desc_->decode_frames.resize(SAVED_FRAME_COUNT - 1);
+      glGenTextures(2, desc_->textures);
+      for (int j = 0; j < 2; ++j) {
+        glBindTexture(GL_TEXTURE_2D, desc_->textures[j]);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      }
+      session_des_[vector_servers[i]] = desc_;
+    }
+    for (auto session : game_sessions_) {
+      session->startSession();  // pull all the stream
+    }
+  });
+
+  GlobalConfiguration::SetEncodedVideoFrameEnabled(true);
+  auto callback = [&](const std::string& id,
+                      std::unique_ptr<VideoEncodedFrame> frame) {
+    if (frame->length > 0) {
+      if (anim_interval > 0 && anim_state == -1) {
+        anim_state = 1;
+      }
+      AVPacket* pkt = av_packet_alloc();
+      pkt->data = const_cast<uint8_t*>(frame->buffer);
+      pkt->size = frame->length;
+      std::shared_ptr<SessionDescriptor> desc_ = session_des_[id];
+      if (desc_ != nullptr && desc_->active) {
+        AVFrame* avframe = av_frame_alloc();
+        desc_->decoder->decode(pkt, avframe);
+        {
+          int nextIndex = (desc_->writeIndex + 1) % SAVED_FRAME_COUNT;
+          std::unique_lock<std::mutex> locker(desc_->mutex);
+          if (desc_->readIndex == nextIndex) {
+            std::cout << desc_->identifier << " more than 5 frames"
+                      << std::endl;
+            av_frame_free(&avframe);
+          } else {
+            desc_->decode_frames[desc_->writeIndex] = avframe;
+            desc_->writeIndex = nextIndex;
+          }
+          Uint32 time = SDL_GetTicks();
+          if (desc_->frame_count == 30) {
+            sprintf(desc_->fps_buf, "%.2f",
+                    30000.00 / (time - desc_->last_render_time));
+            desc_->frame_count = 0;
+            desc_->last_render_time = time;
+          } else if (desc_->frame_count == 0) {
+            desc_->last_render_time = time;
+          }
+          desc_->frame_count++;
+          av_packet_free(&pkt);
+        }
+      } else {
+        std::cout << id << " no matching session" << std::endl;
+      }
+    }
+  };
+  std::unique_ptr<owt::base::VideoDecoderInterface> mVideoDispatcher =
+      std::make_unique<VideoDispatcher>(callback);
+  GlobalConfiguration::SetCustomizedVideoDecoderEnabled(
+      std::move(mVideoDispatcher));
 
   if (lines > displays) {
     SDL_Thread* display_tick_tid = SDL_CreateThread(
@@ -528,9 +595,14 @@ int main(int argc, char* argv[]) {
   };
 
   auto onMouseButton = [&](SDL_MouseButtonEvent& e) {
+    std::cout << "onMouseButton cell_height: " << cell_height
+              << ", cell_width: " << cell_width << std::endl;
+    std::cout << "onMouseButton e.y " << e.y << ", e.x " << e.x << std::endl;
     int row = (e.y + margin) / cell_height;
     int column = (e.x + margin) / cell_width;
     int index = game_matrix[row][column];
+    std::cout << "onMouseButton row " << row << ", column " << column
+              << ", index " << index << std::endl;
     game_sessions_display_[index]->dispatchEvent(e);
   };
 
@@ -546,11 +618,16 @@ int main(int argc, char* argv[]) {
     }
     for (auto session : game_sessions_display_) {
       session->suspendStream(true, nullptr);
+      auto desc = session_des_[session->getSessionId()];
+      desc->active = false;  // deactive the stream
     }
     game_sessions_display_.assign(sv.begin(), sv.end());
 
     for (int i = 0; i < game_sessions_display_.size(); i++) {
       game_sessions_display_[i]->suspendStream(false, render_params_[i]);
+
+      auto session = session_des_[game_sessions_display_[i]->getSessionId()];
+      session->active = true;
     }
     playingIndex = endIndex - 1;
   };
@@ -563,37 +640,84 @@ int main(int argc, char* argv[]) {
   Uint32 fpsStartTime = lastRenderTime;
   int frame_count = 0;
   bool printFps = debug & 0x2;
+
   while (running) {
     SDL_WaitEvent(&e);
     switch (e.type) {
       case AIC_REFRESH_EVENT:
-        renderTime = SDL_GetTicks();
-        if (printFps && (renderTime - fpsStartTime >= 1000)) {  // every seconds
-          std::cout << "main thread refresh count: " << frame_count
-                    << std::endl;
-          frame_count = 0;
-          fpsStartTime = renderTime;
-        }
-        if (renderTime - lastRenderTime > 2 * VIDEO_FPS_INTERVAL) {
-          std::cout << "more than 2 frame, skip this frame, consider play with "
-                       "a lower fps, with -f option"
-                    << std::endl;
-          lastRenderTime = renderTime;
-          break;
-        }
-        /*for (auto session : game_sessions_display_) {
-          session -> renderFrame();
-        }*/
-        pthread_rwlock_wrlock(&rwlock);
-        SDL_SetRenderTarget(sdlRenderer, NULL);
-        SDL_RenderClear(sdlRenderer);
-        for (auto session : game_sessions_display_) {
-          session->copyFrame();
-        }
-        SDL_RenderPresent(sdlRenderer);
-        pthread_rwlock_unlock(&rwlock);
-        lastRenderTime = renderTime;
-        frame_count++;
+        event_queue_->PostTask([&] {
+          Uint32 lastRenderTime = SDL_GetTicks();
+          int nextIndex;
+          int split_num = anim_state;
+          int total_num = 0;
+          int count = 0;
+          if (anim_interval > 0) {
+            if (split_num == -1) {
+              std::cout << "AIC_REFRESH_EVENT not any frames" << std::endl;
+              return;
+            } else if (split_num > 0) {
+              if (split_num > 1000) {
+                anim_state -= 1000;
+                split_num -= 1000;
+                aicRender->renderUpdate(split_num);
+                if (split_num == sp_num) {
+                  anim_state = 0;
+                  split_num = 0;
+                }
+              }
+              total_num = split_num * split_num;
+              std::cout << "split_num " << split_num << ", sp_num: " << sp_num
+                        << std::endl;
+            }
+          } else {
+            std::cout << "anim_state reset" << std::endl;
+          }
+          std::vector<std::shared_ptr<GameSession>> sessions;
+          AVFrame* render_frame = nullptr;
+          sessions.assign(game_sessions_display_.begin(),
+                          game_sessions_display_.end());
+          aicRender->beginFrame();
+          for (int i = 0; i < sessions.size(); i++) {
+            auto session = session_des_[sessions[i]->getSessionId()];
+            {
+              std::unique_lock<std::mutex> locker(session->mutex);
+              if (session->readIndex == session->writeIndex) {
+                std::cout << session->identifier << " no frames to render"
+                          << std::endl;
+              } else {
+                render_frame = session->decode_frames[session->readIndex];
+                nextIndex = (session->readIndex + 1) % SAVED_FRAME_COUNT;
+                session->readIndex = nextIndex;
+              }
+            }
+            if (split_num > 0 && i >= total_num) {
+              if (render_frame != nullptr) {
+                av_frame_unref(render_frame);
+                av_frame_free(&render_frame);
+              }
+              continue;
+            }
+            if (render_frame != nullptr) {
+              aicRender->generateTexture(render_frame, &(session->textures[0]),
+                                         &(session->images[0]),
+                                         session->decoder->getVADisplay());
+              av_frame_unref(render_frame);
+              av_frame_free(&render_frame);
+              aicRender->renderFrame(i, &(session->textures[0]));
+              aicRender->destroyImage(&(session->images[0]));
+            } else {
+              aicRender->renderFrame(i, &(session->textures[0]));
+            }
+            std::string ss;
+            ss.append(session->identifier);
+            ss.append(":");
+            ss.append(session->fps_buf);
+            aicRender->renderText(ss.c_str(), i);
+          }
+          aicRender->endFrame();
+          // std::cout << "AIC_REFRESH_EVENT impl cost "  <<  SDL_GetTicks() -
+          // lastRenderTime  << std::endl;
+        });
         break;
       case SDL_QUIT:
         exit_thread = 1;
@@ -606,13 +730,6 @@ int main(int argc, char* argv[]) {
       case SDL_MOUSEMOTION:
         onMouseMove(e.motion);
         break;
-      case SDL_KEYDOWN: {
-        if (e.key.keysym.sym == SDLK_F11) {
-          uint32_t flags = full_screen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-          SDL_SetWindowFullscreen(win, flags);
-          full_screen = !full_screen;
-        }
-      } break;
       case AIC_SWAP_EVENT:
         onSwapStream();
         break;
@@ -625,7 +742,6 @@ int main(int argc, char* argv[]) {
         break;
     }
   }
-
   for (auto session : game_sessions_) {
     session->freeSession();
   }
@@ -633,19 +749,10 @@ int main(int argc, char* argv[]) {
   for (auto frame : render_params_) {
     delete frame;
   }
-
   for (int i = 0; i < sp_num; i++) {
     delete[] game_matrix[i];
   }
   delete[] game_matrix;
-
-  SDL_DestroyRenderer(sdlRenderer);
-  SDL_DestroyWindow(win);
-  if (font != nullptr) {
-    std::cout << "close font" << endl;
-    TTF_CloseFont(font);
-    TTF_Quit();
-  }
   SDL_Quit();
 #else
   std::list<AVFrame*> frame_list;
@@ -697,6 +804,7 @@ int main(int argc, char* argv[]) {
   turnServer.username = "username";
   turnServer.password = "password";
   configuration.ice_servers.push_back(turnServer);
+  configuration.suspend_remote_stream = false;
 
   VideoCodecParameters videoParam;
   if (video_codec == "h264") {
@@ -708,7 +816,6 @@ int main(int argc, char* argv[]) {
   }
   VideoEncodingParameters video_params(videoParam, 0, true);
   configuration.video_encodings.push_back(video_params);
-  configuration.suspend_remote_stream = false;
 
   auto sc = std::make_shared<OwtSignalingChannel>();
   auto pc = std::make_shared<P2PClient>(configuration, sc);

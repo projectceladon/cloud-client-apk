@@ -14,9 +14,10 @@ class EncodedVideoDispatcher : public owt::base::VideoDecoderInterface {
   EncodedVideoDispatcher(VideoFrameCallback callback);
   virtual ~EncodedVideoDispatcher() {}
 
-  bool InitDecodeContext(VideoCodec video_codec, int* width,
-                         int* height) override {
+  bool InitDecodeContext(VideoCodec video_codec, int* width, int* height,
+                         const std::string& identifier) override {
     video_codec_ = video_codec;
+    identifier_ = identifier;
     return true;
   }
 
@@ -36,6 +37,7 @@ class EncodedVideoDispatcher : public owt::base::VideoDecoderInterface {
  private:
   VideoCodec video_codec_ = VideoCodec::kH264;
   VideoFrameCallback callback_ = nullptr;
+  std::string identifier_;
 };
 
 #endif /* ENCODED_VIDEO_DISPATCHER_H */

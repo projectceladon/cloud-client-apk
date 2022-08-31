@@ -31,16 +31,13 @@ struct RenderParams {
   int top;
   int width;
   int height;
-  Uint32 format;
-  SDL_Texture* texture;
 };
 
-class GameSession : public VideoRendererListener {
+class GameSession {
  public:
   GameSession(std::unique_ptr<GameP2PParams> p2p_params,
-              SDL_Renderer* sdlRenderer, RenderParams* render_params,
-              TTF_Font* font, bool render, bool play_audio,
-              pthread_rwlock_t* lock);
+              RenderParams* render_params,
+              bool render, bool play_audio);
   void setupRenderEnv(RenderParams* render_params);
   void startSession();
   // void renderFrame();
@@ -52,8 +49,8 @@ class GameSession : public VideoRendererListener {
   void initP2P();
   void sendCtrl(const char* event, const char* param);
   void suspendStream(bool suspend, RenderParams* render_params);
-  void onFrame(std::unique_ptr<owt::base::VideoBuffer> video_buffer) override;
   void freeSession();
+  const std::string& getSessionId();
 
  private:
   std::shared_ptr<OwtSignalingChannel> sc_;
@@ -62,33 +59,10 @@ class GameSession : public VideoRendererListener {
   std::string session_desc_;
   std::unique_ptr<GameP2PParams> p2p_params_;
   RenderParams* render_params_;
-
-  std::shared_ptr<VideoRenderer> video_renderer_;
   std::shared_ptr<AudioPlayer> audio_player_;
-  SDL_Renderer* renderer_ = nullptr;
-  SDL_Texture* texture_ = nullptr;
-  TTF_Font* font_ = nullptr;
   SDL_Rect rect_;
-  int video_width_;
-  int video_height_;
-  SDL_Texture* text_texture_;
-  SDL_Rect text_rect_;
-  SDL_Surface* text_surface_ = nullptr;
-  SDL_Color text_color = {255, 0, 0};
-  SDL_Rect render_rect_;
-  int frame_width_;
-  int frame_height_;
   bool suspend_;
-  pthread_rwlock_t* render_lock_;
-  std::unique_ptr<owt::base::VideoBuffer> video_buffer_;
-  std::ofstream ouF;
-  Uint32 render_start_time;
-  Uint32 render_lock_time;
-  Uint32 render_finish_time;
-  int frameCount = 0;
-  int last_fps_time = 0;
-  float fps_;
-  char fps_buf[10]={0};
+ // std::ofstream ouF;
 };
 
 #endif
