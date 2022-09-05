@@ -1,8 +1,8 @@
 package com.intel.gamepad.activity;
 
-import android.Manifest;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.Editable;
@@ -16,11 +16,13 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 
 import com.commonlibrary.utils.StatusBarUtil;
 import com.commonlibrary.view.loadingDialog.LoadingDialog;
 import com.google.android.material.button.MaterialButton;
+import com.hjq.permissions.OnPermissionCallback;
+import com.hjq.permissions.Permission;
+import com.hjq.permissions.XXPermissions;
 import com.intel.gamepad.R;
 import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.GameListBean;
@@ -28,7 +30,6 @@ import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.IPUtils;
-import com.intel.gamepad.utils.permission.PermissionsUtils;
 
 import org.apache.commons.io.FileUtils;
 
@@ -44,29 +45,6 @@ public class GameDetailActivity extends BaseActivity {
             AppConst.CODEC_WHITELIST_FILENAME);
     private final String TAG = GameDetailActivity.class.toString();
     private GameListBean bean = null;
-    PermissionsUtils.IPermissionResult permissionsResult = new PermissionsUtils.IPermissionResult() {
-        @Override
-        public void passPermission(boolean history, String[] permissions) {
-            BaseController.manuallyPressBackButton.set(false);
-            updateMediacodecXmlFile();
-            requestStartGame();
-            if (!history) {
-                for (String pass : permissions) {
-                    Toast.makeText(GameDetailActivity.this, "The " + pass + " has been granted", Toast.LENGTH_LONG).show();
-                }
-            }
-        }
-
-        @Override
-        public void denyPermission(String[] permissions) {
-            BaseController.manuallyPressBackButton.set(false);
-            updateMediacodecXmlFile();
-            requestStartGame();
-            for (String deny : permissions) {
-                Toast.makeText(GameDetailActivity.this, "The " + deny + " has been denied", Toast.LENGTH_LONG).show();
-            }
-        }
-    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -241,18 +219,38 @@ public class GameDetailActivity extends BaseActivity {
         MaterialButton btnPlay = findViewById(R.id.btnPlay);
         if(btnPlay!=null){
             btnPlay.setOnClickListener(v -> {
-                String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-                PermissionsUtils.getInstance().checkPermissions(this, permissions, permissionsResult);
+                XXPermissions perm = XXPermissions.with(this)
+                        .permission(Permission.CAMERA)
+                        .permission(Permission.RECORD_AUDIO);
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
+                    perm.permission(Permission.MANAGE_EXTERNAL_STORAGE);
+                }else{
+                    perm.permission(Permission.Group.STORAGE);
+                }
+                perm.request(new OnPermissionCallback() {
+                            @Override
+                            public void onGranted(List<String> permissions, boolean all) {
+                                if (all) {
+                                    BaseController.manuallyPressBackButton.set(false);
+                                    updateMediacodecXmlFile();
+                                    requestStartGame();
+                                }
+                            }
+                            @Override
+                            public void onDenied(List<String> permissions, boolean never) {
+                                if (never) {
+                                    XXPermissions.startPermissionActivity(GameDetailActivity.this, permissions);
+                                } else {
+                                    for(String str:permissions)
+                                    Toast.makeText(GameDetailActivity.this, "The "+str+" has not been granted", Toast.LENGTH_LONG).show();
+                                }
+                            }
+                        });
             });
             btnPlay.requestFocus();
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        PermissionsUtils.getInstance().onRequestPermissionsResult(GameDetailActivity.this, requestCode, permissions, grantResults);
-    }
 
     private void requestStartGame() {
         LoadingDialog dlg = (LoadingDialog) LoadingDialog.show(this);

@@ -40,7 +40,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "0.29"
+        versionName "0.30"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
         renderscriptTargetApi 18
@@ -158,6 +158,8 @@ dependencies {
     implementation rootProject.ext.dependencies.fast_sharedpreferences
     // LiveEventBus
     implementation rootProject.ext.dependencies.live_event_bus_x
+    // XXPermission
+    implementation rootProject.ext.dependencies.xx_permissions
 
     // Anko
     implementation rootProject.ext.dependencies.anko

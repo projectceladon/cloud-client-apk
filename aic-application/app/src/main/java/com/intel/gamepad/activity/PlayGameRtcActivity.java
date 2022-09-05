@@ -52,6 +52,9 @@ import androidx.lifecycle.LifecycleEventObserver;
 import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
 import com.google.gson.Gson;
+import com.hjq.permissions.OnPermissionCallback;
+import com.hjq.permissions.Permission;
+import com.hjq.permissions.XXPermissions;
 import com.intel.gamepad.R;
 import com.intel.gamepad.app.AppConst;
 import com.intel.gamepad.bean.MotionEventBean;
@@ -1101,48 +1104,26 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
     private void checkPermissions() {
         Log.d(TAG, "checkPermissions called");
-        String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE};
-        ArrayList<String> permissionsToAskFor = new ArrayList<>();
-        for (String permission : permissions) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-                    permissionsToAskFor.add(permission);
-                }
-            }
-        }
-        if (!permissionsToAskFor.isEmpty()) {
-            String[] arrayAskFor = new String[permissionsToAskFor.size()];
-            arrayAskFor = permissionsToAskFor.toArray(arrayAskFor);
-            ActivityCompat.requestPermissions(this, arrayAskFor, REQUEST_PERMISSIONS_REQUEST_CODE);
-        } else {
-            Log.d(TAG, "No need to request permissions to user, as App already has all the required permissions");
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        // grantResults.length <= 0. If user interaction was interrupted, the permission request is cancelled and you receive empty arrays.
-        if (grantResults.length > 0) {
-            for (int i = 0; i < permissions.length; i++) {
-                if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
-                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                        if (ActivityCompat.checkSelfPermission(this, permissions[i]) == PackageManager.PERMISSION_GRANTED) {
-                            Toast.makeText(this, "The " + permissions[i] + "has been granted", Toast.LENGTH_LONG).show();
-                            if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) && requestPermissionFromServer) {
-                                getPositionNetwork();
-                                getPositionGPS();
-                                requestPermissionFromServer = false;
-                            }
-                        } else {
-                            Toast.makeText(this, "The " + permissions[i] + " has been denied", Toast.LENGTH_LONG).show();
-                            if (permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION))
-                                requestPermissionFromServer = false;
+        XXPermissions.with(this)
+                .permission(Permission.ACCESS_FINE_LOCATION)
+                .request(new OnPermissionCallback() {
+                    @Override
+                    public void onGranted(List<String> permissions, boolean all) {
+                        if (all) {
+                            getPositionNetwork();
+                            getPositionGPS();
+                            requestPermissionFromServer = false;
                         }
                     }
-                }
-            }
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+                    @Override
+                    public void onDenied(List<String> permissions, boolean never) {
+                       if(never){
+                           Toast.makeText(PlayGameRtcActivity.this, "The LOCATION has been denied", Toast.LENGTH_LONG).show();
+                           requestPermissionFromServer = false;
+                       }
+                    }
+                });
+
     }
 
     private void stopLoadingFlash() {
