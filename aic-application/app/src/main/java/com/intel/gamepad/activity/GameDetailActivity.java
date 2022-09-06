@@ -285,7 +285,7 @@ public class GameDetailActivity extends BaseActivity {
             Log.d(TAG, "file not found, creating: " + codecWhitelistXMLFile.getName());
 
             try {
-                FileUtils.writeStringToFile(codecWhitelistXMLFile, referenceXmlStr, "UTF8");
+                FileUtils.fileWrite(codecWhitelistXMLFile.getAbsolutePath(), referenceXmlStr);
             } catch (Exception e) {
                 Log.e(TAG, "error creating file: " + codecWhitelistXMLFile.getName());
                 e.printStackTrace();
@@ -295,7 +295,7 @@ public class GameDetailActivity extends BaseActivity {
 
         // file exists, compare and replace content if required
         try {
-            fileContent = FileUtils.readFileToString(codecWhitelistXMLFile, "UTF8");
+            fileContent = FileUtils.fileRead(codecWhitelistXMLFile.getAbsolutePath());
         } catch (IOException e) {
             // error reading file, probably
             Log.e(TAG, "cannot update file (" + codecWhitelistXMLFile.getAbsolutePath()
@@ -310,7 +310,7 @@ public class GameDetailActivity extends BaseActivity {
             // file different than expected, replace content with expected one
             Log.d(TAG, "updating content of " + codecWhitelistXMLFile.getName());
             try {
-                FileUtils.writeStringToFile(codecWhitelistXMLFile, referenceXmlStr, "UTF8");
+                FileUtils.fileWrite(codecWhitelistXMLFile.getAbsolutePath(), referenceXmlStr);
             } catch (Exception e) {
                 Log.d(TAG, "error updating file: " + codecWhitelistXMLFile.getName());
                 e.printStackTrace();

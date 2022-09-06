@@ -78,7 +78,7 @@ ext {
             "commons_text"            : "org.apache.commons:commons-text:1.7",
             "glide"            : "com.github.bumptech.glide:glide:4.9.0",
             "glide_compiler"            : "com.github.bumptech.glide:compiler:4.9.0",
-            "commons_io"            : "commons-io:commons-io:2.11.0",
+            "commons_io"            : "commons-io:commons-io:+",
             "socket_io_client"            : "io.socket:socket.io-client:1.0.0",
             "fast_sharedpreferences"            : "com.jeremyliao:fast-sharedpreferences:0.0.1",
             "live_event_bus_x"            : "com.jeremyliao:live-event-bus-x:1.5.2",
