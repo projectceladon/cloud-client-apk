@@ -9,15 +9,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
-import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.input.InputManager;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -34,7 +30,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.Size;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.View;
@@ -1017,74 +1012,72 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     }
 
     private void getCameraHwCapability() {
-        try {
-            CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
-            String[] cameraIds = manager.getCameraIdList();
-            String[] camOrientation = new String[cameraIds.length];
-            String[] camFacing = new String[cameraIds.length];
-            String[] maxCameraRes = new String[cameraIds.length];
-            // Camera sensor orientation would be zero always for landscape mode.
-            int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
+        int numOfCameras = Camera.getNumberOfCameras();
+        String[] camOrientation = new String[numOfCameras];
+        String[] camFacing = new String[numOfCameras];
+        String[] maxCameraRes = new String[numOfCameras];
+        // Camera sensor orientation would be zero always for landscape mode.
+        int CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE = 0;
 
-            Log.d(TAG, "Number of cameras available in the HW = " + cameraIds.length);
+        Log.d(TAG, "Number of cameras available in the HW = " + numOfCameras);
 
-            for (int i = 0; i < cameraIds.length; i++) {
-                CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraIds[i]);
-                // Update the camera sensor orientation based on screen orientation.
-                if (isScreenOrientationPortrait) {
-                    camOrientation[i] = Integer.toString(characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION));
-                    Log.d(TAG, "set PORTRAIT orientation for camera Id " + i);
-                } else {
-                    camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
-                    Log.d(TAG, "Set LANDSCAPE orientation for camera Id " + i);
-                }
-                camFacing[i] = characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT ? "front" : "back";
+        for (int i = 0; i < numOfCameras; i++) {
+            Camera.CameraInfo cameraInfo = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, cameraInfo);
 
-                StreamConfigurationMap map = characteristics.get( CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP );
-                if (map == null) {
-                    throw new IllegalStateException("Failed to get configuration map: " + cameraIds[i]);
-                }
-                Size[] supportedSize = map.getOutputSizes(SurfaceTexture.class);
-                if (supportedSize != null && supportedSize.length != 0) {
-                    int width = supportedSize[0].getWidth();
-                    int height = supportedSize[0].getHeight();
-                    Log.d(TAG, "width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
-                    if (width >= 7680 && height >= 4320) maxCameraRes[i] = "4320p"; // 8k
-                    else if (width >= 3840 && height >= 2160) maxCameraRes[i] = "2160p"; // 4k
-                    else if (width >= 1920 && height >= 1080) maxCameraRes[i] = "1080p";
-                    else if (width >= 1280 && height >= 720) maxCameraRes[i] = "720p";
-                    else maxCameraRes[i] = "480p";
-                    Log.d(TAG, "Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
-                }
-
+            // Update the camera sensor orientation based on screen orientation.
+            if (isScreenOrientationPortrait) {
+                camOrientation[i] = Integer.toString(cameraInfo.orientation);
+                Log.d(TAG, "set PORTRAIT orientation for camera Id " + i);
+            } else {
+                camOrientation[i] = Integer.toString(CAMERA_SENSOR_ORIENTATION_FOR_LANDSCAPE_MODE);
+                Log.d(TAG, "Set LANDSCAPE orientation for camera Id " + i);
             }
 
-            Map<String, Object> mapParams = new HashMap<>();
-            mapParams.put("numOfCameras", cameraIds.length);
-            mapParams.put("camOrientation", camOrientation);
-            mapParams.put("camFacing", camFacing);
-            mapParams.put("maxCameraRes", maxCameraRes);
+            camFacing[i] = (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) ? "front" : "back";
 
-            Map<String, Object> mapData = new HashMap<>();
-            mapData.put("event", "camerainfo");
-            mapData.put("parameters", mapParams);
-            Map<String, Object> mapKey = new HashMap<>();
-            mapKey.put("type", "control");
-            mapKey.put("data", mapData);
-            JSONObject json = new JSONObject(mapKey);
-            String jsonString = json.toString();
-            P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
-                @Override
-                public void onFailure(OwtError owtError) {
-                    Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
-                }
-            });
-            Log.d(TAG, "Sent camera HW capability info to remote server..");
+            Camera camera = Camera.open(i);
+            Camera.Parameters cameraParams = camera.getParameters();
+            // getSupportedPictureSizes() API would give maximum resolution info and it lists its maximum
+            // value at 0th index. Tested and verified with multiple devices.
+            List<Camera.Size> sizeList = cameraParams.getSupportedPictureSizes();
+            if(sizeList!=null){
+                int width = sizeList.get(0).width;
+                int height = sizeList.get(0).height;
+                Log.d(TAG, "width = " + width + ", height = " + height + ", facing = " + camFacing[i] + ", orientation = " + camOrientation[i] + " for Camera Id = " + i);
 
+                if (width >= 7680 && height >= 4320) maxCameraRes[i] = "4320p"; // 8k
+                else if (width >= 3840 && height >= 2160) maxCameraRes[i] = "2160p"; // 4k
+                else if (width >= 1920 && height >= 1080) maxCameraRes[i] = "1080p";
+                else if (width >= 1280 && height >= 720) maxCameraRes[i] = "720p";
+                else maxCameraRes[i] = "480p";
+                Log.d(TAG, "Max supported camera resolution = " + maxCameraRes[i] + " for Camera Id = " + i);
+            }
 
-        }catch (CameraAccessException e) {
-            e.printStackTrace();
+            camera.release();
         }
+
+        Map<String, Object> mapParams = new HashMap<>();
+        mapParams.put("numOfCameras", numOfCameras);
+        mapParams.put("camOrientation", camOrientation);
+        mapParams.put("camFacing", camFacing);
+        mapParams.put("maxCameraRes", maxCameraRes);
+
+        Map<String, Object> mapData = new HashMap<>();
+        mapData.put("event", "camerainfo");
+        mapData.put("parameters", mapParams);
+        Map<String, Object> mapKey = new HashMap<>();
+        mapKey.put("type", "control");
+        mapKey.put("data", mapData);
+        JSONObject json = new JSONObject(mapKey);
+        String jsonString = json.toString();
+        P2PHelper.getClient().send(P2PHelper.peerId, jsonString, new P2PHelper.FailureCallBack<>() {
+            @Override
+            public void onFailure(OwtError owtError) {
+                Log.e(TAG, owtError.errorMessage + " " + owtError.errorCode + " " + jsonString);
+            }
+        });
+        Log.d(TAG, "Sent camera HW capability info to remote server..");
     }
 
     private void sensorsInit() {
