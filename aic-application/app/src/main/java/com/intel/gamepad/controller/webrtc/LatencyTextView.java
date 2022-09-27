@@ -95,7 +95,9 @@ public class LatencyTextView extends AppCompatTextView implements EglRenderer.Re
             setEnable(false);
         }
         setVisibility(View.GONE);
-        bweTaskUtil.endTask(timingTaskRunnable);
+        if(bweTaskUtil!=null){
+            bweTaskUtil.endTask(timingTaskRunnable);
+        }
     }
 
     public void addBweStream(int frameSize){

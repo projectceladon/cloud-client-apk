@@ -33,6 +33,7 @@ import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CheckBox;
@@ -46,6 +47,7 @@ import androidx.lifecycle.LifecycleEventObserver;
 
 import com.commonlibrary.utils.DensityUtils;
 import com.commonlibrary.utils.StatusBarUtil;
+import com.google.android.material.tabs.TabLayout;
 import com.google.gson.Gson;
 import com.hjq.permissions.OnPermissionCallback;
 import com.hjq.permissions.Permission;
@@ -57,6 +59,7 @@ import com.intel.gamepad.controller.impl.DeviceSwitchListener;
 import com.intel.gamepad.controller.webrtc.BaseController;
 import com.intel.gamepad.controller.webrtc.LatencyTextView;
 import com.intel.gamepad.controller.webrtc.RTCControllerAndroid;
+import com.intel.gamepad.controller.webrtc.StatsTextView;
 import com.intel.gamepad.owt.p2p.P2PHelper;
 import com.intel.gamepad.utils.AicVideoCapturer;
 import com.intel.gamepad.utils.AudioHelper;
@@ -141,6 +144,8 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     private boolean isStreamAdded = false;
     private boolean isOnPause = false;
     private LatencyTextView mLatencyTextView;
+    private StatsTextView mStatsTextView;
+    private TabLayout tabLayout;
 
     public static void actionStart(Activity act, String controller, int gameId, String gameName) {
         Intent intent = new Intent(act, PlayGameRtcActivity.class);
@@ -188,6 +193,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
 
         mLatencyTextView = findViewById(R.id.tv_latency);
         mLatencyTextView.init(fullRenderer, getHandler());
+        mStatsTextView = findViewById(R.id.tv_stats);
 
         bweStatsVideoSink = new BweStatsVideoSink();
         bweStatsVideoSink.setBweStatsEvent((frameDelay, frameSize, packetsLost) -> executor.execute(() -> {
@@ -281,6 +287,9 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         handler.removeMessages(AppConst.MSG_SHOW_CONTROLLER);
         if (mLatencyTextView != null) {
             mLatencyTextView.onStreamExit();
+        }
+        if (mStatsTextView != null) {
+            mStatsTextView.close();
         }
     }
 
@@ -1099,6 +1108,7 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
         Log.d(TAG, "checkPermissions called");
         XXPermissions.with(this)
                 .permission(Permission.ACCESS_FINE_LOCATION)
+                .permission(Permission.ACCESS_COARSE_LOCATION)
                 .request(new OnPermissionCallback() {
                     @Override
                     public void onGranted(List<String> permissions, boolean all) {
@@ -1221,14 +1231,77 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
     @Override
     public void switchE2E(boolean on) {
         Log.d(TAG, "switchE2E " + on );
-        if (on) {
-            controller.setE2eEnabled(true);
-            mLatencyTextView.open();
-        } else {
-            controller.setE2eEnabled(false);
-            if(mLatencyTextView!=null){
-                mLatencyTextView.close();
+        if(tabLayout == null) {
+            tabLayout = findViewById(R.id.tab);
+            TabLayout.Tab tab = tabLayout.newTab();
+            tab.setText("E2E");
+            tab.setId(0x100);
+            tabLayout.addTab(tab);
+            TabLayout.Tab tab1 = tabLayout.newTab();
+            tab1.setText("Stats");
+            tab.setId(0x200);
+            tabLayout.addTab(tab1);
+        }
+        if(on){
+            tabLayout.setVisibility(View.VISIBLE);
+            tabLayout.addOnTabSelectedListener(tabListener);
+            tabLayout.selectTab(tabLayout.getTabAt(tabStyle == TabStyle.E2E?0:1));
+            changeTab(tabStyle);
+        }else{
+            tabLayout.setVisibility(View.GONE);
+            mStatsTextView.close();
+            mLatencyTextView.close();
+            tabLayout.removeOnTabSelectedListener(tabListener);
+        }
+
+    }
+
+    private enum TabStyle {
+        E2E,STATS,
+    }
+
+    private TabStyle tabStyle = TabStyle.E2E;
+    TabLayout.OnTabSelectedListener tabListener= new TabLayout.OnTabSelectedListener() {
+        @Override
+        public void onTabSelected(TabLayout.Tab tab) {
+            ViewGroup viewGroup=(ViewGroup) tabLayout.getChildAt(0);
+            viewGroup.getChildAt(tab.getPosition()).getBackground().setAlpha(180);
+            if("E2E".equals(tab.getText().toString())){
+                tabStyle = TabStyle.E2E;
+
+            }else{
+                tabStyle = TabStyle.STATS;
             }
+            changeTab(tabStyle);
+        }
+
+        @Override
+        public void onTabUnselected(TabLayout.Tab tab) {
+            ViewGroup viewGroup=(ViewGroup) tabLayout.getChildAt(0);
+            viewGroup.getChildAt(tab.getPosition()).getBackground().setAlpha(0);
+        }
+
+        @Override
+        public void onTabReselected(TabLayout.Tab tab) {
+
+        }
+    };
+
+    private void changeTab(TabStyle tabStyle){
+        if(tabStyle == TabStyle.E2E){
+            mLatencyTextView.setVisibility(View.VISIBLE);
+            mLatencyTextView.open();
+            controller.setE2eEnabled(true);
+
+            mStatsTextView.setVisibility(View.GONE);
+            mStatsTextView.close();
+        }else{
+            mLatencyTextView.setVisibility(View.GONE);
+            mLatencyTextView.close();
+            controller.setE2eEnabled(false);
+
+            mStatsTextView.setVisibility(View.VISIBLE);
+            mStatsTextView.open();
         }
     }
 
