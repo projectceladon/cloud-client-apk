@@ -671,6 +671,14 @@ int main(int argc, char* argv[]) {
               total_num = split_num * split_num;
               std::cout << "split_num " << split_num << ", sp_num: " << sp_num
                         << std::endl;
+            } else if (split_num == 0) {
+              if (fullScreen >= 0) {
+                total_num = 1;
+                fullScreenIndex = fullScreen;
+                aicRender->renderUpdate(1);
+              } else {
+                aicRender->renderUpdate(sp_num);
+              }
             }
           } else {
             std::cout << "anim_state reset" << std::endl;

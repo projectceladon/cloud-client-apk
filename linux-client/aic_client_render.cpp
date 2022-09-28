@@ -172,10 +172,12 @@ AicClientRender::AicClientRender(int x, int y, int *w, int *h, int n) {
 }
 
 void AicClientRender::renderUpdate(int n) {
-  scale = n;
-  scale_width = 1.0f / n;
-  glUseProgram(glProgram);
-  glUniform2f(glGetUniformLocation(glProgram, "uTexCoordScale"), scale, scale);
+  if (scale != n) {
+    scale = n;
+    scale_width = 1.0f / n;
+    glUseProgram(glProgram);
+    glUniform2f(glGetUniformLocation(glProgram, "uTexCoordScale"), scale, scale);
+  }
 }
 
 GLuint AicClientRender::loadProgram(const char *vert_source,
