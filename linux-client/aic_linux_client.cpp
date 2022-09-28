@@ -309,6 +309,8 @@ int main(int argc, char* argv[]) {
   std::cout << "LAST_COMMIT: " << LAST_COMMIT << ", internal "
             << VIDEO_FPS_INTERVAL << std::endl;
 
+  int fullScreen = -1;
+
   /***************p2p***********/
   if (signaling_server_url.empty() || server_ids.empty() ||
       client_ids.empty()) {
@@ -651,6 +653,7 @@ int main(int argc, char* argv[]) {
           int split_num = anim_state;
           int total_num = 0;
           int count = 0;
+          int fullScreenIndex = -1;
           if (anim_interval > 0) {
             if (split_num == -1) {
               std::cout << "AIC_REFRESH_EVENT not any frames" << std::endl;
@@ -671,6 +674,13 @@ int main(int argc, char* argv[]) {
             }
           } else {
             std::cout << "anim_state reset" << std::endl;
+            if (fullScreen >= 0) {
+              total_num = 1;
+              fullScreenIndex = fullScreen;
+              aicRender->renderUpdate(1);
+            } else {
+              aicRender->renderUpdate(sp_num);
+            }
           }
           std::vector<std::shared_ptr<GameSession>> sessions;
           AVFrame* render_frame = nullptr;
@@ -690,12 +700,22 @@ int main(int argc, char* argv[]) {
                 session->readIndex = nextIndex;
               }
             }
-            if (split_num > 0 && i >= total_num) {
-              if (render_frame != nullptr) {
-                av_frame_unref(render_frame);
-                av_frame_free(&render_frame);
+            if (fullScreenIndex >= 0) {
+              if (i != fullScreenIndex) {
+                if (render_frame != nullptr) {
+                  av_frame_unref(render_frame);
+                  av_frame_free(&render_frame);
+                }
+                continue;
               }
-              continue;
+            } else {
+              if (split_num > 0 && i >= total_num) {
+                if (render_frame != nullptr) {
+                  av_frame_unref(render_frame);
+                  av_frame_free(&render_frame);
+                }
+                continue;
+              }
             }
             if (render_frame != nullptr) {
               aicRender->generateTexture(render_frame, &(session->textures[0]),
@@ -703,7 +723,11 @@ int main(int argc, char* argv[]) {
                                          session->decoder->getVADisplay());
               av_frame_unref(render_frame);
               av_frame_free(&render_frame);
-              aicRender->renderFrame(i, &(session->textures[0]));
+              if (fullScreenIndex >= 0) {
+                aicRender->renderFrame(0, &(session->textures[0]));
+              } else {
+                aicRender->renderFrame(i, &(session->textures[0]));
+              }
               aicRender->destroyImage(&(session->images[0]));
             } else {
               aicRender->renderFrame(i, &(session->textures[0]));
@@ -712,7 +736,11 @@ int main(int argc, char* argv[]) {
             ss.append(session->identifier);
             ss.append(":");
             ss.append(session->fps_buf);
-            aicRender->renderText(ss.c_str(), i);
+            if (fullScreenIndex >= 0) {
+              aicRender->renderText(ss.c_str(), 0);
+            } else {
+              aicRender->renderText(ss.c_str(), i);
+            }
           }
           aicRender->endFrame();
           // std::cout << "AIC_REFRESH_EVENT impl cost "  <<  SDL_GetTicks() -
@@ -732,6 +760,22 @@ int main(int argc, char* argv[]) {
         break;
       case AIC_SWAP_EVENT:
         onSwapStream();
+        break;
+      case SDL_KEYDOWN:
+        if (SDLK_f == e.key.keysym.sym) {
+          if (fullScreen >= 0) {
+            fullScreen = -1;
+          } else {
+            int x, y;
+            SDL_GetMouseState(&x, &y);
+            int row = (y + margin) / cell_height;
+            int column = (x + margin) / cell_width;
+            int index = game_matrix[row][column];
+            SDL_Log("Mouse cursor is at %d, %d, index is %d", x, y, index);
+            fullScreen = index;
+          }
+          std::cout << "f down " << fullScreen << std::endl;
+        }
         break;
       case SDL_WINDOWEVENT:
         break;
