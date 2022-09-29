@@ -1,0 +1,84 @@
+From 6288afb5d67f9c63ec7e84936877e120a8239a13 Mon Sep 17 00:00:00 2001
+From: Jianjun Zhu <jianjun.zhu@intel.com>
+Date: Tue, 20 Sep 2022 17:26:06 +0800
+Subject: [PATCH] Don't cache RtpSenders in SDK.
+
+Java RtpSenders are recreated when getSenders or getTransceivers are called.
+---
+ .../java/owt/base/PeerConnectionChannel.java  | 31 +++++++++----------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+index 4444547..317ec78 100644
+--- a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
++++ b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+@@ -70,16 +70,12 @@
+     private SessionDescription localSdp;
+     private boolean disposed = false;
+     protected boolean onError = false;
+-    // <MediaStream id, RtpSender>
+-    private ConcurrentHashMap<String, RtpSender> videoRtpSenders, audioRtpSenders;
+ 
+     protected PeerConnectionChannel(String key, PeerConnection.RTCConfiguration configuration,
+             boolean receiveVideo, boolean receiveAudio, PeerConnectionChannelObserver observer) {
+         this.key = key;
+         this.observer = observer;
+ 
+-        videoRtpSenders = new ConcurrentHashMap<>();
+-        audioRtpSenders = new ConcurrentHashMap<>();
+         queuedRemoteCandidates = new LinkedList<>();
+         queuedMessage = new ArrayList<>();
+         sdpConstraints = new MediaConstraints();
+@@ -203,11 +199,9 @@ protected void addStream(final MediaStream mediaStream) {
+             streamIds.add(mediaStream.getId());
+             for (AudioTrack audioTrack : mediaStream.audioTracks) {
+                 RtpTransceiver transceiver = peerConnection.addTransceiver(audioTrack, new RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.SEND_ONLY, streamIds, new ArrayList<RtpParameters.Encoding>()));
+-                audioRtpSenders.put(mediaStream.getId(), transceiver.getSender());
+             }
+             for (VideoTrack videoTrack : mediaStream.videoTracks) {
+                 RtpTransceiver transceiver = peerConnection.addTransceiver(videoTrack, new RtpTransceiver.RtpTransceiverInit(RtpTransceiver.RtpTransceiverDirection.SEND_ONLY, streamIds, new ArrayList<RtpParameters.Encoding>()));
+-                videoRtpSenders.put(mediaStream.getId(), transceiver.getSender());
+             }
+         });
+     }
+@@ -219,11 +213,11 @@ protected void removeStream(String mediaStreamId) {
+                 return;
+             }
+             Log.d(LOG_TAG, "remove stream");
+-            if (audioRtpSenders.get(mediaStreamId) != null) {
+-                peerConnection.removeTrack(audioRtpSenders.get(mediaStreamId));
+-            }
+-            if (videoRtpSenders.get(mediaStreamId) != null) {
+-                peerConnection.removeTrack(videoRtpSenders.get(mediaStreamId));
++            for(RtpSender sender: peerConnection.getSenders()) {
++                List<String> streams = sender.getStreams();
++                if (streams.size() == 1 && streams.get(0).equals(mediaStreamId)) {
++                    peerConnection.removeTrack(sender);
++                }
+             }
+             for (RtpTransceiver transceiver : peerConnection.getTransceivers()) {
+                 if (transceiver.getDirection() == RtpTransceiver.RtpTransceiverDirection.INACTIVE && !transceiver.isStopped()) {
+@@ -408,11 +402,16 @@ private void setMaxBitrate(RtpSender sender, Integer bitrate) {
+     protected void setMaxBitrate(String mediaStreamId) {
+         DCHECK(peerConnection);
+ 
+-        if (videoRtpSenders.get(mediaStreamId) != null) {
+-            setMaxBitrate(videoRtpSenders.get(mediaStreamId), videoMaxBitrate);
+-        }
+-        if (audioRtpSenders.get(mediaStreamId) != null) {
+-            setMaxBitrate(audioRtpSenders.get(mediaStreamId), audioMaxBitrate);
++        for(RtpSender sender: peerConnection.getSenders()) {
++            List<String> streams = sender.getStreams();
++            // A sender can be shared by multiple streams. Only apply max bitrate if it's not shared.
++            if (streams.size() == 1 && streams.get(0).equals(mediaStreamId)) {
++                if (sender.track() == null) {
++                    continue;
++                }
++                Integer bitrateLimit = sender.track().kind().equals("audio") ? audioMaxBitrate : videoMaxBitrate;
++                setMaxBitrate(sender, bitrateLimit);
++            }
+         }
+     }
+ 
+
+

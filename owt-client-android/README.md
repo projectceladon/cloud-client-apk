@@ -22,6 +22,9 @@ Download owt-client-android source code:
 8. $ git am ../patches/0004-Upgrade-socket.io-client-from-1.0.1-to-2.0.1.patch
 9. $ git am ../patches/0005-Add-getVideoEncoderFactory-and-getVideoDecoderFactor.patch
 10. $ git am ../patches/0006-Update-owt-Android-SDK-to-31.patch
+11. $ git am ../patches/0007-Stop-a-transceiver-if-its-direction-is-inactive.-286.patch
+12. $ git am ../patches/0008-Create-transceivers-explicitly.-287.patch
+13. $ git am ../patches/0009-Dont-cache-RtpSenders-in-SDK.patch
 
 Compile:
 1. $ python tools/pack.py

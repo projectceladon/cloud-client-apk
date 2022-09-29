@@ -430,11 +430,11 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                 case "stop-audio-rec":
                                     Log.d(TAG, "Received stop-audio-rec");
                                     Log.d(TAG, "stopping localAudioStream");
-                                    if (localAudioStream != null) {
-                                        localAudioStream.disableAudio();
-                                    }
                                     if (audioPublication != null) {
                                         audioPublication.stop();
+                                    }
+                                    if (localAudioStream != null) {
+                                        localAudioStream.disableAudio();
                                     }
 
                                     break;

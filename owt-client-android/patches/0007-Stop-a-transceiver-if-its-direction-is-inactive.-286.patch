@@ -1,0 +1,41 @@
+From 10d29101af5fbddc63f9f06753abfa7a54187fc2 Mon Sep 17 00:00:00 2001
+From: jianjunz <jianjun.zhu@intel.com>
+Date: Tue, 5 Jul 2022 16:52:14 +0800
+Subject: [PATCH 2/3] Stop a transceiver if its direction is inactive. (#286)
+
+It avoids too much resources being used by inactive transceivers. For example,
+if the app frequently publish a stream and unpublish it, there will be a lot of
+inactive transceivers.
+---
+ .../base/src/main/java/owt/base/PeerConnectionChannel.java   | 6 +++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+index 6d55958..b1c2094 100644
+--- a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
++++ b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+@@ -24,6 +24,7 @@ import org.webrtc.RTCStatsReport;
+ import org.webrtc.RtpParameters;
+ import org.webrtc.RtpReceiver;
+ import org.webrtc.RtpSender;
++import org.webrtc.RtpTransceiver;
+ import org.webrtc.SdpObserver;
+ import org.webrtc.SessionDescription;
+ import org.webrtc.VideoTrack;
+--- a/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
++++ b/src/sdk/base/src/main/java/owt/base/PeerConnectionChannel.java
+@@ -225,6 +225,11 @@ public abstract class PeerConnectionChannel
+             if (videoRtpSenders.get(mediaStreamId) != null) {
+                 peerConnection.removeTrack(videoRtpSenders.get(mediaStreamId));
+             }
++            for (RtpTransceiver transceiver : peerConnection.getTransceivers()) {
++                if (transceiver.getDirection() == RtpTransceiver.RtpTransceiverDirection.INACTIVE && !transceiver.isStopped()) {
++                    transceiver.stop();
++                }
++            }
+         });
+     }
+ 
+-- 
+2.37.2
+
