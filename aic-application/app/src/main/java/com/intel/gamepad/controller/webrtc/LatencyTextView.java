@@ -18,6 +18,7 @@ import androidx.appcompat.widget.AppCompatTextView;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import com.intel.gamepad.utils.FormatUtil;
 import com.intel.gamepad.utils.TimingTaskUtil;
 
 import org.webrtc.EglRenderer;
@@ -55,8 +56,8 @@ public class LatencyTextView extends AppCompatTextView implements EglRenderer.Re
     private int bweStream;
     final Runnable timingTaskRunnable = () -> {
         synchronized (bweLock) {
-            bweStreamMsg = "bweStream:"+bweStream+"/10s\n";
-            String data = bweStreamMsg+(latencyMsg!=null?latencyMsg:"");
+            bweStreamMsg = "bweStream:" + FormatUtil.transferSize(bweStream, 2) + "/10s\n";
+            String data = bweStreamMsg + (latencyMsg != null ? latencyMsg : "");
             setText(data);
             bweStream = 0;
         }

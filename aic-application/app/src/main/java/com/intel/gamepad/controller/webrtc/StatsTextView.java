@@ -20,7 +20,6 @@ import owt.base.OwtError;
 import owt.p2p.P2PClient;
 
 public class StatsTextView extends AppCompatTextView  {
-    private static final String TAG = "StatsTextView";
     private TimingTaskUtil statsTaskUtil;
     private final Object statsLock = new Object();
     private ConnStatsBean statsBean;

@@ -2,6 +2,8 @@ package com.intel.gamepad.bean;
 
 import android.util.Log;
 
+import com.intel.gamepad.utils.FormatUtil;
+
 import org.webrtc.RTCStats;
 import org.webrtc.RTCStatsReport;
 
@@ -79,7 +81,7 @@ public class ConnStatsBean {
                     // receiver-bps
                     long bytesReceived = ((BigInteger) Objects.requireNonNull(findStatsMemberByKey(stat, "bytesReceived"))).longValue();
                     statReceiverBps.updateAccumulatedValue(bytesReceived * 8, tsSec);
-                    Log.v(TAG, "statSenderBps:" + statReceiverBps.value);
+                    Log.v(TAG, "statReceivedBps:" + statReceiverBps.value);
 
                     //videoQosReport
                     synchronized (reportLock) {
@@ -138,13 +140,6 @@ public class ConnStatsBean {
                         videoQosReport.qp = statDecoderQp.value;
                         videoQosReport.squareFrameDelay = statSquareFrameDelay.value;
                         videoQosReport.tsSec = tsSec;
-                        Log.v("SHUJU", "tsSec:" + videoQosReport.tsSec +
-                                "\navailBps:" + videoQosReport.availBps +
-                                "\nreceiverBps:" + videoQosReport.receiverBps +
-                                "\npacketsReceive:" + videoQosReport.packetsReceive +
-                                "\nfps:" + videoQosReport.fps +
-                                "\nqp:" + videoQosReport.qp +
-                                "\nsquareFrameDelay:" + videoQosReport.squareFrameDelay);
                     }
 
                 }
@@ -156,19 +151,20 @@ public class ConnStatsBean {
         return null;
     }
 
-
     private String updateTxt() {
-        return "availBps:" + videoQosReport.availBps +
-                "\nreceiverBps:" + formatValue(videoQosReport.receiverBps,2) +
-                "\npacketsReceive:" + formatValue(videoQosReport.packetsReceive,1) +
-                "\nfps:" + formatValue(videoQosReport.fps,2) +
-                "\nqp:" + formatValue(videoQosReport.qp,1) ;
+        Log.v(TAG, "tsSec:" + videoQosReport.tsSec +
+                "\navailBps:" + videoQosReport.availBps +
+                "\nreceiverBps:" + videoQosReport.receiverBps +
+                "\npacketsReceive:" + videoQosReport.packetsReceive +
+                "\nfps:" + videoQosReport.fps +
+                "\nqp:" + videoQosReport.qp +
+                "\nsquareFrameDelay:" + videoQosReport.squareFrameDelay);
+        return "availRate:" + FormatUtil.transferSize(videoQosReport.availBps, 2) + "ps" +
+                "\nreceiverRate:" + FormatUtil.transferSize(videoQosReport.receiverBps, 2) + "ps" +
+                "\npacketsReceive:" + FormatUtil.formatValue(videoQosReport.packetsReceive, 1) +
+                "\nfps:" + FormatUtil.formatValue(videoQosReport.fps, 2) +
+                "\nqp:" + FormatUtil.formatValue(videoQosReport.qp, 1);
     }
-
-    private String formatValue(double value,int decimal) {
-        return new BigDecimal(value).setScale(decimal, BigDecimal.ROUND_DOWN).toString();
-    }
-
 
     private boolean isVideoStats(RTCStats stat) {
         Map<String, Object> mem = stat.getMembers();
