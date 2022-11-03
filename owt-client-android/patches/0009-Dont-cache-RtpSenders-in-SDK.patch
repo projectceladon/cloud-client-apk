@@ -28,7 +28,7 @@ index 4444547..317ec78 100644
 -        audioRtpSenders = new ConcurrentHashMap<>();
          queuedRemoteCandidates = new LinkedList<>();
          queuedMessage = new ArrayList<>();
-         sdpConstraints = new MediaConstraints();
+         queuedMessage2 = new ArrayList<>();
 @@ -203,11 +199,9 @@ protected void addStream(final MediaStream mediaStream) {
              streamIds.add(mediaStream.getId());
              for (AudioTrack audioTrack : mediaStream.audioTracks) {
