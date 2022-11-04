@@ -407,49 +407,56 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
 
     @Override
     public void showPopupWindow(View parent) {
-        if (popupNavigator != null) {
-            popupNavigator.dismiss();
-        }
-        View popView = getView().inflate(getContext(), R.layout.popup_window, null);
-        popView.setAlpha(0.8f);
-        popupNavigator = PopupUtil.createPopup(parent, popView, -1);
-        if(popView.findViewById(R.id.back)!=null){
-            popView.findViewById(R.id.back).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_BACK"));
-        }
-        if(popView.findViewById(R.id.home)!=null){
-            popView.findViewById(R.id.home).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_HOME"));
-        }
-        if(popView.findViewById(R.id.app_switch)!=null){
-            popView.findViewById(R.id.app_switch).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_APP_SWITCH"));
-        }
-        if(popView.findViewById(R.id.close)!=null){
-            popView.findViewById(R.id.close).setOnClickListener(v -> popupNavigator.dismiss());
-        }
-        popView.setOnTouchListener(new View.OnTouchListener() {
-            int orgX, orgY;
-            int offsetX, offsetY;
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        orgX = (int) event.getX();
-                        orgY = (int) event.getY();
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        popView.setAlpha(0.2f);
-                        offsetX = (int) event.getRawX() - orgX;
-                        offsetY = (int) event.getRawY() - orgY;
-                        popupNavigator.update(offsetX, offsetY, -1, -1, true);
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        popView.setAlpha(0.8f);
-                        break;
-                }
-                v.performClick();
-                return true;
+        try{
+            if (popupNavigator != null) {
+                popupNavigator.dismiss();
             }
-        });
+            if(parent == null){
+                return;
+            }
+            View popView = getView().inflate(getContext(), R.layout.popup_window, null);
+            popView.setAlpha(0.8f);
+            popupNavigator = PopupUtil.createPopup(parent, popView, -1);
+            if(popView.findViewById(R.id.back)!=null){
+                popView.findViewById(R.id.back).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_BACK"));
+            }
+            if(popView.findViewById(R.id.home)!=null){
+                popView.findViewById(R.id.home).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_HOME"));
+            }
+            if(popView.findViewById(R.id.app_switch)!=null){
+                popView.findViewById(R.id.app_switch).setOnClickListener(v -> clickMenu("input keyevent KEYCODE_APP_SWITCH"));
+            }
+            if(popView.findViewById(R.id.close)!=null){
+                popView.findViewById(R.id.close).setOnClickListener(v -> popupNavigator.dismiss());
+            }
+            popView.setOnTouchListener(new View.OnTouchListener() {
+                int orgX, orgY;
+                int offsetX, offsetY;
+
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            orgX = (int) event.getX();
+                            orgY = (int) event.getY();
+                            break;
+                        case MotionEvent.ACTION_MOVE:
+                            popView.setAlpha(0.2f);
+                            offsetX = (int) event.getRawX() - orgX;
+                            offsetY = (int) event.getRawY() - orgY;
+                            popupNavigator.update(offsetX, offsetY, -1, -1, true);
+                            break;
+                        case MotionEvent.ACTION_UP:
+                            popView.setAlpha(0.8f);
+                            break;
+                    }
+                    v.performClick();
+                    return true;
+                }
+            });
+        }catch (Exception e){
+
+        }
     }
 
     @Override

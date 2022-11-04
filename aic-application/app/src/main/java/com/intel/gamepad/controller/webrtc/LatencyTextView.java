@@ -104,7 +104,7 @@ public class LatencyTextView extends AppCompatTextView implements EglRenderer.Re
     public void addBweStream(int frameSize){
         synchronized (bweLock) {
             bweStream += frameSize;
-            Log.e(TAG,"frameSize:"+frameSize+";bweStream: "+bweStream);
+//            Log.e(TAG,"frameSize:"+frameSize+";bweStream: "+bweStream);
         }
     }
 
@@ -196,30 +196,34 @@ public class LatencyTextView extends AppCompatTextView implements EglRenderer.Re
 
     @Override
     public void onFrameDroped(long timestampNs, long receiveTime) {
-        Log.d(TAG, "onFrameDropped timestampNs " + timestampNs + " - " + receiveTime);
-        if (mHandler != null) {
-            Message msg = mHandler.obtainMessage(MSG_FRAME_DROPPED);
-            Bundle bundle = new Bundle();
-            bundle.putLong("receiveTime", receiveTime);
-            bundle.putLong("timestampNs", timestampNs);
-            msg.obj = bundle;
-            mHandler.sendMessage(msg);
+        if(mE2eEnabled){
+            Log.d(TAG, "onFrameDropped timestampNs " + timestampNs + " - " + receiveTime);
+            if (mHandler != null) {
+                Message msg = mHandler.obtainMessage(MSG_FRAME_DROPPED);
+                Bundle bundle = new Bundle();
+                bundle.putLong("receiveTime", receiveTime);
+                bundle.putLong("timestampNs", timestampNs);
+                msg.obj = bundle;
+                mHandler.sendMessage(msg);
+            }
         }
     }
 
     @Override
     public void onFrameDrawed(long timestampNs, long receiveTime, long drawStartTime, long drawEndTime, boolean draw) {
-        Log.e(TAG, "onFrameDrawn timestampNs " + timestampNs + " - " + receiveTime + " - " + drawStartTime + " - " + drawEndTime + " - " + draw);
-        if (mHandler != null) {
-            Message msg = mHandler.obtainMessage(MSG_FRAME_RENDERED);
-            Bundle bundle = new Bundle();
-            bundle.putLong("receiveTime", receiveTime);
-            bundle.putLong("timestampNs", timestampNs);
-            bundle.putLong("drawStartTime", drawStartTime);
-            bundle.putLong("drawEndTime", drawEndTime);
-            bundle.putBoolean("draw", draw);
-            msg.obj = bundle;
-            mHandler.sendMessage(msg);
+        if(mE2eEnabled){
+            Log.e(TAG, "onFrameDrawn timestampNs " + timestampNs + " - " + receiveTime + " - " + drawStartTime + " - " + drawEndTime + " - " + draw);
+            if (mHandler != null) {
+                Message msg = mHandler.obtainMessage(MSG_FRAME_RENDERED);
+                Bundle bundle = new Bundle();
+                bundle.putLong("receiveTime", receiveTime);
+                bundle.putLong("timestampNs", timestampNs);
+                bundle.putLong("drawStartTime", drawStartTime);
+                bundle.putLong("drawEndTime", drawEndTime);
+                bundle.putBoolean("draw", draw);
+                msg.obj = bundle;
+                mHandler.sendMessage(msg);
+            }
         }
     }
 

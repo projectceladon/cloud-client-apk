@@ -74,6 +74,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.webrtc.GlUtil;
 import org.webrtc.RendererCommon;
+import org.webrtc.SEILogger;
 import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCodecInfo;
 import org.webrtc.VideoDecoderFactory;
@@ -478,17 +479,17 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
                                 case "video-alpha-success":
                                     Log.d(TAG, "video-alpha-success");
                                     runOnUiThread(() -> {
-                                        controller.switchAlpha(IPUtils.loadAlphaChannel());
-                                        GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
-                                        fullRenderer.requestLayout();
+//                                        controller.switchAlpha(IPUtils.loadAlphaChannel());
+//                                        GlUtil.setAlphaChannel(IPUtils.loadAlphaChannel());
+//                                        fullRenderer.requestLayout();
                                         alpha.set(false);
                                     });
                                     break;
                                 case "video-alpha-failed":
                                     Log.d(TAG, "video-alpha-failed");
                                     runOnUiThread(() -> {
-                                        IPUtils.savealphachannel(!IPUtils.loadAlphaChannel());
-                                        controller.switchAlpha(IPUtils.loadAlphaChannel());
+//                                        IPUtils.savealphachannel(!IPUtils.loadAlphaChannel());
+//                                        controller.switchAlpha(IPUtils.loadAlphaChannel());
                                         alpha.set(false);
                                     });
                                     break;
@@ -1246,12 +1247,14 @@ public class PlayGameRtcActivity extends AppCompatActivity implements InputManag
             tabLayout.setVisibility(View.VISIBLE);
             tabLayout.addOnTabSelectedListener(tabListener);
             tabLayout.selectTab(tabLayout.getTabAt(tabStyle == TabStyle.E2E?0:1));
+            controller.setE2eEnabled(tabStyle == TabStyle.E2E?true:false);
             changeTab(tabStyle);
         }else{
             tabLayout.setVisibility(View.GONE);
             mStatsTextView.close();
             mLatencyTextView.close();
             tabLayout.removeOnTabSelectedListener(tabListener);
+            controller.setE2eEnabled(false);
         }
 
     }

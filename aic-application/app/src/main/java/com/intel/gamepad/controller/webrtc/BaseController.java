@@ -27,6 +27,7 @@ import com.intel.gamepad.utils.IPUtils;
 import com.intel.gamepad.utils.TimeDelayUtils;
 
 import org.json.JSONObject;
+import org.webrtc.SEILogger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -145,6 +146,7 @@ public abstract class BaseController implements OnTouchListener {
         onBack = true;
         IPUtils.savealphachannel(false);
         sendAlphaEvent(0);
+        SEILogger.getInstance().clear();
         BaseController.manuallyPressBackButton.set(true);
         Message.obtain(refHandler.get(), AppConst.MSG_QUIT, AppConst.EXIT_NORMAL).sendToTarget();
     }

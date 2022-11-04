@@ -1,0 +1,660 @@
+From 12e4b66194894768e17501d4f204072fdd529be9 Mon Sep 17 00:00:00 2001
+From: shipeigx <peigangx.shi@intel.com>
+Date: Fri, 4 Nov 2022 23:26:25 +0800
+Subject: [PATCH] Add talk/owt/patches/0031-Add-Native-SEI-Info.patch
+
+Signed-off-by: shipeigx <peigangx.shi@intel.com>
+---
+ scripts/prepare_dev.py                        |   1 +
+ .../patches/0031-Add-Native-SEI-Info.patch    | 627 ++++++++++++++++++
+ 2 files changed, 628 insertions(+)
+ create mode 100644 talk/owt/patches/0031-Add-Native-SEI-Info.patch
+
+diff --git a/scripts/prepare_dev.py b/scripts/prepare_dev.py
+index 28f5ec1..41e872b 100644
+--- a/scripts/prepare_dev.py
++++ b/scripts/prepare_dev.py
+@@ -54,6 +54,7 @@ patchList = [
+     ('0028-enable-e2e-latency-telemotry.patch', WEBRTC_PATH),
+     ('0029-JNI-pass-a-tcae-object-to-java-layer.patch', WEBRTC_PATH),
+     ('0030-Update-Android-SDK-to-31-build.patch', BUILD_PATH),
++    ('0031-Add-Native-SEI-Info.patch', WEBRTC_PATH),
+ ]
+ 
+ def _patch(ignoreFailures=False):
+diff --git a/talk/owt/patches/0031-Add-Native-SEI-Info.patch b/talk/owt/patches/0031-Add-Native-SEI-Info.patch
+new file mode 100644
+index 0000000..e47224b
+--- /dev/null
++++ b/talk/owt/patches/0031-Add-Native-SEI-Info.patch
+@@ -0,0 +1,627 @@
++From f6037535a4eb9de1c67b7c66ba95c53d4c5377fc Mon Sep 17 00:00:00 2001
++From: shipeigx <peigangx.shi@intel.com>
++Date: Wed, 2 Nov 2022 22:42:30 +0800
++Subject: [PATCH] Add Native SEI Info
++
++Signed-off-by: shipeigx <peigangx.shi@intel.com>
++---
++ sdk/android/BUILD.gn                          |   2 +
++ .../api/org/webrtc/VideoFrameDrawer.java      |  63 +++++-
++ .../java/org/webrtc/AndroidVideoDecoder.java  | 207 +++++++++++++-----
++ .../src/java/org/webrtc/SEILogger.java        |  78 +++++++
++ .../src/java/org/webrtc/SEINativeMessage.java |  89 ++++++++
++ 5 files changed, 380 insertions(+), 59 deletions(-)
++ create mode 100644 sdk/android/src/java/org/webrtc/SEILogger.java
++ create mode 100644 sdk/android/src/java/org/webrtc/SEINativeMessage.java
++
++diff --git a/sdk/android/BUILD.gn b/sdk/android/BUILD.gn
++index 901b3a5605..3079e8afc9 100644
++--- a/sdk/android/BUILD.gn
+++++ b/sdk/android/BUILD.gn
++@@ -246,6 +246,8 @@ if (is_android) {
++       "src/java/org/webrtc/GlDrawerBg.java",
++       "src/java/org/webrtc/LatencyLogger.java",
++       "src/java/org/webrtc/LatencyNativeMessage.java",
+++      "src/java/org/webrtc/SEILogger.java",
+++      "src/java/org/webrtc/SEINativeMessage.java",
++     ]
++ 
++     deps = [
++diff --git a/sdk/android/api/org/webrtc/VideoFrameDrawer.java b/sdk/android/api/org/webrtc/VideoFrameDrawer.java
++index 66c1c4fb0e..be6cc9c2d6 100644
++--- a/sdk/android/api/org/webrtc/VideoFrameDrawer.java
+++++ b/sdk/android/api/org/webrtc/VideoFrameDrawer.java
++@@ -195,14 +195,58 @@ public class VideoFrameDrawer {
++       Logging.w(TAG, "Illegal frame size: " + renderWidth + "x" + renderHeight);
++       return;
++     }
++-
++     final boolean isTextureFrame = frame.getBuffer() instanceof VideoFrame.TextureBuffer;
++     renderMatrix.reset();
++     renderMatrix.preTranslate(0.5f, 0.5f);
++     if (!isTextureFrame) {
++       renderMatrix.preScale(1f, -1f); // I420-frames are upside down
++     }
++-    renderMatrix.preRotate(frame.getRotation());
+++
+++    int rotation = frame.getRotation();
+++    SEINativeMessage msg = getSEIMsg(frame.getTimestampFrame());
+++    if(msg != null){
+++      //viewport
+++      short[] viewport=msg.getViewport();
+++      if(viewport!=null && viewport.length==4){
+++//        Logging.d(TAG, "seitag drawFrame viewport=" + viewport[0]+"-"+viewport[1]+"-"+viewport[2]+"-"+viewport[3]);
+++        if(viewport[0] != 0){
+++          viewportX = viewport[0] * viewportWidth / 1280;
+++          viewportWidth = (viewport[2] - viewport[0]) * viewportWidth / 1280;
+++          if(viewportWidth<0){
+++            viewportWidth = 1280;
+++          }
+++        }
+++
+++        if(viewport[1] != 0){
+++          viewportY = viewport[1] * viewportHeight / 720;
+++          viewportHeight = (viewport[3] - viewport[1]) * viewportHeight / 720;
+++          if(viewportHeight<0){
+++            viewportHeight = 720;
+++          }
+++        }
+++      }
+++      //alpha
+++      if(msg.getAlpha()==0){
+++        GlUtil.setAlphaChannel(false);
+++      }else{
+++        GlUtil.setAlphaChannel(true);
+++      }
+++      //rotation
+++      switch (msg.getRotation()){
+++        case 0:
+++          break;
+++        case 1:
+++          rotation+=90f;
+++          break;
+++        case 2:
+++          rotation+=180f;
+++          break;
+++        case 3:
+++          rotation+=270f;
+++          break;
+++      }
+++    }
+++    renderMatrix.preRotate(rotation);
++     renderMatrix.preTranslate(-0.5f, -0.5f);
++     if (additionalRenderMatrix != null) {
++       renderMatrix.preConcat(additionalRenderMatrix);
++@@ -228,6 +272,21 @@ public class VideoFrameDrawer {
++     }
++   }
++ 
+++  private SEINativeMessage getSEIMsg(long currentTimestampFrame){
+++    SEINativeMessage msg = SEILogger.getInstance().getMessage(currentTimestampFrame);
+++    if(msg!=null){
+++      SEILogger.getInstance().removeMessage(SEILogger.getInstance().getTimestamp());
+++      SEILogger.getInstance().saveTimestamp(currentTimestampFrame);
+++      return msg;
+++    }else{
+++      msg = SEILogger.getInstance().getMessage(SEILogger.getInstance().getTimestamp());
+++      if(msg!=null){
+++        return msg;
+++      }
+++    }
+++    return null;
+++  }
+++
++   public VideoFrame.Buffer prepareBufferForViewportSize(
++       VideoFrame.Buffer buffer, int width, int height) {
++     buffer.retain();
++diff --git a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
++index 8fe323f780..3e52fe1f70 100644
++--- a/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
+++++ b/sdk/android/src/java/org/webrtc/AndroidVideoDecoder.java
++@@ -23,6 +23,7 @@ import java.util.concurrent.LinkedBlockingDeque;
++ import java.util.concurrent.TimeUnit;
++ import org.webrtc.ThreadUtils.ThreadChecker;
++ import java.util.Arrays;
+++import java.util.HashMap;
++ /**
++  * Android hardware video decoder.
++  */
++@@ -55,7 +56,9 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   private static final int DEQUEUE_OUTPUT_BUFFER_TIMEOUT_US = 100000;
++ 
++   // guids same as the server
++-  private static final byte[] guids = new byte[] {(byte) 0xef, (byte) 0xc8, (byte) 0xe7, (byte) 0xb0, 0x26,
+++  private static final byte[] seiguids = new byte[] {(byte) 0xbe, 0x57, (byte) 0xad, (byte) 0xd4, (byte) 0xc8,
+++          (byte) 0xf3, 0x47, (byte) 0xb4, (byte) 0xb1, (byte) 0xef, (byte)0xff, (byte) 0xfa, (byte) 0xfb, 0x07, 0x1f, 0x02};
+++  private static final byte[] latencyguids = new byte[] {(byte) 0xef, (byte) 0xc8, (byte) 0xe7, (byte) 0xb0, 0x26,
++           0x26, 0x47, (byte) 0xfd, (byte) 0x9d, (byte) 0xa3, 0x49, 0x4f, 0x60, (byte) 0xb8, 0x5b, (byte) 0xf0};
++ 
++   private final MediaCodecWrapperFactory mediaCodecWrapperFactory;
++@@ -65,12 +68,12 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   private static class FrameInfo {
++     final long decodeStartTimeMs;
++     final int rotation;
++-    final ByteBuffer latencyBuffer;
+++    final HashMap<String,ByteBuffer> bufferMap;
++ 
++-    FrameInfo(long decodeStartTimeMs, int rotation, ByteBuffer latencyBuffer) {
+++    FrameInfo(long decodeStartTimeMs, int rotation, HashMap<String,ByteBuffer> bufferMap) {
++       this.decodeStartTimeMs = decodeStartTimeMs;
++       this.rotation = rotation;
++-      this.latencyBuffer = latencyBuffer;
+++      this.bufferMap = bufferMap;
++     }
++   }
++ 
++@@ -117,12 +120,12 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   private static class DecodedTextureMetadata {
++     final long presentationTimestampUs;
++     final Integer decodeTimeMs;
++-    final ByteBuffer latencyBuffer;
+++    final HashMap<String,ByteBuffer> bufferMap;
++ 
++-    DecodedTextureMetadata(long presentationTimestampUs, Integer decodeTimeMs, ByteBuffer buffer) {
+++    DecodedTextureMetadata(long presentationTimestampUs, Integer decodeTimeMs, HashMap<String,ByteBuffer> bufferMap) {
++       this.presentationTimestampUs = presentationTimestampUs;
++       this.decodeTimeMs = decodeTimeMs;
++-      this.latencyBuffer = buffer;
+++      this.bufferMap = bufferMap;
++     }
++   }
++ 
++@@ -213,38 +216,105 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     return VideoCodecStatus.OK;
++   }
++ 
++-  private ByteBuffer getLatencyMsg(ByteBuffer byteBuffer, int pos) {
++-    int capacity = byteBuffer.remaining();
++-    if (capacity < 24) {
++-      return null;
++-    }
++-    if (byteBuffer.get() != 0 || byteBuffer.get() != 0 || byteBuffer.get() != 0 || byteBuffer.get() != 1) {
+++  private HashMap<String,ByteBuffer> getSEIData(ByteBuffer byteBuffer){
+++
+++    if (!(byteBuffer.get(0) == 0 && byteBuffer.get(1) == 0 && byteBuffer.get(2) == 0 && byteBuffer.get(3) == 1)) {
++       return null;
++     }
++ 
++-    if ((byteBuffer.get() & 0x1f) == 0x06) {
++-      if (byteBuffer.get() == 0x05) {
++-        int size = byteBuffer.get() & 0xff;
++-        if (size > capacity - 8 || size < 17) {
+++    int remain = byteBuffer.remaining();
+++    int off = 0;
+++    int nalType;
+++    HashMap<String,ByteBuffer> dataMap = null;
+++    do{
+++      while ( !(byteBuffer.get(off) == 0x00 && byteBuffer.get(off+1) == 0x00 && byteBuffer.get(off+2) == 0x01) ){
+++        off ++;
+++      }
+++      nalType = byteBuffer.get(off+3) & 0x1f;
+++      off += 4;
+++    }while (nalType == 7 || nalType == 8);
+++    if (nalType == 6) {
+++//      Logging.d(TAG, "seitag nalType:5,off="+off);
+++      byteBuffer.position(off);
+++      dataMap = getByteData(byteBuffer,new HashMap<>());
+++    }
+++    return dataMap;
+++  }
+++
+++  private HashMap<String,ByteBuffer> getByteData(ByteBuffer byteBuffer, HashMap<String,ByteBuffer> dataMap){
+++    if(byteBuffer.remaining()>0){
+++      int type = byteBuffer.get() & 0xff ;
+++      if(type == 0x05){ //sei need this type
+++        int dataSize = byteBuffer.get() & 0xff;
+++        //sei length
+++        if (dataSize < 17) {
++           return null;
++         }
+++        //test
+++//        String str = "";
+++//        for (int i = 0; i < 150; i++){
+++//          str+=String.format("%x", byteBuffer.get(i))+",";
+++//        }
+++//        Logging.d(TAG, "seitag prefix:" +str);
+++        byte[] velidUUID = new byte[16];
+++        for (int i = 0; i < 16; i++)  {  // verify guid
+++          velidUUID[i] = byteBuffer.get();
+++        }
++ 
++-        for (int i = 0; i < 16; i++)  {  // 15 for guid
++-          if (byteBuffer.get() != guids[i]) {
++-            return null;
++-          }
+++        dataSize = dataSize - 16;
+++        ByteBuffer parseByteData = parseByteData(byteBuffer,dataSize);
+++
+++        if(Arrays.equals(velidUUID, seiguids)){
+++          dataMap.put(SEILogger.DISPLAY_CONTROL,parseByteData);
+++          Logging.d(TAG, "seitag getSeiData: :" + Arrays.toString(parseByteData.array()));
+++        }else if(Arrays.equals(velidUUID, latencyguids)){
+++          dataMap.put(SEILogger.LANTENCY,parseByteData);
+++          Logging.d(TAG, "seitag getLatencyData: :" + Arrays.toString(parseByteData.array()));
++         }
++-        ByteBuffer res = ByteBuffer.allocate(size -16);
++-        byteBuffer.position(pos + 23);
++-        byteBuffer.limit(pos + 23 +size -16);
++-        res.put(byteBuffer);
++-        res.flip();
++-        return res;
+++        Logging.d(TAG, "seitag remain length: :" + byteBuffer.remaining());
+++        getByteData(byteBuffer,dataMap);
+++      }else if(type == 0x80){
+++
+++      }else{
+++        int dataSize = byteBuffer.get() & 0xff;
+++        parseByteData(byteBuffer,dataSize);
+++        getByteData(byteBuffer,dataMap);
+++      }
+++    }
+++    return dataMap;
+++  }
+++
+++  private ByteBuffer parseByteData(ByteBuffer byteBuffer,int dataSize){
+++    short zeroCount = 0;
+++    int loopCount = 0;
+++    boolean goon = true;
+++
+++    ByteBuffer seiRes = ByteBuffer.allocate(dataSize);
+++    while (goon){
+++      if(loopCount == dataSize){
+++        goon = false;
+++        continue;
+++      }
+++      byte val = byteBuffer.get();
+++      if(val == 0x03 ){
+++        if(zeroCount >= 2){    //give up 0x03
+++          zeroCount = 0;
+++          continue;
+++        }else{
+++          seiRes.put(val);
+++          loopCount++;
+++        }
+++      }else if(val == 0x00){ //count 0x00
+++        seiRes.put(val);
+++        zeroCount++;
+++        loopCount++;
+++      }else{
+++        seiRes.put(val);
+++        loopCount++;
++       }
++-    } else {
++-      return null;
++     }
++-    return null;
+++    seiRes.flip();
+++    return seiRes;
++   }
++ 
++   @Override
++@@ -324,13 +394,16 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++ 
++     int limit = frame.buffer.limit();
++     int pos = frame.buffer.position();
++-    ByteBuffer lateBuffer = getLatencyMsg(frame.buffer, pos);
+++
+++    HashMap<String,ByteBuffer> allData = getSEIData(frame.buffer);
++     frame.buffer.limit(limit);
++     frame.buffer.position(pos);
++     buffer.put( frame.buffer);
++-    if (lateBuffer != null) {
++-      Logging.d(TAG, "get sei data " + lateBuffer.capacity() + Arrays.toString(lateBuffer.array()));
++-      frameInfos.offer(new FrameInfo(SystemClock.elapsedRealtime(), frame.rotation, lateBuffer));
+++
+++    if (allData != null && allData.size()>0) {
+++//      ByteBuffer data = allData.get(SEILogger.LANTENCY);
+++//      Logging.d(TAG, "seitag give sei data " + data.capacity() + Arrays.toString(data.array()));
+++      frameInfos.offer(new FrameInfo(SystemClock.elapsedRealtime(), frame.rotation, allData));
++     } else {
++       frameInfos.offer(new FrameInfo(SystemClock.elapsedRealtime(), frame.rotation, null));
++     }
++@@ -462,9 +535,9 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++       hasDecodedFirstFrame = true;
++ 
++       if (surfaceTextureHelper != null) {
++-        deliverTextureFrame(result, info, rotation, decodeTimeMs, frameInfo.latencyBuffer);
+++        deliverTextureFrame(result, info, rotation, decodeTimeMs, frameInfo.bufferMap);
++       } else {
++-        deliverByteFrame(result, info, rotation, decodeTimeMs, frameInfo.latencyBuffer);
+++        deliverByteFrame(result, info, rotation, decodeTimeMs, frameInfo.bufferMap);
++       }
++ 
++     } catch (IllegalArgumentException | IllegalStateException e) {
++@@ -473,7 +546,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++   }
++ 
++   private void deliverTextureFrame(final int index, final MediaCodec.BufferInfo info,
++-      final int rotation, final Integer decodeTimeMs, ByteBuffer buffer) {
+++      final int rotation, final Integer decodeTimeMs, HashMap<String,ByteBuffer> bufferMap) {
++     // Load dimensions from shared memory under the dimension lock.
++     final int width;
++     final int height;
++@@ -485,11 +558,24 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     synchronized (renderedTextureMetadataLock) {
++       if (renderedTextureMetadata != null) {
++         codec.releaseOutputBuffer(index, false);
+++        if (bufferMap != null) {
+++          SEILogger.getInstance().setLastBufferMap(bufferMap);
+++          Logging.e(TAG, "seitag deliverTextureFrame log drop frame save last bufferMap");
+++        }
++         return; // We are still waiting for texture for the previous frame, drop this one.
++       }
++       surfaceTextureHelper.setTextureSize(width, height);
++       surfaceTextureHelper.setFrameRotation(rotation);
++-      renderedTextureMetadata = new DecodedTextureMetadata(info.presentationTimeUs, decodeTimeMs, buffer);
+++
+++      if (SEILogger.getInstance().getLastBufferMap() != null) {
+++        if(bufferMap == null){
+++          bufferMap = SEILogger.getInstance().getLastBufferMap();
+++          Logging.e(TAG, "seitag deliverTextureFrame log resend last bufferMap");
+++        }
+++        SEILogger.getInstance().setLastBufferMap(null);
+++      }
+++
+++      renderedTextureMetadata = new DecodedTextureMetadata(info.presentationTimeUs, decodeTimeMs, bufferMap);
++       codec.releaseOutputBuffer(index, /* render= */ true);
++     }
++   }
++@@ -500,6 +586,7 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     final Integer decodeTimeMs;
++     final long timestampNs;
++     final ByteBuffer latencyBuffer;
+++    final ByteBuffer dcBuffer;
++     synchronized (renderedTextureMetadataLock) {
++       if (renderedTextureMetadata == null) {
++         throw new IllegalStateException(
++@@ -507,26 +594,29 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++       }
++       timestampNs = renderedTextureMetadata.presentationTimestampUs * 1000;
++       decodeTimeMs = renderedTextureMetadata.decodeTimeMs;
++-      latencyBuffer = renderedTextureMetadata.latencyBuffer;
+++      HashMap<String,ByteBuffer> bufferMap = renderedTextureMetadata.bufferMap;
+++      latencyBuffer = bufferMap==null?null:bufferMap.get(SEILogger.LANTENCY);
+++      dcBuffer = bufferMap==null?null:bufferMap.get(SEILogger.DISPLAY_CONTROL);
++       renderedTextureMetadata = null;
++     }
+++
+++    final VideoFrame frameWithModifiedTimeStamp =
+++            new VideoFrame(frame.getBuffer(), frame.getRotation(), timestampNs);
+++    frameWithModifiedTimeStamp.setTimestampFrame(timestampNs);
+++
++     if (latencyBuffer != null) {
++       Logging.e(TAG, "onFrame log latency");
++       LatencyLogger.getInstance().logLatencyMsg(timestampNs, decodeTimeMs, latencyBuffer);
++-      final VideoFrame frameWithModifiedTimeStamp =
++-        new VideoFrame(frame.getBuffer(), frame.getRotation(), timestampNs);
++-      frameWithModifiedTimeStamp.setTimestampFrame(timestampNs);
++-      callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
++-    } else {
++-      final VideoFrame frameWithModifiedTimeStamp =
++-        new VideoFrame(frame.getBuffer(), frame.getRotation(), timestampNs);
++-      frameWithModifiedTimeStamp.setTimestampFrame(-1);
++-      callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
++     }
+++    if(dcBuffer!=null){
+++      SEILogger.getInstance().logSEIMsg(timestampNs,dcBuffer);
+++    }
+++
+++    callback.onDecodedFrame(frameWithModifiedTimeStamp, decodeTimeMs, null /* qp */);
++   }
++ 
++   private void deliverByteFrame(
++-      int result, MediaCodec.BufferInfo info, int rotation, Integer decodeTimeMs, ByteBuffer delayBuffer) {
+++      int result, MediaCodec.BufferInfo info, int rotation, Integer decodeTimeMs, HashMap<String,ByteBuffer> bufferMap) {
++     // Load dimensions from shared memory under the dimension lock.
++     int width;
++     int height;
++@@ -568,16 +658,19 @@ class AndroidVideoDecoder implements VideoDecoder, VideoSink {
++     codec.releaseOutputBuffer(result, /* render= */ false);
++ 
++     long presentationTimeNs = info.presentationTimeUs * 1000;
++-
++     VideoFrame frame;
++-    if(delayBuffer != null) {
++-      LatencyLogger.getInstance().logLatencyMsg(presentationTimeNs, decodeTimeMs, delayBuffer);
++-      frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);
++-      frame.setTimestampFrame(presentationTimeNs);
+++
+++    frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);
+++    frame.setTimestampFrame(presentationTimeNs);
+++
+++    ByteBuffer latency = bufferMap.get(SEILogger.LANTENCY);
+++    if(latency != null) {
+++      LatencyLogger.getInstance().logLatencyMsg(presentationTimeNs, decodeTimeMs, latency);
++       Logging.e(TAG, "deliverByteFrame log latency");
++-    } else {
++-      frame = new VideoFrame(frameBuffer, rotation, presentationTimeNs);
++-      frame.setTimestampFrame(-1);
+++    }
+++    ByteBuffer dc = bufferMap.get(SEILogger.DISPLAY_CONTROL);
+++    if(dc!=null){
+++      SEILogger.getInstance().logSEIMsg(presentationTimeNs,dc);
++     }
++ 
++     // Note that qp is parsed on the C++ side.
++diff --git a/sdk/android/src/java/org/webrtc/SEILogger.java b/sdk/android/src/java/org/webrtc/SEILogger.java
++new file mode 100644
++index 0000000000..5b2f2b8be4
++--- /dev/null
+++++ b/sdk/android/src/java/org/webrtc/SEILogger.java
++@@ -0,0 +1,78 @@
+++package org.webrtc;
+++
+++import java.nio.ByteBuffer;
+++import java.util.Map;
+++import java.util.concurrent.ConcurrentHashMap;
+++import java.util.HashMap;
+++
+++public class SEILogger {
+++    public static final String DISPLAY_CONTROL = "dc";
+++    public static final String LANTENCY = "lantency";
+++    private static final String TAG = "SEILogger";
+++
+++    /**
+++     * Used to resolve the problem of dropping frames and temporarily save the last sei data
+++     * */
+++    private HashMap<String,ByteBuffer> lastBufferMap;
+++
+++    public static final Object lock = new Object();
+++    private ConcurrentHashMap<Long, SEINativeMessage> msgMap =
+++            new ConcurrentHashMap<Long, SEINativeMessage>();
+++    private long timestamp;
+++    private static class SEILoggerInstance {
+++        private static final SEILogger instance = new SEILogger();
+++    }
+++
+++    private SEILogger() {
+++
+++    }
+++
+++    public void setLastBufferMap(HashMap<String,ByteBuffer> bufferMap){
+++        lastBufferMap = bufferMap;
+++    }
+++
+++    public HashMap<String,ByteBuffer> getLastBufferMap(){
+++        return lastBufferMap;
+++    }
+++
+++    public void saveTimestamp(long saveTime){
+++        synchronized (lock) {
+++            timestamp = saveTime;
+++        }
+++    }
+++
+++    public long getTimestamp(){
+++        return timestamp;
+++    }
+++
+++    public static SEILogger getInstance() {
+++        return SEILoggerInstance.instance;
+++    }
+++
+++    public void logSEIMsg(long timestampNs, ByteBuffer buffer) {
+++        if(buffer == null)
+++            return;
+++        SEINativeMessage message = new SEINativeMessage(buffer);
+++        msgMap.put(timestampNs, message);
+++    }
+++
+++    public SEINativeMessage getMessage(long timestampNs) {
+++        SEINativeMessage msg = msgMap.get(timestampNs);
+++        return msg;
+++    }
+++
+++    public void removeMessage(long timestampNs) {
+++        if (msgMap.containsKey(timestampNs)) {
+++            msgMap.remove(timestampNs);
+++            Logging.d(TAG, "removeMessage frame" + timestampNs + msgMap.size());
+++        } else {
+++            Logging.d(TAG, "removeMessage no such frame" + timestampNs);
+++        }
+++    }
+++
+++    public void clear() {
+++        timestamp = -1;
+++        msgMap.clear();
+++    }
+++
+++}
++diff --git a/sdk/android/src/java/org/webrtc/SEINativeMessage.java b/sdk/android/src/java/org/webrtc/SEINativeMessage.java
++new file mode 100644
++index 0000000000..22679eb21f
++--- /dev/null
+++++ b/sdk/android/src/java/org/webrtc/SEINativeMessage.java
++@@ -0,0 +1,89 @@
+++package org.webrtc;
+++
+++import android.util.Log;
+++import java.nio.ByteBuffer;
+++
+++public class SEINativeMessage {
+++    private static final String TAG = "SEINativeMessage";
+++//    typedef struct _display_control_t {
+++//        uint32_t alpha         :1;  // alpha video content
+++//        uint32_t top_layer     :1;  // top layer to be blend
+++//        uint32_t rotation      :2;  // content is rotated
+++//        uint32_t reserved      :28;
+++//        struct {
+++//            int16_t l, t, r, b;
+++//        } viewport;
+++//    } display_control_t;
+++
+++    private int alpha;
+++    private int topLayer;
+++    private int rotation;
+++    private short[] viewport;
+++
+++    public SEINativeMessage(ByteBuffer buffer) {
+++        update(buffer);
+++    }
+++
+++    public void update(ByteBuffer buffer){
+++//        String str = "";
+++//        for (int i = 0; i < buffer.remaining(); i++){
+++////        str+=String.format("%x", buffer.get(i))+",";
+++//          int a = buffer.get(i)& 0xff;
+++//          str+=a+",";
+++//        }
+++//        Logging.d(TAG, "seitag sei cap:" +": "+str);
+++
+++        alpha = buffer.get(0) & 0x1;
+++        topLayer = (buffer.get(0)>>1) & 0x1;
+++        rotation = (buffer.get(0)>>2) & 0x3 ;
+++        viewport = new short[]{calViewport(buffer.get(4),buffer.get(5)),calViewport(buffer.get(6),buffer.get(7)),
+++                calViewport(buffer.get(8),buffer.get(9)),calViewport(buffer.get(10),buffer.get(11))};
+++        print();
+++    }
+++
+++    public int getAlpha() {
+++        return alpha;
+++    }
+++
+++    public void setAlpha(int alpha) {
+++        this.alpha = alpha;
+++    }
+++
+++    public int getTopLayer() {
+++        return topLayer;
+++    }
+++
+++    public void setTopLayer(int topLayer) {
+++        this.topLayer = topLayer;
+++    }
+++
+++    public int getRotation() {
+++        return rotation;
+++    }
+++
+++    public void setRotation(int rotation) {
+++        this.rotation = rotation;
+++    }
+++
+++    public short[] getViewport() {
+++        return viewport;
+++    }
+++
+++    public void setViewport(short[] viewport) {
+++        this.viewport = viewport;
+++    }
+++
+++
+++    private short calViewport(byte a,byte b){
+++        short result = 0;
+++        result = (short)(result ^ (b & 0xff));
+++        result = (short)(result << 8);
+++        result = (short)(result ^ (a & 0xff));
+++        return result;
+++    }
+++
+++    public void print(){
+++        Log.d(TAG, "seitag  alpha="+alpha+",topLayer="+topLayer+",rotation="+rotation+",viewport=" + viewport[0]+"-"+viewport[1]+"-"+viewport[2]+"-"+viewport[3]);
+++    }
+++
+++}
++-- 
++2.25.1
++
+-- 
+2.25.1
+
