@@ -144,7 +144,6 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         int nRomoteX;
         int nRomoteY;
         int pointId;
-        float width = 32767, height = 32767;
         int action = evt.getActionMasked();
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             if (action == MotionEvent.ACTION_UP) {
@@ -156,9 +155,7 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             for (int i = 0; i < nPointCount; i++) {
                 strCmd.append("u ").append(pointArray[i]).append("\n");
             }
-            if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
-                sendAndroidEventAsString(strCmd.toString(), -1);
-            }
+            sendAndroidEventAsString(strCmd.toString(), -1);
             return true;
         } else {
             nPointCount = evt.getPointerCount();
@@ -177,13 +174,11 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
                 pointId = evt.getPointerId(i);
                 x = evt.getX(i);
                 y = evt.getY(i);
-                nRomoteX = Math.round((x * width) / v.getWidth());
-                nRomoteY = Math.round((y * height) / v.getHeight());
+                nRomoteX = Math.round((x * BaseController.INPUT_MAX_WIDTH) / v.getWidth());
+                nRomoteY = Math.round((y * BaseController.INPUT_MAX_HEIGHT) / v.getHeight());
                 strCmd.append("m ").append(pointId).append(" ").append(nRomoteX).append(" ").append(nRomoteY).append(" ").append(255).append("\n");
             }
-            if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
-                sendAndroidEventAsString(strCmd.toString(), -1);
-            }
+            sendAndroidEventAsString(strCmd.toString(), -1);
             return true;
         }
 
@@ -191,8 +186,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         pointId = evt.getPointerId(index);
         x = evt.getX(index);
         y = evt.getY(index);
-        nRomoteX = Math.round((x * width) / v.getWidth());
-        nRomoteY = Math.round((y * height) / v.getHeight());
+        nRomoteX = Math.round((x * BaseController.INPUT_MAX_WIDTH) / v.getWidth());
+        nRomoteY = Math.round((y * BaseController.INPUT_MAX_HEIGHT) / v.getHeight());
         //pressure = (int)evt.getPressure(pointId);
         String strCmd;
         if (action == MotionEvent.ACTION_POINTER_UP) {
@@ -200,12 +195,10 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
         } else {
             strCmd = "d " + pointId + " " + nRomoteX + " " + nRomoteY + " " + 255 + "\n";
         }
-        if (evt.getToolType(0) != MotionEvent.TOOL_TYPE_MOUSE) {
-            if (strCmd.startsWith("d")) {
-                sendAndroidEventAsString(strCmd, mE2eEnabled ? JniCommon.nativeGetTimeStampNs() : -1);
-            } else {
-                sendAndroidEventAsString(strCmd, -1);
-            }
+        if (strCmd.startsWith("d")) {
+            sendAndroidEventAsString(strCmd, mE2eEnabled ? JniCommon.nativeGetTimeStampNs() : -1);
+        } else {
+            sendAndroidEventAsString(strCmd, -1);
         }
         v.performClick();
         return true;
@@ -253,9 +246,8 @@ public class RTCControllerAndroid extends BaseController implements View.OnGener
             for (int i = 0; i < pointerCount; i++) {
                 float x = event.getX(i);
                 float y = event.getY(i);
-                float width = 32767, height = 32767;
-                int nRomoteX = Math.round((x * width) / v.getWidth());
-                int nRomoteY = Math.round((y * height) / v.getHeight());
+                int nRomoteX = Math.round((x * BaseController.INPUT_MAX_WIDTH) / v.getWidth());
+                int nRomoteY = Math.round((y * BaseController.INPUT_MAX_HEIGHT) / v.getHeight());
                 sendAndroidEvent(event.getAction(), nRomoteX, nRomoteY, i);
             }
             float leftAxisX = event.getAxisValue(MotionEvent.AXIS_X);

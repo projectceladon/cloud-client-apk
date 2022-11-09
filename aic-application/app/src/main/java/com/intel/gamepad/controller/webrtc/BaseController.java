@@ -72,6 +72,8 @@ public abstract class BaseController implements OnTouchListener {
     public static final int JOY_KEY_CODE_MAP_SELECT = 314;
     public static final int JOY_KEY_CODE_MAP_START = 315;
     public static long lastTouchMillis = 0L;
+    public static float INPUT_MAX_WIDTH = 32767;
+    public static float INPUT_MAX_HEIGHT = 32767;
     public static AtomicBoolean manuallyPressBackButton = new AtomicBoolean(false);
     //    public static boolean isForAndroid = false; // true时发送安卓的原始事件，false发送windows事件
     protected final Context context;
@@ -452,19 +454,25 @@ public abstract class BaseController implements OnTouchListener {
         //Listen for physical mouse events.
         viewGroup.setOnGenericMotionListener((v, event) -> {
             // Determine whether it is a mouse event
-            if (event.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE) {
+            if (event.getToolType(0) == MotionEvent.TOOL_TYPE_MOUSE && event.getActionButton() == 0) {
+                int remoteX;
+                int remoteY;
+                float x = event.getX();
+                float y = event.getY();
+                remoteX = Math.round((x * INPUT_MAX_WIDTH) / v.getWidth());
+                remoteY = Math.round((y * INPUT_MAX_HEIGHT) / v.getHeight());
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_BUTTON_PRESS:
                         // Send mouse button down event
-                        sendMouseKey(true, 1, event.getX(), event.getY());
+                        //sendMouseKey(true, 1, remoteX, remoteY);
                         break;
                     case MotionEvent.ACTION_BUTTON_RELEASE:
                         // Send mouse button up event
-                        sendMouseKey(false, 1, event.getX(), event.getY());
+                        //sendMouseKey(false, 1, remoteX, remoteY);
                         break;
                     default:
                         // Send mouse button move event
-                        sendMouseMotionF(event.getX(), event.getY(), 0, 0);
+                        sendMouseMotionF(remoteX, remoteY, 0, 0);
                         break;
                 }
                 return true;
