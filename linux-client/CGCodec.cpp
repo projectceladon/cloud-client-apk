@@ -159,7 +159,7 @@ HWAccelContext::HWAccelContext(const AVCodec *decoder,
 
   int count = snprintf(device, sizeof(device), "%s%d", device_prefix, 128);
   if (count < 0 || count > MAX_DEVICE_NAME_SIZE) {
-    strcpy(device, "/dev/dri/renderD128");
+    strncpy(device, "/dev/dri/renderD128", strlen("/dev/dri/renderD128"));
   }
   std::cout << __func__ << " - device: " << device << std::endl;
   if ((av_hwdevice_ctx_create(&m_hw_dev_ctx, type, device, NULL, 0)) < 0) {

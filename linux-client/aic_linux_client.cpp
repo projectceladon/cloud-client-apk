@@ -288,7 +288,12 @@ int main(int argc, char* argv[]) {
         cycle_interval = atoi(optarg);
         break;
       case 'f':
-        fps = atoi(optarg);
+        {
+          int tmpFps = atoi(optarg);
+          if (tmpFps > 0) {
+            fps = tmpFps;
+          }
+        }
         break;
       case 'm':
         anim_interval = atoi(optarg);
@@ -323,13 +328,13 @@ int main(int argc, char* argv[]) {
   resolveIds(server_ids, vector_servers);
   resolveIds(client_ids, vector_clients);
   int index = 0;
-  for (auto id : vector_servers) {
+  for (auto &id : vector_servers) {
     std::cout << index << ":" << id << " ";
     index++;
   }
   std::cout << std::endl;
   index = 0;
-  for (auto id : vector_clients) {
+  for (auto &id : vector_clients) {
     std::cout << index << ":" << id << " ";
     index++;
   }
@@ -417,10 +422,10 @@ int main(int argc, char* argv[]) {
   int row;
   int column;
   int margin = 0;  // displays > 1 ? 10 : 0;
-  int cell_width;
-  int cell_height;
-  int cell_with_margin;
-  int cell_height_margin;
+  int cell_width = 0;
+  int cell_height = 0;
+  int cell_with_margin = 0;
+  int cell_height_margin = 0;
   int** game_matrix;
   game_matrix = new int*[sp_num];
   for (int i = 0; i < sp_num; i++) game_matrix[i] = new int[sp_num];
@@ -527,7 +532,7 @@ int main(int argc, char* argv[]) {
       }
       session_des_[vector_servers[i]] = desc_;
     }
-    for (auto session : game_sessions_) {
+    for (auto &session : game_sessions_) {
       session->startSession();  // pull all the stream
     }
   });
@@ -540,6 +545,9 @@ int main(int argc, char* argv[]) {
         anim_state = 1;
       }
       AVPacket* pkt = av_packet_alloc();
+      if (pkt == nullptr) {
+        return;
+      }
       pkt->data = const_cast<uint8_t*>(frame->buffer);
       pkt->size = frame->length;
       std::shared_ptr<SessionDescriptor> desc_ = session_des_[id];
@@ -570,7 +578,7 @@ int main(int argc, char* argv[]) {
           av_packet_free(&pkt);
         }
       } else {
-        std::cout << id << " no matching session" << std::endl;
+        std::cout << id << " no match" << std::endl;
       }
     }
   };
@@ -580,11 +588,9 @@ int main(int argc, char* argv[]) {
       std::move(mVideoDispatcher));
 
   if (lines > displays) {
-    SDL_Thread* display_tick_tid = SDL_CreateThread(
-        video_fps_thread, "video_fps_thread-2", &cycle_interval);
+    SDL_CreateThread(video_fps_thread, "video_fps_thread-2", &cycle_interval);
   } else {
-    SDL_Thread* video_tick_tid =
-        SDL_CreateThread(video_fps_thread, "video_fps_thread-1", NULL);
+    SDL_CreateThread(video_fps_thread, "video_fps_thread-1", NULL);
   }
 
   auto onMouseMove = [&](SDL_MouseMotionEvent& e) {
@@ -618,7 +624,7 @@ int main(int argc, char* argv[]) {
     for (int i = startIndex; i < endIndex; i++) {
       sv.push_back(game_sessions_[i]);
     }
-    for (auto session : game_sessions_display_) {
+    for (auto &session : game_sessions_display_) {
       session->suspendStream(true, nullptr);
       auto desc = session_des_[session->getSessionId()];
       desc->active = false;  // deactive the stream
@@ -633,26 +639,16 @@ int main(int argc, char* argv[]) {
     }
     playingIndex = endIndex - 1;
   };
-
-  bool full_screen = false;
   bool running = true;
-  SDL_Event e;
-  Uint32 lastRenderTime = SDL_GetTicks();
-  Uint32 renderTime;
-  Uint32 fpsStartTime = lastRenderTime;
-  int frame_count = 0;
-  bool printFps = debug & 0x2;
-
+  SDL_Event e{};
   while (running) {
     SDL_WaitEvent(&e);
     switch (e.type) {
       case AIC_REFRESH_EVENT:
         event_queue_->PostTask([&] {
-          Uint32 lastRenderTime = SDL_GetTicks();
           int nextIndex;
           int split_num = anim_state;
           int total_num = 0;
-          int count = 0;
           int fullScreenIndex = -1;
           if (anim_interval > 0) {
             if (split_num == -1) {
@@ -774,7 +770,7 @@ int main(int argc, char* argv[]) {
           if (fullScreen >= 0) {
             fullScreen = -1;
           } else {
-            int x, y;
+            int x = 0, y = 0;
             SDL_GetMouseState(&x, &y);
             int row = (y + margin) / cell_height;
             int column = (x + margin) / cell_width;
@@ -794,7 +790,7 @@ int main(int argc, char* argv[]) {
         break;
     }
   }
-  for (auto session : game_sessions_) {
+  for (auto &session : game_sessions_) {
     session->freeSession();
   }
 

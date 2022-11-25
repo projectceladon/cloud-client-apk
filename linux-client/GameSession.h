@@ -58,9 +58,8 @@ class GameSession {
   std::unique_ptr<PcObserver> ob_;
   std::string session_desc_;
   std::unique_ptr<GameP2PParams> p2p_params_;
-  RenderParams* render_params_;
   std::shared_ptr<AudioPlayer> audio_player_;
-  SDL_Rect rect_;
+  SDL_Rect rect_{};
   bool suspend_;
  // std::ofstream ouF;
 };

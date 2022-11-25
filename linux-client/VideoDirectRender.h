@@ -23,7 +23,6 @@ using EventListener = std::function<void(const char* event, const char* param)>;
 
 class VideoDirectRender {
  public:
-  VideoDirectRender();
   virtual ~VideoDirectRender();
 
   void setup_texture();

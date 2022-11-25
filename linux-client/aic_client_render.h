@@ -36,19 +36,19 @@ class AicClientRender {
  private:
   SDL_Window* glWindow = NULL;
   EGLDisplay glDisplay;
-  EGLConfig glConfig;
+  EGLConfig glConfig{};
   EGLContext glContext;
   EGLSurface glSurface;
   unsigned int glProgram;
   GLuint offset;
 
   unsigned int textProgram;
-  unsigned int VBO, VAO;
+  unsigned int VBO = 0, VAO = 0;
   std::map<GLchar, Character> characters;
 
   int scale;
-  int mWidth;
-  int mHeight;
+  int mWidth = 0;
+  int mHeight = 0;
   float scale_width;
 
   PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;

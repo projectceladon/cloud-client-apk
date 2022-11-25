@@ -24,7 +24,7 @@ VideoDecoder::VideoDecoder() {
     std::cerr << "vaGetDisplay failed!" << std::endl;
   }
 
-  int major, minor;
+  int major = 0 , minor = 0;
   if (vaInitialize(mVADisplay, &major, &minor) != VA_STATUS_SUCCESS) {
     std::cerr << "vaInitialize failed!" << std::endl;
   }

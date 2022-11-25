@@ -107,7 +107,7 @@ AicClientRender::AicClientRender(int x, int y, int *w, int *h, int n) {
                               EGL_OPENGL_BIT,
                               EGL_NONE};
 
-  EGLint numConfigs, majorVersion, minorVersion;
+  EGLint numConfigs = 0, majorVersion = 0, minorVersion = 0;
   glWindow = SDL_CreateWindow("multi-stream player", 0, 0, 0, 0,
                               SDL_WINDOW_OPENGL | SDL_WINDOW_MAXIMIZED);
   glDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -117,10 +117,14 @@ AicClientRender::AicClientRender(int x, int y, int *w, int *h, int n) {
     exit(-1);
   }
   eglChooseConfig(glDisplay, egl_config_attr, &glConfig, 1, &numConfigs);
-  SDL_SysWMinfo sysInfo;
+  SDL_SysWMinfo sysInfo{};
   SDL_VERSION(&sysInfo.version);
   SDL_GetWindowWMInfo(glWindow, &sysInfo);
   glContext = eglCreateContext(glDisplay, glConfig, EGL_NO_CONTEXT, NULL);
+  if(sysInfo.subsystem != SDL_SYSWM_X11) {
+    std::cout << "please use x11 window" << std::endl;
+    exit(-1);
+  }
   glSurface = eglCreateWindowSurface(
       glDisplay, glConfig, (EGLNativeWindowType)sysInfo.info.x11.window, 0);
   eglMakeCurrent(glDisplay, glSurface, glSurface, glContext);
@@ -196,7 +200,7 @@ GLuint AicClientRender::loadProgram(const char *vert_source,
 
   glGetProgramiv(program, GL_LINK_STATUS, &status);
   if (!status) {
-    char log[1000];
+    char log[1000] = {'\0'};
     GLsizei len;
     glGetProgramInfoLog(program, 1000, &len, log);
     std::cout << "get program info log: " << log << std::endl;
@@ -206,16 +210,21 @@ GLuint AicClientRender::loadProgram(const char *vert_source,
 
 GLuint AicClientRender::loadShader(const char *source, GLenum shaderType) {
   GLuint shader;
-  GLint status;
+  GLint status = 0;
   shader = glCreateShader(shaderType);
-  glShaderSource(shader, 1, (const char **)&source, NULL);
-  glCompileShader(shader);
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-  if (!status) {
-    char log[1000];
-    GLsizei len;
-    glGetShaderInfoLog(shader, 1000, &len, log);
-    std::cout << "Error: compile shader failed " << log << std::endl;
+  if (!shader) {
+    std::cout << "Error: create shader failed"<< std::endl;
+    exit(-1);
+  } else {
+    glShaderSource(shader, 1, (const char **)&source, NULL);
+    glCompileShader(shader);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+    if (!status) {
+      char log[1000] = {'\0'};
+      GLsizei len;
+      glGetShaderInfoLog(shader, 1000, &len, log);
+      std::cout << "Error: compile shader failed " << log << std::endl;
+    }
   }
   return shader;
 }
@@ -231,7 +240,7 @@ void AicClientRender::endFrame() { eglSwapBuffers(glDisplay, glSurface); }
 int AicClientRender::generateTexture(AVFrame *frame, GLuint *textures,
                                      EGLImage *images, VADisplay vaDisplay) {
   VASurfaceID va_surface = (uintptr_t)frame->data[3];
-  VADRMPRIMESurfaceDescriptor prime;
+  VADRMPRIMESurfaceDescriptor prime{};
   if (vaExportSurfaceHandle(
           vaDisplay, va_surface, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
           VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
@@ -332,11 +341,11 @@ void AicClientRender::initTextGL() {
 }
 
 void AicClientRender::initFreeType() {
-  FT_Library ft;
+  FT_Library ft = nullptr;
   if (FT_Init_FreeType(&ft))
     std::cout << "ERROR::FREETYPE: Could not init FreeType Library"
               << std::endl;
-  FT_Face face;
+  FT_Face face = nullptr;
   if (FT_New_Face(ft, "SourceSansPro-Regular.ttf", 0, &face))
     std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
 
@@ -347,7 +356,7 @@ void AicClientRender::initFreeType() {
       std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
       continue;
     }
-    GLuint texture;
+    GLuint texture = 0;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, face->glyph->bitmap.width,

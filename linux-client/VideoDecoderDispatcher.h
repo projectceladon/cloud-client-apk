@@ -35,7 +35,6 @@ class VideoDecoderDispatcher : public owt::base::VideoDecoderInterface {
   int out_size;
   int frame_width_;
   int frame_height_;
-  FILE* fid;
   int count = 0;
   std::string identifier_;
 };

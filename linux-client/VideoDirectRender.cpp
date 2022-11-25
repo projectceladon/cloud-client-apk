@@ -89,8 +89,6 @@ static const char *fs_src =
     "}";
 #endif
 
-VideoDirectRender::VideoDirectRender() {}
-
 VideoDirectRender::~VideoDirectRender() {
   std::cout << "~VideoDirectRender()" << std::endl;
   eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -163,8 +161,8 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
                           EGL_OPENGL_BIT,
                           EGL_NONE};
 
-  EGLConfig cfg;
-  EGLint cfg_count;
+  EGLConfig cfg{};
+  EGLint cfg_count = 0;
   if (!eglChooseConfig(egl_display, visual_attr, &cfg, 1, &cfg_count) ||
       (cfg_count < 1)) {
     std::cerr << "eglChooseConfig failed!" << std::endl;
@@ -217,7 +215,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
 #endif
 
 #if USE_CORE_PROFILE
-  GLuint vao;
+  GLuint vao = 0;
   glGenVertexArrays(1, &vao);
   glBindVertexArray(vao);
 #else
@@ -242,7 +240,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   }
   glCompileShader(vs);
 
-  GLint ok;
+  GLint ok = GL_FALSE;
   glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
 
   if (glGetError() || (ok != GL_TRUE)) {
@@ -276,7 +274,7 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   glBindTexture(GL_TEXTURE_2D, 0);
 #endif
 
-  GLint vp[4];
+  GLint vp[4] = {0};
   glGetIntegerv(GL_VIEWPORT, vp);
   glViewport(0, 0, vp[2], vp[3]);
   return 0;
@@ -284,11 +282,11 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
 
 int VideoDirectRender::handleWindowEvents() {
   char param[64];
-  XWindowAttributes attr;
+  XWindowAttributes attr{};
   XGetWindowAttributes(mXDisplay, mWindow, &attr);
 
   while (XPending(mXDisplay)) {
-    XEvent ev;
+    XEvent ev{};
     XNextEvent(mXDisplay, &ev);
     switch (ev.type) {
       case ClientMessage:
@@ -336,7 +334,7 @@ int VideoDirectRender::handleWindowEvents() {
 
 int VideoDirectRender::renderFrame(VASurfaceID va_surface) {
   fflush(stdout);
-  VADRMPRIMESurfaceDescriptor prime;
+  VADRMPRIMESurfaceDescriptor prime{};
   if (vaExportSurfaceHandle(mVADisplay, va_surface,
                             VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
                             VA_EXPORT_SURFACE_READ_ONLY |
