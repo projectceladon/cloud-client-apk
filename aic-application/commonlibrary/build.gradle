@@ -11,6 +11,10 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders=[
+                minSdkVersion : rootProject.ext.minSdkVersion,
+                targetSdkVersion : rootProject.ext.targetSdkVersion
+        ]
     }
 
     buildTypes {
@@ -23,6 +27,7 @@ android {
         sourceCompatibility rootProject.ext.sourceCompatibility
         targetCompatibility rootProject.ext.targetCompatibility
     }
+
 }
 
 dependencies {
