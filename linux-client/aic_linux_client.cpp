@@ -533,7 +533,14 @@ int main(int argc, char* argv[]) {
       session_des_[vector_servers[i]] = desc_;
     }
     for (auto &session : game_sessions_) {
-      session->startSession();  // pull all the stream
+      try
+      {
+        session->startSession();  // pull all the stream
+      }
+      catch(const std::exception& e)
+      {
+        std::cerr << e.what() << '\n';
+      }
     }
   });
 

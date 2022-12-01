@@ -210,14 +210,22 @@ int VideoDirectRender::initRender(int window_width, int window_height) {
   LOOKUP_FUNCTION(PFNGLEGLIMAGETARGETTEXTURE2DOESPROC,
                   glEGLImageTargetTexture2DOES)
 #if USE_CORE_PROFILE
-  LOOKUP_FUNCTION(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays);
-  LOOKUP_FUNCTION(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray);
+  if(glGenVertexArrays != NULL){
+    LOOKUP_FUNCTION(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays);
+  }
+  if(glBindVertexArray != NULL){
+    LOOKUP_FUNCTION(PFNGLBINDVERTEXARRAYPROC, glBindVertexArray);
+  }
 #endif
 
 #if USE_CORE_PROFILE
   GLuint vao = 0;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  if(glGenVertexArrays != NULL){
+    glGenVertexArrays(1, &vao);
+  }
+  if(glBindVertexArray != NULL){
+    glBindVertexArray(vao);
+  }
 #else
   glOrtho(0.0, 1.0, 1.0, 0.0, -1.0, 1.0);
 #endif
@@ -308,20 +316,22 @@ int VideoDirectRender::handleWindowEvents() {
         break;
       case MotionNotify:
         if (ev.xmotion.state & Button1MotionMask) {
-          snprintf(
-              param, 64,
-              "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }",
-              ev.xmotion.x * 32767 / attr.width,
-              ev.xmotion.y * 32767 / attr.height, ev.xmotion.x_root,
-              ev.xmotion.y_root);
+          if(attr.width != 0 && attr.height != 0)
+            snprintf(
+                param, 64,
+                "{\"x\": %d, \"y\": %d, \"movementX\": %d, \"movementY\": %d }",
+                ev.xmotion.x * 32767 / attr.width,
+                ev.xmotion.y * 32767 / attr.height, ev.xmotion.x_root,
+                ev.xmotion.y_root);
           mEventListener("mousemove", param);
         }
         break;
       case ButtonPress:
       case ButtonRelease:
-        snprintf(param, 64, "{\"which\": %d, \"x\": %d, \"y\": %d }",
-                 ev.xbutton.button, ev.xbutton.x * 32767 / attr.width,
-                 ev.xbutton.y * 32767 / attr.height);
+        if(attr.width != 0 && attr.height != 0)
+          snprintf(param, 64, "{\"which\": %d, \"x\": %d, \"y\": %d }",
+                  ev.xbutton.button, ev.xbutton.x * 32767 / attr.width,
+                  ev.xbutton.y * 32767 / attr.height);
         mEventListener((ev.type == ButtonPress) ? "mousedown" : "mouseup",
                        param);
         break;

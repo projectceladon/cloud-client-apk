@@ -32,9 +32,9 @@ class VideoDecoderDispatcher : public owt::base::VideoDecoderInterface {
   std::shared_ptr<CGVideoDecoder> decoder_;
   CGCodecSettings codec_settings_;
   std::vector<uint8_t> buffer_;
-  int out_size;
-  int frame_width_;
-  int frame_height_;
+  int out_size = 0;
+  int frame_width_ = 0;
+  int frame_height_ = 0;
   int count = 0;
   std::string identifier_;
 };
