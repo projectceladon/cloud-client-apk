@@ -34,6 +34,7 @@ Download owt-client-native source code:
     $ git am -3 ../patches/0016-Add-talk-owt-patches-0029-JNI-pass-a-tcae-object-to-.patch
     $ git am -3 ../patches/0017-Add-talk-owt-patches-Update-Android-SDK-to-31-in-src.patch
     $ git am -3 ../patches/0018-Add-talk-owt-patches-0031-Add-Native-SEI-Info.patch.patch
+    $ git am -3 ../patches/0019-Add-talk-owt-patches-0032-Enable-Autofocus-for-back-.patch
 6. Patch the third_party project: $ gclient sync
 
 Compile:
