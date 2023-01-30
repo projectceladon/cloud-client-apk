@@ -144,6 +144,7 @@ public abstract class BaseController implements OnTouchListener {
 
     public void onBackPress() {
         onBack = true;
+        sendAdbCmdEvent("input keyevent KEYCODE_HOME");
         IPUtils.savealphachannel(false);
         sendAlphaEvent(0);
         SEILogger.getInstance().clear();
